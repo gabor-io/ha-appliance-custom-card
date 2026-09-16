@@ -85,6 +85,7 @@ function delayControl(stateObj) {
     step: Number.isFinite(attrs.step) ? attrs.step : seconds ? 60 : 1,
     min: Number.isFinite(attrs.min) ? attrs.min : -1,
     max,
+    maxMinutes: seconds ? Math.round(max / 60) : max,
     minutes: raw === null || raw <= 0 ? 0 : seconds ? Math.round(raw / 60) : raw,
   };
 }

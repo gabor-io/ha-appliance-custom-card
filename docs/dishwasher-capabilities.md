@@ -89,6 +89,11 @@ mutatja a régieket.
   pedig `"<severity>-<acknowledgeStatus>"` (pl. `WARNING-NOT_NEEDED`). A kártya
   az attribútumokból olvassa ki a kódokat, és csak akkor ír darabszámot, ha
   más nem áll rendelkezésre.
+- **A késleltetés felbontása 10 perc**: a gép `startTime` képessége
+  `min 0, max 86400, step 600` (másodpercben), vagyis 10 perces lépésekben,
+  legfeljebb 24 órára állítható – függetlenül attól, hogy a Home Assistant
+  entitás ennél finomabb lépésközt mutat. A kártya minden beállított értéket
+  ehhez igazít (lefelé kerekítve).
 - **`number.<prefix>_start_time`** egységét az integráció verziója dönti el:
   percben (min -1, max 1440) vagy másodpercben (min -1, max 86400, step 60). A
   kártya az entitás `unit_of_measurement`, `max` és `step` attribútumaiból

@@ -2,7 +2,9 @@ import {
   CARD_NAME,
   CARD_VERSION,
   COMMAND_META,
+  DELAY_MAX_MINUTES,
   DELAY_PRESETS,
+  DELAY_STEP_MINUTES,
   EDITOR_NAME,
   PROGRAMS,
   PROGRAM_ORDER,
@@ -111,6 +113,7 @@ export class AegDishwasherCard extends HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'wrap';
     wrap.addEventListener('click', (ev) => this._onClick(ev));
+    wrap.addEventListener('change', (ev) => this._onChange(ev));
 
     for (const name of [
       'header',
@@ -512,10 +515,38 @@ export class AegDishwasherCard extends HTMLElement {
     const current = active
       ? `<span class="hint">${escapeHtml(formatDuration(model.delay, t))}</span>`
       : `<span class="hint">${escapeHtml(t('ui.delay_off'))}</span>`;
+
+    const maxDelay = Math.min(model.delayControl?.maxMinutes ?? DELAY_MAX_MINUTES, DELAY_MAX_MINUTES);
+    const fine = `
+      <div class="steppers narrow">
+        <div class="stepper">
+          <span class="label">${escapeHtml(t('ui.delay_amount'))}</span>
+          <div class="row">
+            <button class="step-btn" type="button" data-action="delay-step" data-dir="-1"
+              ${editable && model.delay > 0 ? '' : 'disabled'} aria-label="−">−</button>
+            <span class="value">${escapeHtml(model.delay ? formatDuration(model.delay, t) : t('ui.delay_off'))}</span>
+            <button class="step-btn" type="button" data-action="delay-step" data-dir="1"
+              ${editable && model.delay < maxDelay ? '' : 'disabled'} aria-label="+">+</button>
+          </div>
+        </div>
+        <div class="stepper" title="${escapeHtml(t('ui.ready_by_hint'))}">
+          <span class="label">${escapeHtml(t('ui.ready_by'))}</span>
+          <div class="row">
+            <input class="time-input" type="time" data-action="ready-by" ${editable ? '' : 'disabled'}>
+          </div>
+        </div>
+      </div>`;
+
+    const notice = this._delayNotice && Date.now() - this._delayNotice.at < 20000
+      ? `<div class="note">${icon('info')}${escapeHtml(this._delayNotice.text)}</div>`
+      : '';
+
     return `
       <div class="section">
         <div class="section-title">${escapeHtml(t('ui.delay'))}${current}</div>
         <div class="chips">${chips.join('')}</div>
+        ${fine}
+        ${notice}
       </div>`;
   }
 
@@ -685,6 +716,13 @@ export class AegDishwasherCard extends HTMLElement {
 
   /* ---------------------------- actions ----------------------------- */
 
+  _onChange(ev) {
+    const target = ev.target.closest('[data-action="ready-by"]');
+    if (!target || target.hasAttribute('disabled') || !this._model?.ok) return;
+    this._readyBy(target.value, this._t);
+    this._render();
+  }
+
   _onClick(ev) {
     const target = ev.target.closest('[data-action]');
     if (!target || target.hasAttribute('disabled')) return;
@@ -716,26 +754,92 @@ export class AegDishwasherCard extends HTMLElement {
       case 'delay':
         this._setDelay(Number(value));
         break;
+      case 'delay-step':
+        this._stepDelay(Number(target.dataset.dir));
+        break;
       default:
         break;
     }
   }
 
-  /** Writes the delay in whatever unit the number entity uses (minutes or seconds). */
+  /**
+   * Writes the delay in whatever unit the number entity uses (minutes or
+   * seconds), snapped to the 10 minute granularity the appliance accepts.
+   */
   _setDelay(minutes) {
     const model = this._model;
     const entityId = model.entities.start_time;
     if (!entityId) return;
     const control = model.delayControl;
-    let value = minutes;
-    if (minutes < 0) {
+
+    let value;
+    if (minutes <= 0) {
       value = control ? control.min : -1;
     } else {
-      if (control?.seconds) value *= 60;
-      if (control?.step > 1) value = Math.round(value / control.step) * control.step;
+      const entityStep = control ? (control.seconds ? control.step / 60 : control.step) : 1;
+      const granularity = Math.max(DELAY_STEP_MINUTES, entityStep || 1);
+      const snapped = Math.floor(minutes / granularity) * granularity;
+      if (snapped <= 0) return this._setDelay(0);
+      value = control?.seconds ? snapped * 60 : snapped;
     }
     this._haptic('light');
-    this._call('number', 'set_value', { entity_id: entityId, value });
+    return this._call('number', 'set_value', { entity_id: entityId, value });
+  }
+
+  /** One step up or down on the delay, in the appliance's 10 minute units. */
+  _stepDelay(direction) {
+    const model = this._model;
+    const maxDelay = Math.min(model.delayControl?.maxMinutes ?? DELAY_MAX_MINUTES, DELAY_MAX_MINUTES);
+    const current = Math.floor(model.delay / DELAY_STEP_MINUTES) * DELAY_STEP_MINUTES;
+    const next = Math.min(maxDelay, Math.max(0, current + direction * DELAY_STEP_MINUTES));
+    if (next === model.delay) return;
+    this._setDelay(next);
+  }
+
+  /**
+   * "Ready by": turns a wall-clock target into a delay.
+   *
+   * The delay is what is left after the cycle itself, rounded *down* to the
+   * appliance's 10 minute steps, so the dishes are always done by the chosen
+   * time rather than after it. A target that has already passed today is taken
+   * as tomorrow.
+   */
+  _readyBy(value, t) {
+    const model = this._model;
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value || '');
+    if (!match) return;
+
+    // count from the start of the current minute: the delay is rounded down to
+    // ten minutes anyway, and the stray seconds would only cost a whole step
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const target = new Date(now);
+    target.setHours(Number(match[1]), Number(match[2]), 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+
+    const cycle = this._cycleMinutes(model) || 0;
+    const available = Math.round((target.getTime() - now.getTime()) / 60000);
+    const maxDelay = Math.min(model.delayControl?.maxMinutes ?? DELAY_MAX_MINUTES, DELAY_MAX_MINUTES);
+    let delay = Math.floor((available - cycle) / DELAY_STEP_MINUTES) * DELAY_STEP_MINUTES;
+
+    if (delay <= 0) {
+      const earliest = new Date(Date.now() + cycle * 60000);
+      this._delayNotice = {
+        at: Date.now(),
+        text: `${t('ui.ready_by_too_soon')} ${formatClock(earliest, this._hass)}`,
+      };
+      delay = 0;
+    } else if (delay > maxDelay) {
+      delay = maxDelay;
+      this._delayNotice = { at: Date.now(), text: t('ui.ready_by_max') };
+    } else {
+      const finish = new Date(Date.now() + (delay + cycle) * 60000);
+      this._delayNotice = {
+        at: Date.now(),
+        text: `${t('ui.ready_by_set')}: ${formatDuration(delay, t)} · ${t('ui.ready_at')} ${formatClock(finish, this._hass)}`,
+      };
+    }
+    this._setDelay(delay);
   }
 
   /** Floor light and the end-of-cycle sound are selects, the key tone a switch. */
