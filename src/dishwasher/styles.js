@@ -22,7 +22,8 @@ const CARD_STYLES = `
 .step.skip { opacity: .2; }
 
 /* ---------- score meters ---------- */
-.meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; transition: opacity .3s ease; }
+.meters.stale { opacity: .4; }
 .meter { display: grid; gap: 6px; }
 .meter .top { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--ap-muted); }
 .meter .top .icon { width: 15px; height: 15px; }

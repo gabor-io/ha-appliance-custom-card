@@ -519,10 +519,31 @@ export class AegDishwasherCard extends HTMLElement {
       </div>`;
   }
 
+  /**
+   * The appliance recomputes the scores a few seconds after a program change,
+   * just like the remaining time. Until the new values arrive the old ones are
+   * shown dimmed, so they do not read as the new program's numbers.
+   */
+  _scoresStale(model) {
+    const values = [model.scores.eco, model.scores.energy, model.scores.water].join('/');
+    const track = this._scoreTrack;
+    if (!track) {
+      this._scoreTrack = { program: model.program, values, stale: false, since: 0 };
+    } else if (track.program !== model.program) {
+      this._scoreTrack = { program: model.program, values, stale: true, since: Date.now() };
+    } else if (track.stale && (values !== track.values || Date.now() - track.since > 30000)) {
+      track.stale = false;
+    }
+    return this._scoreTrack.stale;
+  }
+
   _metersHtml(model, t) {
     const blocks = [];
     const { eco, energy, water } = model.scores;
-    if (this._config.show_scores && (eco !== null || energy !== null || water !== null)) {
+    // Rinse & Hold and MachineCare report no scores at all
+    const scored = PROGRAMS[model.program]?.scores !== false;
+    const stale = this._scoresStale(model);
+    if (this._config.show_scores && scored && (eco !== null || energy !== null || water !== null)) {
       const meter = (key, cls, iconName, value) => {
         const filled = Math.max(0, Math.min(7, value ?? 0));
         const track = Array.from({ length: 7 }, (_, i) => `<i class="${i < filled ? 'on' : ''}"></i>`).join('');
@@ -534,7 +555,7 @@ export class AegDishwasherCard extends HTMLElement {
           </div>`;
       };
       blocks.push(`
-        <div class="meters">
+        <div class="meters${stale ? ' stale' : ''}">
           ${meter('eco_score', 'eco', 'leaf', eco)}
           ${meter('energy_score', 'energy', 'energy', energy)}
           ${meter('water_score', 'water', 'water', water)}
@@ -551,9 +572,10 @@ export class AegDishwasherCard extends HTMLElement {
         </div>`);
     }
     if (!blocks.length) return '';
+    const hint = stale && scored ? `<span class="hint">${escapeHtml(t('ui.scores_updating'))}</span>` : '';
     return `
       <div class="section">
-        <div class="section-title">${escapeHtml(t('ui.scores'))}</div>
+        <div class="section-title">${escapeHtml(t('ui.scores'))}${hint}</div>
         ${blocks.join('')}
       </div>`;
   }

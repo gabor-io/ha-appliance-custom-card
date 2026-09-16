@@ -119,6 +119,8 @@ export const PROGRAMS = {
     energy: 0.15,
     duration: 15,
     steps: ['PREWASH'],
+    // the appliance reports no eco/energy/water score for this program
+    scores: false,
   },
   MACHINE_CARE: {
     icon: 'care',
@@ -126,6 +128,7 @@ export const PROGRAMS = {
     energy: 0.575,
     duration: 60,
     steps: ['MAINWASH', 'RINSE', 'DRYING'],
+    scores: false,
   },
 };
 
