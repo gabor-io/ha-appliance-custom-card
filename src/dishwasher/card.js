@@ -37,6 +37,7 @@ export const DEFAULTS = {
   show_consumption: true,
   show_details: true,
   show_controls: true,
+  show_appliance_settings: true,
 };
 
 // programs can be picked while the appliance is off (the card powers it on first)
@@ -120,6 +121,7 @@ export class AegDishwasherCard extends HTMLElement {
       'delay',
       'meters',
       'controls',
+      'appliance',
       'details',
     ]) {
       const node = document.createElement('div');
@@ -161,6 +163,10 @@ export class AegDishwasherCard extends HTMLElement {
     this._section('delay', this._config.show_delay ? this._delayHtml(model, t) : '');
     this._section('meters', this._metersHtml(model, t));
     this._section('controls', this._config.show_controls ? this._controlsHtml(model, t) : '');
+    this._section(
+      'appliance',
+      this._config.show_appliance_settings ? this._applianceSettingsHtml(model, t) : '',
+    );
     this._section('details', this._config.show_details ? this._detailsHtml(model, t) : '');
   }
 
@@ -525,6 +531,50 @@ export class AegDishwasherCard extends HTMLElement {
     return `<div class="section"><div class="controls">${buttons.join('')}</div>${note}</div>`;
   }
 
+  /** Appliance settings: floor light, sounds and display brightness. */
+  _applianceSettingsHtml(model, t) {
+    const { brightness, floorLight, endSound, keyTone } = model.settings;
+    if (!brightness && !floorLight && !endSound && !keyTone) return '';
+    const editable = model.online && model.remoteEnabled;
+
+    const chip = (key, iconName, label, setting) =>
+      setting
+        ? `<button class="chip" type="button" data-action="setting" data-value="${key}"
+            aria-pressed="${setting.on}" title="${escapeHtml(t(`ui.${label}_hint`, ''))}"
+            ${editable ? '' : 'disabled'}>
+            ${icon(iconName)}<span>${escapeHtml(t(`ui.${label}`))}</span>
+          </button>`
+        : '';
+
+    const chips = [
+      chip('floor', 'floor_light', 'floor_light', floorLight),
+      chip('sound', 'end_sound', 'end_sound', endSound),
+      chip('key', 'key_tone', 'key_tone', keyTone),
+    ].filter(Boolean);
+
+    const stepper = brightness
+      ? `<div class="steppers narrow">
+          <div class="stepper" title="${escapeHtml(t('ui.brightness_hint', ''))}">
+            <span class="label">${escapeHtml(t('ui.brightness'))}</span>
+            <div class="row">
+              <button class="step-btn" type="button" data-action="brightness" data-dir="-1"
+                ${editable && brightness.value > brightness.min ? '' : 'disabled'} aria-label="−">−</button>
+              <span class="value">${brightness.value}</span>
+              <button class="step-btn" type="button" data-action="brightness" data-dir="1"
+                ${editable && brightness.value < brightness.max ? '' : 'disabled'} aria-label="+">+</button>
+            </div>
+          </div>
+        </div>`
+      : '';
+
+    return `
+      <div class="section">
+        <div class="section-title">${escapeHtml(t('ui.appliance_settings'))}</div>
+        ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
+        ${stepper}
+      </div>`;
+  }
+
   _detailsHtml(model, t) {
     const items = [];
     const push = (key, value, iconName) => {
@@ -591,6 +641,12 @@ export class AegDishwasherCard extends HTMLElement {
         this._haptic('medium');
         this._call('button', 'press', { entity_id: model.entities[`cmd_${value}`] });
         break;
+      case 'setting':
+        this._toggleSetting(value);
+        break;
+      case 'brightness':
+        this._stepBrightness(Number(target.dataset.dir));
+        break;
       case 'delay':
         this._haptic('light');
         this._call('number', 'set_value', {
@@ -601,6 +657,39 @@ export class AegDishwasherCard extends HTMLElement {
       default:
         break;
     }
+  }
+
+  /** Floor light and the end-of-cycle sound are selects, the key tone a switch. */
+  _toggleSetting(key) {
+    const model = this._model;
+    this._haptic('light');
+    if (key === 'key') {
+      return this._call('switch', 'toggle', { entity_id: model.entities.key_tone });
+    }
+    const [settingKey, entityKey] =
+      key === 'floor'
+        ? ['floorLight', 'display_on_floor']
+        : ['endSound', 'end_of_cycle_sound'];
+    const setting = model.settings[settingKey];
+    if (!setting) return undefined;
+    return this._call('select', 'select_option', {
+      entity_id: model.entities[entityKey],
+      option: setting.on ? setting.offOption : setting.onOption,
+    });
+  }
+
+  /** Display brightness is a numbered select, stepped one level at a time. */
+  _stepBrightness(direction) {
+    const { brightness } = this._model.settings;
+    if (!brightness) return;
+    const index = brightness.levels.findIndex((item) => item.value === brightness.value);
+    const next = brightness.levels[(index === -1 ? 0 : index) + direction];
+    if (!next) return;
+    this._haptic('light');
+    this._call('select', 'select_option', {
+      entity_id: this._model.entities.display_light,
+      option: next.label,
+    });
   }
 
   /** Selecting a program while the appliance is off turns it on first. */

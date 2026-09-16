@@ -123,6 +123,27 @@ ha-card { overflow: hidden; container-type: inline-size; }
 .fact .icon { width: 15px; height: 15px; color: var(--ap-muted); }
 .fact b { font-weight: 600; }
 
+/* ---------- steppers ---------- */
+.steppers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.steppers.narrow { grid-template-columns: repeat(auto-fit, minmax(150px, 210px)); justify-content: start; }
+.stepper {
+  display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--ap-text) 5%, transparent);
+}
+.stepper .label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ap-muted); }
+.stepper .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stepper .value { font-size: 1.1rem; font-weight: 700; color: var(--ap-text); font-variant-numeric: tabular-nums; }
+.step-btn {
+  width: 32px; height: 32px; border-radius: 10px; cursor: pointer; flex: 0 0 auto;
+  border: 1px solid var(--ap-line); background: transparent; color: var(--ap-text);
+  font: inherit; font-size: 1.05rem; font-weight: 700; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color .2s ease, transform .1s ease;
+}
+.step-btn:hover:not([disabled]) { border-color: var(--ap-accent); }
+.step-btn:active:not([disabled]) { transform: scale(.94); }
+.step-btn[disabled] { opacity: .35; cursor: not-allowed; }
+
 /* ---------- controls ---------- */
 .controls { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn {

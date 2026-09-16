@@ -86,6 +86,44 @@ function cycleProgress(key, program, state, remaining) {
   return { progress: total ? Math.min(1, Math.max(0, 1 - remaining / total)) : 0, total };
 }
 
+/**
+ * A select entity that is really an on/off setting (e.g. the floor projection
+ * or the end-of-cycle sound). `offKeys` names the options that mean "off".
+ */
+function toggleSelect(stateObj, offKeys) {
+  if (isUnavailable(stateObj)) return null;
+  const options = stateObj.attributes?.options || [];
+  const isOff = (label) => offKeys.includes(normaliseKey(label));
+  const offOption = options.find(isOff) || null;
+  const onOption = options.find((label) => !isOff(label)) || null;
+  if (!offOption || !onOption) return null;
+  return { on: !isOff(stateObj.state), onOption, offOption };
+}
+
+/**
+ * A select entity whose options are numbered levels ("Display Light 0" ...
+ * "Display Light 9"), presented as a stepper.
+ */
+function levelSelect(stateObj) {
+  if (isUnavailable(stateObj)) return null;
+  const level = (label) => {
+    const match = String(label).match(/(\d+)\s*$/);
+    return match ? Number(match[1]) : null;
+  };
+  const levels = (stateObj.attributes?.options || [])
+    .map((label) => ({ label, value: level(label) }))
+    .filter((item) => item.value !== null)
+    .sort((a, b) => a.value - b.value);
+  if (!levels.length) return null;
+  const current = levels.find((item) => item.label === stateObj.state);
+  return {
+    levels,
+    value: current ? current.value : level(stateObj.state),
+    min: levels[0].value,
+    max: levels[levels.length - 1].value,
+  };
+}
+
 export function buildModel(hass, config) {
   const entities = resolveEntities(hass, config);
   const get = (key) => (entities[key] ? hass.states[entities[key]] : undefined);
@@ -198,6 +236,13 @@ export function buildModel(hass, config) {
     ecoMode: get('eco_mode')?.state === 'on',
     rinseAid: num(get('rinse_aid_level')),
     waterHardness: get('water_hardness')?.state || null,
+    // appliance settings that the card exposes as chips and a stepper
+    settings: {
+      brightness: levelSelect(get('display_light')),
+      floorLight: toggleSelect(get('display_on_floor'), ['OFF']),
+      endSound: toggleSelect(get('end_of_cycle_sound'), ['NO_SOUND', 'OFF']),
+      keyTone: entities.key_tone ? { on: get('key_tone')?.state === 'on' } : null,
+    },
     options,
     name:
       config.name ||
