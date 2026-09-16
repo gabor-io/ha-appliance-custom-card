@@ -26,18 +26,67 @@ function remainingMinutes(stateObj) {
   return value > 1000 ? Math.round(value / 60) : Math.round(value);
 }
 
+const NO_ALERT = ['NONE', 'OFF', 'OK', '0', 'UNKNOWN', 'UNAVAILABLE'];
+
+/**
+ * Active alerts as `{ code, severity }`.
+ *
+ * The integration puts the *number* of alerts in the state and the codes in the
+ * attributes: every code the appliance knows maps to `OFF`, an active one to
+ * `"<severity>-<acknowledge status>"` (e.g. `WARNING-NOT_NEEDED`). Older
+ * versions listed the codes in the state, which is still handled.
+ */
 function parseAlerts(stateObj) {
   if (isUnavailable(stateObj)) return [];
-  const raw = stateObj.attributes?.alerts ?? stateObj.attributes?.alert_list ?? stateObj.state;
+  const attributes = stateObj.attributes || {};
+
+  const fromAttributes = Object.entries(attributes)
+    .filter(([key, value]) => /^[A-Z][A-Z0-9_]*$/.test(key) && typeof value === 'string')
+    .filter(([, value]) => !NO_ALERT.includes(normaliseKey(value).split('-')[0]))
+    .map(([key, value]) => ({
+      code: normaliseKey(key),
+      severity: normaliseKey(String(value).split('-')[0]),
+    }));
+  if (fromAttributes.length) return fromAttributes;
+
+  const raw = attributes.alerts ?? attributes.alert_list ?? stateObj.state;
   let list = [];
   if (Array.isArray(raw)) {
     list = raw.map((item) => (typeof item === 'string' ? item : item?.code));
-  } else if (typeof raw === 'string') {
+  } else if (typeof raw === 'string' && !/^\d+$/.test(raw.trim())) {
     list = raw.split(/[,;]/);
   }
-  return list
+  const codes = list
     .map((item) => normaliseKey(item))
-    .filter((item) => item && !['NONE', 'OFF', 'OK', '0', 'UNKNOWN', 'UNAVAILABLE'].includes(item));
+    .filter((item) => item && !NO_ALERT.includes(item))
+    .map((code) => ({ code, severity: '' }));
+  if (codes.length) return codes;
+
+  // only a count is known: report that much rather than nothing
+  const count = Number(stateObj.state);
+  return Number.isFinite(count) && count > 0 ? [{ code: '', severity: '', count }] : [];
+}
+
+/**
+ * The delayed-start number entity is minutes on some integration versions and
+ * seconds on others (min -1, max 86400, step 60). Read the scale off the entity
+ * instead of guessing, so both write the right value.
+ */
+function delayControl(stateObj) {
+  if (!stateObj) return null;
+  const attrs = stateObj.attributes || {};
+  const unit = String(attrs.unit_of_measurement || '').toLowerCase();
+  const max = Number.isFinite(attrs.max) ? attrs.max : 1440;
+  const seconds = unit === 's' || unit === 'sec' || unit === 'seconds' || (!unit && max > 5000);
+  const raw = num(stateObj);
+  return {
+    raw,
+    seconds,
+    step: Number.isFinite(attrs.step) ? attrs.step : seconds ? 60 : 1,
+    min: Number.isFinite(attrs.min) ? attrs.min : -1,
+    max,
+    minutes: raw === null || raw <= 0 ? 0 : seconds ? Math.round(raw / 60) : raw,
+  };
 }
 
 function readStore() {
@@ -147,8 +196,8 @@ export function buildModel(hass, config) {
   const remaining = remainingMinutes(get('time_to_end'));
   const { progress } = cycleProgress(entities.prefix, programKey, state, remaining);
 
-  const delayRaw = num(get('start_time'));
-  const delay = delayRaw !== null && delayRaw > 0 ? delayRaw : 0;
+  const delayEntity = delayControl(get('start_time'));
+  const delay = delayEntity ? delayEntity.minutes : 0;
 
   const doorEntity = get('door_state');
   const doorOpen = doorEntity ? doorEntity.state === 'on' : null;
@@ -179,13 +228,15 @@ export function buildModel(hass, config) {
     minutesToFinish =
       reported !== null && reported > delay ? reported : programMinutes ? delay + programMinutes : null;
   } else if (state === STATE.IDLE || state === STATE.READY_TO_START) {
-    // not started yet: the estimate assumes the cycle begins now
-    minutesToFinish = reported !== null ? reported : programMinutes || null;
+    // not started yet: the estimate assumes the cycle begins now, or after the
+    // delay when one is already dialled in
+    const cycle = reported !== null ? reported : programMinutes || null;
+    minutesToFinish = cycle === null ? null : cycle + delay;
   }
 
   const finishAt =
     minutesToFinish !== null ? new Date(Date.now() + minutesToFinish * 60000) : null;
-  const startAt = state === STATE.DELAYED_START && delay ? new Date(Date.now() + delay * 60000) : null;
+  const startAt = delay ? new Date(Date.now() + delay * 60000) : null;
 
   const options = OPTIONS.map((option) => {
     const entityId = entities.options?.[option.entity];
@@ -220,6 +271,7 @@ export function buildModel(hass, config) {
     finishAt,
     startAt,
     delay,
+    delayControl: delayEntity,
     delayEntity: entities.start_time,
     doorOpen,
     online,

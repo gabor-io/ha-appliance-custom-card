@@ -72,6 +72,18 @@ Hibakódok a gépkönyv 13. fejezete szerint:
 | i97 / i98 / iC0–iC5 | Készülékhiba |
 | iF1 | Túl magas vízszint |
 
+## Két entitás, ami máshogy viselkedik, mint elsőre látszik
+
+- **`sensor.<prefix>_alerts`** állapota a riasztások **darabszáma** (pl. `2`), a
+  tényleges kódok az attribútumokban vannak: minden ismert kód `OFF`, az aktív
+  pedig `"<severity>-<acknowledgeStatus>"` (pl. `WARNING-NOT_NEEDED`). A kártya
+  az attribútumokból olvassa ki a kódokat, és csak akkor ír darabszámot, ha
+  más nem áll rendelkezésre.
+- **`number.<prefix>_start_time`** egységét az integráció verziója dönti el:
+  percben (min -1, max 1440) vagy másodpercben (min -1, max 86400, step 60). A
+  kártya az entitás `unit_of_measurement`, `max` és `step` attribútumaiból
+  állapítja meg, és ugyanabban az egységben ír vissza.
+
 ## A kártya által használt entitások
 
 | Kulcs | Entitás |

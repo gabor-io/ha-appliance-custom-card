@@ -35,7 +35,9 @@ magyar és angol nyelven, világos és sötét témában.
 - **Késleltetett indítás** 1–12 óra, egy kattintással – ilyenkor azt is kiírja,
   hogy a gép mikor indul, illetve a késleltetéssel és a választott programmal
   együtt mikor lesz kész (`Indul 16:28 · Elkészül 21:38`).
-- **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok.
+- **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok
+  – a kódokat az `alerts` szenzor attribútumaiból olvassa ki (az állapota csak
+  a riasztások darabszáma).
 - Eco/energia/víz pontszámok, ciklusszám, öblítőszerszint, vízkeménység,
   Wi-Fi jelminőség, távvezérlés állapota.
 

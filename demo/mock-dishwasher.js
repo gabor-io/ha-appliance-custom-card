@@ -9,7 +9,7 @@ const BASE = {
   program: 'Eco',
   door: 'off',
   connectivity: 'on',
-  alerts: 'DISH_ALARM_SALT_MISSING,DISH_ALARM_RINSE_AID_LOW',
+  alerts: ['DISH_ALARM_SALT_MISSING', 'DISH_ALARM_RINSE_AID_LOW'],
   eco: '7',
   energy: '1',
   water: '1',
@@ -30,7 +30,7 @@ export const SCENARIOS = {
   off: {},
   ready: {
     appliance_state: 'READY_TO_START',
-    alerts: '',
+    alerts: [],
     // the appliance reports the length of the selected program (ExtraDry included)
     time_to_end: '325',
     options: { xtra_dry_option: 'on' },
@@ -39,7 +39,7 @@ export const SCENARIOS = {
     appliance_state: 'RUNNING',
     cycle_phase: 'Mainwash',
     time_to_end: '138',
-    alerts: '',
+    alerts: [],
     options: { xtra_dry_option: 'on', extra_silent_option: 'on' },
   },
   drying: {
@@ -47,16 +47,24 @@ export const SCENARIOS = {
     cycle_phase: 'Drying',
     time_to_end: '24',
     program: '120 Min',
-    alerts: '',
+    alerts: [],
   },
   paused: { appliance_state: 'PAUSED', cycle_phase: 'Mainwash', time_to_end: '96', alerts: '' },
+  ready_delay: {
+    appliance_state: 'READY_TO_START',
+    alerts: [],
+    // the appliance reports the program length; the delay is a separate setting
+    time_to_end: '385',
+    start_time: '240',
+    options: { auto_door_opener: 'on' },
+  },
   delayed: { appliance_state: 'DELAYED_START', time_to_end: '490', start_time: '180', alerts: '' },
   finished: { appliance_state: 'END_OF_CYCLE', time_to_end: '0', door: 'on', alerts: '' },
-  alarm: { appliance_state: 'ALARM', alerts: 'DISH_ALARM_I20', time_to_end: '0' },
+  alarm: { appliance_state: 'ALARM', alerts: ['DISH_ALARM_I20'], time_to_end: '0' },
   quick: {
     appliance_state: 'READY_TO_START',
     program: 'Quick30',
-    alerts: 'DISH_ALARM_RINSE_AID_LOW',
+    alerts: ['DISH_ALARM_RINSE_AID_LOW'],
     eco: '3',
     energy: '5',
     water: '4',
@@ -65,6 +73,27 @@ export const SCENARIOS = {
 };
 
 const PROGRAM_OPTIONS = ['120 Min', 'Auto', 'Eco', 'Machine Care', 'Normal90', 'Quick30', 'Quick60', 'Rinse'];
+
+/**
+ * The integration reports the *number* of alerts as the state and the codes as
+ * attributes: every known code maps to OFF, an active one to severity-status.
+ */
+const ALL_ALERTS = [
+  'DISH_ALARM_SALT_MISSING',
+  'DISH_ALARM_RINSE_AID_LOW',
+  'DISH_ALARM_I10',
+  'DISH_ALARM_I20',
+  'DISH_ALARM_I30',
+  'DISH_ALARM_IF1',
+];
+
+function alertAttributes(codes) {
+  const attributes = Object.fromEntries(ALL_ALERTS.map((code) => [code, 'OFF']));
+  for (const code of codes) {
+    attributes[code] = /_I[0-9A-F]+$/.test(code) ? 'ERROR-NOT_NEEDED' : 'WARNING-NOT_NEEDED';
+  }
+  return attributes;
+}
 
 const OPTION_SWITCHES = [
   'xtra_dry_option',
@@ -90,7 +119,7 @@ export function makeHass(scenarioKey) {
     entity(`sensor.${PREFIX}_appliance_state`, s.appliance_state, { friendly_name: 'AEG GI8200X5TN Appliance state' }),
     entity(`sensor.${PREFIX}_cycle_phase`, s.cycle_phase),
     entity(`sensor.${PREFIX}_time_to_end`, s.time_to_end, { unit_of_measurement: 'min', device_class: 'duration' }),
-    entity(`sensor.${PREFIX}_alerts`, s.alerts || 'None'),
+    entity(`sensor.${PREFIX}_alerts`, String(s.alerts.length), alertAttributes(s.alerts)),
     entity(`sensor.${PREFIX}_eco_score`, s.eco),
     entity(`sensor.${PREFIX}_energy_score`, s.energy),
     entity(`sensor.${PREFIX}_water_score`, s.water),
