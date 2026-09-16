@@ -4,7 +4,7 @@ type: custom:philips-airfryer-card
 # ---------------------------------------------------------------------------
 # 2) Konkrét készülék + magyar felirat
 type: custom:philips-airfryer-card
-device: 8f1c0a2b5d7e4f3a9c6b1d2e3f4a5b6c   # a készülék device_id-ja
+device: fedcba9876543210fedcba9876543210   # a készülék device_id-ja (helyőrző)
 name: Airfryer
 language: hu
 
