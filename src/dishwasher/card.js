@@ -312,11 +312,17 @@ export class AegDishwasherCard extends HTMLElement {
     }
     if (model.state === STATE.DELAYED_START) {
       const parts = splitDuration(model.delay || model.remaining, t);
-      const at = model.startAt
-        ? `<span class="at">${icon('clock')}${escapeHtml(t('ui.starts_at'))} ${formatClock(model.startAt, this._hass)}</span>`
-        : '';
       if (!parts) return '';
-      return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${at}</div>`;
+      // with a delay the interesting number is when the dishes are actually done
+      const chips = [
+        model.startAt
+          ? `<span class="at">${icon('timer')}${escapeHtml(t('ui.starts_at'))} ${formatClock(model.startAt, this._hass)}</span>`
+          : '',
+        model.finishAt
+          ? `<span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(model.finishAt, this._hass)}</span>`
+          : '',
+      ].join('');
+      return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${chips}</div>`;
     }
     if ([STATE.RUNNING, STATE.PAUSED].includes(model.state)) {
       const parts = splitDuration(model.remaining, t);

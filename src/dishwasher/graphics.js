@@ -49,12 +49,14 @@ export function renderMachine() {
     </defs>
 
     <rect class="cabinet" x="8" y="6" width="164" height="202" rx="18"/>
+    <ellipse class="door-shadow" cx="90" cy="206" rx="78" ry="7"/>
 
     <!-- interior: stays put while the door swings open -->
     <g class="cavity">
       <rect class="tub-body" x="26" y="52" width="128" height="136" rx="12"/>
       <g clip-path="url(#dw-tub-clip)">
         <rect class="cavity-glow" x="26" y="52" width="128" height="136"/>
+        <rect class="cavity-light" x="26" y="52" width="128" height="136"/>
 
         <g class="rack rack-top">
           <line x1="34" y1="94" x2="146" y2="94"/>
@@ -109,6 +111,20 @@ export function renderMachine() {
           </g>
         </g>
 
+        <g class="wash-water">
+          <path class="pool" d="M20 178c10-4 18 4 28 0s18-6 28-2 18 6 28 2 18-6 28-2 18 4 28 0v18H20z"/>
+          <path class="pool pool-back" d="M20 182c10-4 18 4 28 0s18-6 28-2 18 6 28 2 18-6 28-2 18 4 28 0v14H20z"/>
+        </g>
+
+        <g class="bubbles">
+          <circle cx="54" cy="176" r="2.6"/>
+          <circle cx="72" cy="176" r="1.8"/>
+          <circle cx="96" cy="176" r="3"/>
+          <circle cx="114" cy="176" r="2.2"/>
+          <circle cx="132" cy="176" r="2.6"/>
+          <circle cx="84" cy="176" r="2"/>
+        </g>
+
         <g class="steam">
           <path d="M68 140c8-10-8-18 0-28"/>
           <path d="M90 134c8-10-8-18 0-28"/>
@@ -128,6 +144,7 @@ export function renderMachine() {
       <rect class="glass" x="26" y="52" width="128" height="136" rx="12"/>
       <path class="door-panel" d="${FRAME}" fill-rule="evenodd"/>
       <rect class="panel-strip" x="18" y="14" width="144" height="28" rx="10"/>
+      <circle class="led-ring" cx="32" cy="28" r="7"/>
       <circle class="led" cx="32" cy="28" r="4"/>
       <rect class="display" x="60" y="19" width="60" height="18" rx="6"/>
       <text class="display-text" x="90" y="32" text-anchor="middle">--:--</text>

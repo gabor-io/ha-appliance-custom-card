@@ -123,8 +123,25 @@ export function buildModel(hass, config) {
 
   const showsCountdown =
     state === STATE.RUNNING || state === STATE.PAUSED || state === STATE.DELAYED_START;
+
+  /**
+   * With a delayed start the appliance already counts the delay into
+   * `timeToEnd`; when it does not (or the sensor is missing), the delay plus the
+   * program's nominal duration is the next best estimate.
+   */
+  const programMinutes = PROGRAMS[programKey]?.duration || 0;
+  let minutesToFinish = remaining;
+  if (state === STATE.DELAYED_START && delay) {
+    const estimate = delay + programMinutes;
+    if (minutesToFinish === null || minutesToFinish <= delay) {
+      minutesToFinish = programMinutes ? estimate : null;
+    }
+  }
+
   const finishAt =
-    showsCountdown && remaining !== null ? new Date(Date.now() + remaining * 60000) : null;
+    showsCountdown && minutesToFinish !== null
+      ? new Date(Date.now() + minutesToFinish * 60000)
+      : null;
   const startAt = state === STATE.DELAYED_START && delay ? new Date(Date.now() + delay * 60000) : null;
 
   const options = OPTIONS.map((option) => {
@@ -155,6 +172,7 @@ export function buildModel(hass, config) {
     programRaw: programEntity?.state || null,
     programOptions,
     remaining,
+    minutesToFinish,
     progress,
     finishAt,
     startAt,

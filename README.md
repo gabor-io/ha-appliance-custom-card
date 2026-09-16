@@ -14,8 +14,12 @@ magyar és angol nyelven, világos és sötét témában.
 
 ![Mosogatógép kártya](docs/images/dishwasher-light.png)
 
-- **Animált géprajz**: forgó szórókar, gőz a szárítási fázisban, csillogás a
-  ciklus végén, kinyíló ajtó, a gép kijelzőjén a hátralévő idő.
+- **Animált géprajz**: mosogatás közben forgó szórókar, vízsugarak, hullámzó
+  vízszint és felszálló buborékok, gőz a szárítási fázisban, csillogás a ciklus
+  végén, a gép kijelzőjén a hátralévő idő.
+- **Ajtó és bekapcsolt állapot a képen**: nyitott ajtónál a gép ajtaja lehajlik
+  és árnyékot vet, kikapcsolt gépnél sötét a kijelző, a jelzőfény és a belső
+  világítás is.
 - **Hátralévő idő és pontos befejezés** (`Elkészül 14:12`) + előrehaladás-sáv.
   A gép nem küld százalékot, ezért a ciklus alatt látott leghosszabb hátralévő
   időből (illetve a program névleges hosszából) számol.
@@ -23,7 +27,9 @@ magyar és angol nyelven, világos és sötét témában.
   nem használt fázisok halványak.
 - **Programválasztó** a gépkönyv szerinti nevekkel, víz-/energiafogyasztással.
 - **Kiegészítő funkciók** csak ott, ahol az adott program elfogadja őket.
-- **Késleltetett indítás** 1–12 óra, egy kattintással.
+- **Késleltetett indítás** 1–12 óra, egy kattintással – és kiírja, hogy a gép
+  mikor indul, illetve a késleltetéssel és a választott programmal együtt mikor
+  lesz kész (`Indul 16:28 · Elkészül 21:38`).
 - **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok.
 - Eco/energia/víz pontszámok, ciklusszám, öblítőszerszint, vízkeménység,
   Wi-Fi jelminőség, távvezérlés állapota.
