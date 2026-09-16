@@ -203,7 +203,7 @@ Közös opciók mindkét kártyán:
 | `show_controls` | bool | `true` | Vezérlőgombok |
 
 Csak a mosogatógép kártyán: `show_programs`, `show_options`, `show_delay`,
-`show_scores`, `show_consumption`.
+`show_scores`, `show_consumption`, `show_appliance_settings`.
 
 Csak az airfryer kártyán: `show_methods`, `show_presets`, `show_settings`,
 `show_probe`.

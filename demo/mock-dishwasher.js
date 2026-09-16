@@ -19,6 +19,10 @@ const BASE = {
   start_time: '-1',
   rinse_aid: '8',
   hardness: 'Step 5',
+  brightness: '9',
+  floor_light: 'Green',
+  end_sound: 'No Sound',
+  key_tone: 'on',
   options: {},
 };
 
@@ -98,6 +102,14 @@ export function makeHass(scenarioKey) {
     entity(`binary_sensor.${PREFIX}_miscellaneous_state_eco_mode`, 'on'),
     entity(`select.${PREFIX}_program_uid`, s.program, { options: PROGRAM_OPTIONS }),
     entity(`select.${PREFIX}_water_hardness`, s.hardness, { options: ['Soft', 'Medium', 'Hard'] }),
+    entity(`select.${PREFIX}_display_light`, `Display Light ${s.brightness}`, {
+      options: Array.from({ length: 10 }, (_, i) => `Display Light ${i}`),
+    }),
+    entity(`select.${PREFIX}_display_on_floor`, s.floor_light, { options: ['Green', 'Off'] }),
+    entity(`select.${PREFIX}_end_of_cycle_sound`, s.end_sound, {
+      options: ['No Sound', 'Short Sound'],
+    }),
+    entity(`switch.${PREFIX}_key_tone`, s.key_tone),
     entity(`number.${PREFIX}_start_time`, s.start_time, { min: -1, max: 1440, step: 1, unit_of_measurement: 'min' }),
     entity(`number.${PREFIX}_rinse_aid_level`, s.rinse_aid, { min: 0, max: 8, step: 1 }),
     ...['on', 'off', 'start', 'pause', 'resume', 'stopreset'].map((cmd) =>

@@ -12,6 +12,7 @@ export const AegDishwasherCardEditor = createEditorClass({
     'show_delay',
     'show_scores',
     'show_consumption',
+    'show_appliance_settings',
     'show_details',
     'show_controls',
     'compact',

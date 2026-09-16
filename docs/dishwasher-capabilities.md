@@ -89,6 +89,10 @@ Hibakódok a gépkönyv 13. fejezete szerint:
 | `eco_mode` | `binary_sensor.<prefix>_miscellaneous_state_eco_mode` |
 | `program` | `select.<prefix>_program_uid` |
 | `water_hardness` | `select.<prefix>_water_hardness` |
+| `display_light` | `select.<prefix>_display_light` (`Display Light 0`–`9`) |
+| `display_on_floor` | `select.<prefix>_display_on_floor` (`Green` / `Off`) |
+| `end_of_cycle_sound` | `select.<prefix>_end_of_cycle_sound` (`Short Sound` / `No Sound`) |
+| `key_tone` | `switch.<prefix>_key_tone` |
 | `start_time` | `number.<prefix>_start_time` (-1 = nincs késleltetés) |
 | `rinse_aid_level` | `number.<prefix>_rinse_aid_level` |
 | `cmd_*` | `button.<prefix>_execute_command_{on,off,start,pause,resume,stopreset}` |
