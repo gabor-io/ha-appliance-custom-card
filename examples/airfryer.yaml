@@ -1,0 +1,38 @@
+# 1) A legegyszerűbb: a kártya magától megkeresi az airfryert
+type: custom:philips-airfryer-card
+
+# ---------------------------------------------------------------------------
+# 2) Konkrét készülék + magyar felirat
+type: custom:philips-airfryer-card
+device: 8f1c0a2b5d7e4f3a9c6b1d2e3f4a5b6c   # a készülék device_id-ja
+name: Airfryer
+language: hu
+
+# ---------------------------------------------------------------------------
+# 3) Kompakt nézet (pl. mobil dashboardra)
+type: custom:philips-airfryer-card
+compact: true
+show_presets: false
+show_details: false
+
+# ---------------------------------------------------------------------------
+# 4) Entitások kézzel megadva (ha az elnevezés eltér)
+type: custom:philips-airfryer-card
+name: Konyhai airfryer
+prefix: airfryer_combi_7000_series_xxl_cloud
+entities:
+  status: sensor.airfryer_combi_7000_series_xxl_cloud_cooking_status
+  current_temp: sensor.airfryer_combi_7000_series_xxl_cloud_current_temperature
+  target_temp: sensor.airfryer_combi_7000_series_xxl_cloud_target_temperature
+  remaining: sensor.airfryer_combi_7000_series_xxl_cloud_time_remaining
+  total_time: sensor.airfryer_combi_7000_series_xxl_cloud_total_cook_time
+  drawer: binary_sensor.airfryer_combi_7000_series_xxl_cloud_drawer
+  shake: binary_sensor.airfryer_combi_7000_series_xxl_cloud_shake_reminder
+  probe_unplugged: binary_sensor.airfryer_combi_7000_series_xxl_cloud_probe_unplugged
+  num_temp: number.airfryer_combi_7000_series_xxl_cloud_set_temperature
+  num_time: number.airfryer_combi_7000_series_xxl_cloud_set_cook_time
+  sel_method: select.airfryer_combi_7000_series_xxl_cloud_cooking_method
+  btn_start: button.airfryer_combi_7000_series_xxl_cloud_start_cooking
+  btn_pause: button.airfryer_combi_7000_series_xxl_cloud_pause
+  btn_stop: button.airfryer_combi_7000_series_xxl_cloud_stop
+  power: switch.airfryer_combi_7000_series_xxl_cloud_power

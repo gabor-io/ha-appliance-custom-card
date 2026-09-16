@@ -1,0 +1,38 @@
+# 1) A legegyszerűbb: a kártya magától megkeresi a mosogatógépet
+type: custom:aeg-dishwasher-card
+
+# ---------------------------------------------------------------------------
+# 2) Konkrét készülék + magyar felirat
+type: custom:aeg-dishwasher-card
+device: 6fd23c0061402c12a296ee8cd6b656a9   # a készülék device_id-ja
+name: Mosogatógép
+language: hu
+
+# ---------------------------------------------------------------------------
+# 3) Kompakt nézet (pl. oldalsávba vagy mobil dashboardra)
+type: custom:aeg-dishwasher-card
+compact: true
+show_options: false
+show_details: false
+show_consumption: false
+
+# ---------------------------------------------------------------------------
+# 4) Minden entitás kézzel megadva (ha az elnevezés eltér)
+type: custom:aeg-dishwasher-card
+name: Konyhai mosogatógép
+prefix: aeg_gi8200x5tn
+entities:
+  appliance_state: sensor.aeg_gi8200x5tn_appliance_state
+  cycle_phase: sensor.aeg_gi8200x5tn_cycle_phase
+  time_to_end: sensor.aeg_gi8200x5tn_time_to_end
+  program: select.aeg_gi8200x5tn_program_uid
+  door_state: binary_sensor.aeg_gi8200x5tn_door_state
+  connectivity: binary_sensor.aeg_gi8200x5tn_connectivity_state
+  alerts: sensor.aeg_gi8200x5tn_alerts
+  start_time: number.aeg_gi8200x5tn_start_time
+  cmd_start: button.aeg_gi8200x5tn_execute_command_start
+  cmd_pause: button.aeg_gi8200x5tn_execute_command_pause
+  cmd_resume: button.aeg_gi8200x5tn_execute_command_resume
+  cmd_stopreset: button.aeg_gi8200x5tn_execute_command_stopreset
+  cmd_on: button.aeg_gi8200x5tn_execute_command_on
+  cmd_off: button.aeg_gi8200x5tn_execute_command_off

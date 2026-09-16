@@ -1,0 +1,97 @@
+# AEG GI8200X5TN – entitások és képességek
+
+A kártya ezekre az adatokra épül. Forrás: a Home Assistant Electrolux
+integrációjának diagnosztikai exportja és a GI8200X5TN gépkönyve.
+
+## Állapotok (`sensor.<prefix>_appliance_state`)
+
+`OFF`, `IDLE`, `READY_TO_START`, `DELAYED_START`, `RUNNING`, `PAUSED`,
+`END_OF_CYCLE`, `ALARM`
+
+Az adott állapotban engedélyezett parancsok (a `applianceState` triggerekből):
+
+| Állapot | Parancs | Program állítható? |
+| --- | --- | --- |
+| `IDLE` | `ON` | igen |
+| `READY_TO_START` | `START` | igen |
+| `RUNNING` | `PAUSE` | nem |
+| `PAUSED` | `RESUME`, `STOPRESET` | nem |
+| `DELAYED_START` | `STOPRESET` | nem |
+| `END_OF_CYCLE` | `STOPRESET` | nem |
+
+## Ciklusfázisok (`sensor.<prefix>_cycle_phase`)
+
+`PREWASH`, `MAINWASH`, `COLDRINSE`, `HOTRINSE`, `EXTRARINSE`, `DRYING`,
+`ADO_DRYING`, `UNAVAILABLE`
+
+A kártya ezeket négy lépésre vonja össze: Előmosás, Mosogatás, Öblítés,
+Szárítás.
+
+## Programok és fogyasztás (gépkönyv, 5.5 fejezet)
+
+| Program UID | Kijelzett név | Víz (l) | Energia (kWh) | Idő (perc) |
+| --- | --- | --- | --- | --- |
+| `ECO` | Eco | 8.4 | 0.488 | 310 |
+| `AUTO` | Auto | 12.5 | 1.000 | 180 |
+| `QUICK30` | Quick 30 | 8.5 | 0.475 | 30 |
+| `QUICK60` | 1h00m | 10.5 | 1.000 | 60 |
+| `NORMAL90` | 1h30m | 10.5 | 1.000 | 90 |
+| `120_MIN` | 2h00m | 10.5 | 0.900 | 120 |
+| `RINSE` | Öblítés és várakozás | 4.0 | 0.150 | 15 |
+| `MACHINE_CARE` | Gépápolás | 10.0 | 0.575 | 60 |
+
+## Melyik program milyen opciót fogad el?
+
+| Program | Elfogadott opciók |
+| --- | --- |
+| `ECO` | ExtraSilent, XtraDry |
+| `AUTO` | – |
+| `QUICK30` | ExtraPower, GlassCare, OneRack, Sanitize, SprayZone, ZoneClean |
+| `QUICK60` | ExtraPower, GlassCare, OneRack, Sanitize, SprayZone, XtraDry, ZoneClean |
+| `NORMAL90` | ExtraPower, ExtraSilent, GlassCare, Sanitize, SprayZone, XtraDry, ZoneClean |
+| `120_MIN` | ExtraPower, ExtraSilent, GlassCare, Sanitize, SprayZone, XtraDry, ZoneClean |
+| `RINSE` | – |
+| `MACHINE_CARE` | – |
+
+Az AutoOpen (`userSelections/autoDoorOpener`) minden programnál elérhető.
+
+## Riasztások (`sensor.<prefix>_alerts`)
+
+Figyelmeztetés: `DISH_ALARM_SALT_MISSING`, `DISH_ALARM_RINSE_AID_LOW`.
+
+Hibakódok a gépkönyv 13. fejezete szerint:
+
+| Kód | Jelentés |
+| --- | --- |
+| i10 / i11 | A készülék nem tölt be vizet |
+| i20 | A készülék nem ereszti le a vizet |
+| i23 / i24 / i28 | Leeresztő szivattyú hibája |
+| i30 | Túlcsordulásgátló bekapcsolt |
+| i51–i59 | Mosószivattyú hibája |
+| i61 / i69 | Túl magas vízhőmérséklet vagy érzékelőhiba |
+| i97 / i98 / iC0–iC5 | Készülékhiba |
+| iF1 | Túl magas vízszint |
+
+## A kártya által használt entitások
+
+| Kulcs | Entitás |
+| --- | --- |
+| `appliance_state` | `sensor.<prefix>_appliance_state` |
+| `cycle_phase` | `sensor.<prefix>_cycle_phase` |
+| `time_to_end` | `sensor.<prefix>_time_to_end` |
+| `alerts` | `sensor.<prefix>_alerts` |
+| `eco_score` / `energy_score` / `water_score` | `sensor.<prefix>_*_score` |
+| `total_cycle_counter` | `sensor.<prefix>_total_cycle_counter` |
+| `remote_control` | `sensor.<prefix>_remote_control` |
+| `link_quality` | `sensor.<prefix>_network_interface_link_quality_indicator` |
+| `door_state` | `binary_sensor.<prefix>_door_state` |
+| `connectivity` | `binary_sensor.<prefix>_connectivity_state` |
+| `eco_mode` | `binary_sensor.<prefix>_miscellaneous_state_eco_mode` |
+| `program` | `select.<prefix>_program_uid` |
+| `water_hardness` | `select.<prefix>_water_hardness` |
+| `start_time` | `number.<prefix>_start_time` (-1 = nincs késleltetés) |
+| `rinse_aid_level` | `number.<prefix>_rinse_aid_level` |
+| `cmd_*` | `button.<prefix>_execute_command_{on,off,start,pause,resume,stopreset}` |
+| opciók | `switch.<prefix>_{xtra_dry,extra_power,extra_silent,glass_care,sanitize,spray_zone,zone_clean,one_rack}_option`, `switch.<prefix>_auto_door_opener` |
+
+A `<prefix>` az entitások közös része, a példagépnél `aeg_gi8200x5tn`.
