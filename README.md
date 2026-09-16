@@ -100,12 +100,65 @@ példák: [`examples/airfryer.yaml`](examples/airfryer.yaml).
 
 Frissítéskor töltsd le újra a fájlt, és növeld az erőforrás URL végén a `?v=`
 értéket (`?v=2`, `?v=3`, …), hogy a böngésző ne a régi verziót töltse be.
+A letöltést a [`scripts/update-card.sh`](scripts/update-card.sh) automatizálja –
+lásd a következő szakaszt.
 
 ### HACS (ha publikussá teszed a repót)
 
 1. HACS → ⋮ → **Custom repositories**
 2. URL: `https://github.com/gabor-io/ha-appliance-custom-card`, típus: **Dashboard**
 3. Telepítés után a HACS magától felveszi a `ha-appliance-cards.js` erőforrást.
+
+### Automatikus frissítés a GitHubról
+
+A [`scripts/update-card.sh`](scripts/update-card.sh) letölti a repóból az aktuális
+buildet a Home Assistant `www` mappájába. Privát repónál kell hozzá egy
+fine-grained GitHub token (`Contents: Read` az adott repóra), publikusnál token
+nélkül is megy.
+
+```bash
+GITHUB_TOKEN=github_pat_... ./scripts/update-card.sh
+```
+
+Amit tud:
+
+- csak akkor tölt le, ha a fájl tényleg változott (a blob SHA-ját eltárolja a
+  cél mellé `.sha` néven), így időzítve is nyugodtan futtatható;
+- `--ref latest` esetén a legutóbbi GitHub Release-t húzza le (ha nincs release,
+  a `main` branchre esik vissza), `--ref main` (alapértelmezés) mindig a legfrissebb állapotot;
+- a letöltést ellenőrzi, és csak ép fájlt tesz a helyére – félbeszakadt letöltés
+  soha nem írja felül a működő kártyát;
+- `--file`, `--dest`, `--repo`, `--quiet` kapcsolókkal testre szabható
+  (mindegyik megadható környezeti változóként is: `REPO`, `REF`, `FILE`, `DEST`,
+  `GITHUB_TOKEN`).
+
+**Időzítés a Docker hoston** (HA Container telepítésnél ez a legegyszerűbb) –
+`crontab -e`:
+
+```
+0 4 * * * GITHUB_TOKEN=github_pat_... /opt/ha/update-card.sh --quiet --dest /path/to/ha-config/www/ha-appliance-cards.js
+```
+
+**Vagy magából a Home Assistantból**, `secrets.yaml`:
+
+```yaml
+update_cards_cmd: "GITHUB_TOKEN=github_pat_... /config/scripts/update-card.sh --quiet"
+```
+
+`configuration.yaml`:
+
+```yaml
+shell_command:
+  update_appliance_cards: !secret update_cards_cmd
+```
+
+…majd egy automatizálás naponta (vagy HA indulásakor) hívja meg a
+`shell_command.update_appliance_cards` műveletet. Előtte futtasd le kézzel a
+Fejlesztői eszközök → Műveletek alatt: ha a konténerben nincs `curl`, a hostos
+cron a megoldás.
+
+Frissítés után a böngészőben Ctrl+F5, vagy növeld a Lovelace erőforrás URL-jében
+a `?v=` értéket.
 
 ## Használat
 
