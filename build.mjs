@@ -19,6 +19,7 @@ const optionsFor = (target) => ({
   format: 'esm',
   target: ['es2021'],
   minify: !dev,
+  define: { __CARD_VERSION__: JSON.stringify(pkg.version) },
   legalComments: 'none',
   banner: { js: `/*! ${pkg.name} v${pkg.version} - ${pkg.homepage} - MIT licence */` },
 });
