@@ -237,6 +237,27 @@ src/
 └── airfryer/    # Philips airfryer kártya
 ```
 
+### Kiadás (release)
+
+A verziószám egyetlen helyen él: a `package.json`-ben. A build innen veszi a
+bundle fejlécét és a kártyák konzolra írt verzióját is.
+
+Új kiadáshoz csak a verziót kell emelni:
+
+1. `package.json` → `"version": "1.2.0"`
+2. `npm run build` (a `dist/` a repóban van, a HACS ezt tölti le)
+3. commit + merge a `main`-re
+
+A `.github/workflows/release.yml` innentől automatikus: ha a `main`-en változik
+a `package.json`, létrehozza a `v1.2.0` taget és a hozzá tartozó GitHub
+Release-t, csatolja a három bundle-t, és a kiadási jegyzeteket a commitokból
+generálja. Ha a `dist/` nincs újraépítve, a workflow hibával leáll – így nem
+kerülhet ki olyan release, amiben a lefordított fájl elavult. Kézzel is
+indítható a Actions fülön (**Run workflow**).
+
+A HACS a GitHub Release-eket látja verzióként, tehát minden ilyen kiadás után
+megjelenik a frissítés a HACS-ban.
+
 A `demo/` mappa a valódi diagnosztikai adatokból épített állapotokat játssza
 vissza (mosogatógép: fut, szárít, szünetel, késleltetve indul, elkészült, hiba,
 offline; airfryer: előmelegít, süt, rázás, nyitott fiók, ételhőmérő, párolás,

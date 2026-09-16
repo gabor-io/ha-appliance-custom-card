@@ -1,7 +1,7 @@
 {
-  "name": "aeg-dishwasher-card",
-  "version": "1.0.0",
-  "description": "Lovelace card for AEG / Electrolux dishwashers integrated through the Electrolux custom integration",
+  "name": "ha-appliance-cards",
+  "version": "1.1.0",
+  "description": "Lovelace cards for AEG / Electrolux dishwashers and Philips airfryers in Home Assistant",
   "type": "module",
   "homepage": "https://github.com/gabor-io/ha-appliance-custom-card",
   "license": "MIT",

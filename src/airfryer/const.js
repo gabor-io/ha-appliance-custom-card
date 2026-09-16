@@ -8,7 +8,9 @@
 
 export const CARD_NAME = 'philips-airfryer-card';
 export const EDITOR_NAME = 'philips-airfryer-card-editor';
-export const CARD_VERSION = '1.0.0';
+// replaced by the build with the version from package.json
+export const CARD_VERSION =
+  typeof __CARD_VERSION__ === 'string' ? __CARD_VERSION__ : 'dev';
 
 /** `sensor.<prefix>_cooking_status` values (local_models.py). */
 export const STATUS = {
