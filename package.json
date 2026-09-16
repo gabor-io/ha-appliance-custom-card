@@ -1,0 +1,17 @@
+{
+  "name": "aeg-dishwasher-card",
+  "version": "1.0.0",
+  "description": "Lovelace card for AEG / Electrolux dishwashers integrated through the Electrolux custom integration",
+  "type": "module",
+  "homepage": "https://github.com/gabor-io/ha-appliance-custom-card",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch --dev",
+    "serve": "node build.mjs --dev && node serve.mjs"
+  },
+  "devDependencies": {
+    "@mdi/js": "^7.4.47",
+    "esbuild": "^0.25.0"
+  }
+}
