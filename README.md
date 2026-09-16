@@ -42,12 +42,15 @@ példák: [`examples/dishwasher.yaml`](examples/dishwasher.yaml).
 ![Airfryer kártya](docs/images/airfryer-light.png)
 
 - **Animált géprajz**: pörgő ventilátor, izzó fűtőszál, felszálló hő, gőz a
-  párolós módokban, pirulő étel, és **kicsúszó fiók, ha kinyitod**.
-- **Fiókállapot mindenhol**: a géprajzon, figyelmeztető sávként (sütés közben
-  „a fiók nyitva – a sütés szünetel”), fejlécikonként és a Részletek között.
-  Nyitott fióknál az indítás gomb le van tiltva.
-- **Rázás- és fordításemlékeztető** villogó figyelmeztetéssel (manuális módban a
-  beállított idő felénél szól a gép).
+  párolós módokban, pirulő étel.
+- **Nyitott / csukott fiók a képen**: csukva egybefüggő előlap, nyitva a fiók
+  kicsúszik a néző felé, árnyékot vet, mögötte sötét rés, és felülnézetből
+  látszik a kosár a benne lévő étellel. Ugyanez megjelenik figyelmeztető sávként
+  (sütés közben „a fiók nyitva – a sütés szünetel”), fejlécikonként és a
+  Részletek között; nyitott fióknál az indítás gomb le van tiltva.
+- **Rázás- és fordításemlékeztető animációval**: a fiók rázkódik, az étel
+  ugrál benne, a fiók körvonala felvillan, mellé villogó figyelmeztető sáv
+  (manuális módban a beállított idő felénél szól a gép).
 - **Hátralévő idő** perc:másodperc pontossággal, pontos befejezési időponttal és
   előrehaladás-sávval (a gép a teljes és a hátralévő időt is küldi).
 - **Hőmérséklet-mérő**: aktuális / cél, és **ételhőmérő** esetén a maghőmérséklet
@@ -66,22 +69,43 @@ példák: [`examples/airfryer.yaml`](examples/airfryer.yaml).
 
 ## Telepítés
 
-### HACS (ajánlott)
+> **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
+> privát repónál a kézi telepítés a biztos út. (Ha később publikussá teszed a
+> repót, a HACS-os mód is működik – lásd lentebb.)
 
-1. HACS → Frontend → ⋮ → **Custom repositories**
-2. URL: `https://github.com/gabor-io/ha-appliance-custom-card`, kategória: **Lovelace**
-3. Telepítés után a HACS felveszi a `ha-appliance-cards.js` erőforrást, ami
-   mindkét kártyát tartalmazza.
+### Kézzel (privát repónál ez ajánlott)
 
-### Kézzel
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mindkét
+   kártyát. (Ha csak az egyik kell: `dist/aeg-dishwasher-card.js`, illetve
+   `dist/philips-airfryer-card.js`.)
+   - GitHub böngészőből: a fájl oldalán **Download raw file**.
+   - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
+     token, `Contents: Read` jogosultsággal az adott repóra):
 
-1. Másold a kívánt fájlt a `config/www/` könyvtárba:
-   - `dist/ha-appliance-cards.js` – mindkét kártya, vagy
-   - `dist/aeg-dishwasher-card.js` / `dist/philips-airfryer-card.js` – külön-külön.
-2. Beállítások → Irányítópultok → ⋮ → **Erőforrások** → Erőforrás hozzáadása:
-   - URL: `/local/ha-appliance-cards.js`
+     ```bash
+     curl -L \
+       -H "Authorization: Bearer <GITHUB_TOKEN>" \
+       -H "Accept: application/vnd.github.raw" \
+       -o /config/www/ha-appliance-cards.js \
+       "https://api.github.com/repos/gabor-io/ha-appliance-custom-card/contents/dist/ha-appliance-cards.js?ref=main"
+     ```
+
+2. A fájl kerüljön a `config/www/` könyvtárba (ha még nincs, hozd létre); ez a
+   `/local/` útvonalon érhető el.
+3. Beállítások → Irányítópultok → ⋮ (jobb felül) → **Erőforrások** → jobb alul
+   **+ Erőforrás hozzáadása**:
+   - URL: `/local/ha-appliance-cards.js?v=1`
    - Típus: **JavaScript modul**
-3. Ctrl+F5 a böngészőben.
+4. Ctrl+F5 (vagy Cmd+Shift+R) a böngészőben.
+
+Frissítéskor töltsd le újra a fájlt, és növeld az erőforrás URL végén a `?v=`
+értéket (`?v=2`, `?v=3`, …), hogy a böngésző ne a régi verziót töltse be.
+
+### HACS (ha publikussá teszed a repót)
+
+1. HACS → ⋮ → **Custom repositories**
+2. URL: `https://github.com/gabor-io/ha-appliance-custom-card`, típus: **Dashboard**
+3. Telepítés után a HACS magától felveszi a `ha-appliance-cards.js` erőforrást.
 
 ## Használat
 

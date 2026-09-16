@@ -82,10 +82,21 @@ export function renderAirfryer() {
       </g>
     </g>
 
-    <!-- drawer -->
-    <rect class="drawer-gap" x="26" y="128" width="148" height="46" rx="10"/>
+    <!-- drawer: slides out and down, revealing the basket from above -->
+    <rect class="drawer-gap" x="26" y="126" width="148" height="52" rx="10"/>
     <g class="drawer">
+      <g class="basket-top">
+        <ellipse class="basket-rim" cx="100" cy="126" rx="66" ry="14"/>
+        <ellipse class="basket-inner" cx="100" cy="127" rx="58" ry="10"/>
+        <g class="food-top">
+          <ellipse cx="74" cy="126" rx="9" ry="5"/>
+          <ellipse cx="92" cy="129" rx="8" ry="4.5"/>
+          <ellipse cx="110" cy="125" rx="9" ry="5"/>
+          <ellipse cx="127" cy="128" rx="8" ry="4.5"/>
+        </g>
+      </g>
       <rect class="drawer-body" x="26" y="128" width="148" height="56" rx="12"/>
+      <rect class="drawer-seam" x="26" y="128" width="148" height="2" rx="1"/>
       <rect class="drawer-window" x="38" y="136" width="124" height="30" rx="8"/>
       <g class="food">
         <rect x="52" y="146" width="18" height="11" rx="5"/>

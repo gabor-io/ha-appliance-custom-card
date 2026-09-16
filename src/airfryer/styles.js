@@ -84,6 +84,11 @@ const CARD_STYLES = `
   transition: transform .6s cubic-bezier(.4, 0, .2, 1);
 }
 .fryer .drawer-gap { fill: #05080b; opacity: 0; transition: opacity .4s ease; }
+.fryer .drawer-seam { fill: color-mix(in srgb, var(--ap-text) 16%, transparent); opacity: .7; }
+.fryer .basket-top { opacity: 0; transition: opacity .35s ease; }
+.fryer .basket-rim { fill: color-mix(in srgb, var(--ap-text) 26%, var(--card-background-color, #fff)); }
+.fryer .basket-inner { fill: #241207; }
+.fryer .food-top ellipse { fill: #d8a55f; transition: fill .8s ease; }
 .fryer .drawer-body { fill: url(#af-body); stroke: var(--ap-line); stroke-width: 1.2; }
 .fryer .drawer-window { fill: url(#af-glass); stroke: color-mix(in srgb, var(--ap-text) 12%, transparent); }
 .fryer .food rect { fill: #d8a55f; transition: fill .8s ease; }
@@ -102,7 +107,7 @@ const CARD_STYLES = `
 .cooking .fryer .heatwaves path { animation: rise 2.6s ease-in-out infinite; }
 .cooking .fryer .heatwaves path:nth-child(2) { animation-delay: .5s; }
 .cooking .fryer .heatwaves path:nth-child(3) { animation-delay: 1s; }
-.cooking .fryer .food rect { fill: #c07f33; }
+.cooking .fryer .food rect, .cooking .fryer .food-top ellipse { fill: #c07f33; }
 .cooking .fryer .wifi-led { animation: blink 2.4s ease-in-out infinite; }
 
 .preheat .fryer .fan-blades { animation: spin 1.6s linear infinite; }
@@ -115,7 +120,7 @@ const CARD_STYLES = `
 .paused .fryer .fan-blades { animation: spin 5s linear infinite; }
 .paused .fryer .heatwaves path { animation: none; opacity: .18; }
 
-.done .fryer .food rect { fill: #a75f22; }
+.done .fryer .food rect, .done .fryer .food-top ellipse { fill: #a75f22; }
 .done .fryer .sparkles path { animation: twinkle 2.4s ease-in-out infinite; }
 .done .fryer .sparkles path:nth-child(2) { animation-delay: .8s; }
 
@@ -123,11 +128,29 @@ const CARD_STYLES = `
 .off .fryer .display-main, .off .fryer .display-sub { fill: color-mix(in srgb, var(--ap-muted) 55%, transparent); }
 .off .fryer .wifi-led { fill: color-mix(in srgb, var(--ap-muted) 50%, transparent); }
 
-.drawer-open .fryer .drawer { transform: translateY(26px); filter: drop-shadow(0 6px 10px rgba(0,0,0,.28)); }
+/* pulled out: the drawer comes down and toward the viewer, basket visible */
+.drawer-open .fryer .drawer {
+  transform: translateY(30px) scale(1.07);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .3));
+}
+.drawer-open .fryer .basket-top { opacity: 1; }
+.drawer-open .fryer .drawer-seam { opacity: 0; }
 .drawer-open .fryer .drawer-gap { opacity: 1; }
 .drawer-open .fryer .heat-glow { opacity: .35; }
 
-.shake-now .fryer .drawer { animation: shake .8s ease-in-out infinite; }
+/* shake / flip reminder */
+.shake-now:not(.drawer-open) .fryer .drawer { animation: shake .7s ease-in-out infinite; }
+.shake-now .fryer .drawer-body { stroke: var(--ap-accent); stroke-width: 2; }
+.shake-now .fryer .drawer-window { animation: glow 1.2s ease-in-out infinite; }
+.shake-now .fryer .food rect { animation: hop .5s ease-in-out infinite; }
+.shake-now .fryer .food rect:nth-child(2) { animation-delay: .08s; }
+.shake-now .fryer .food rect:nth-child(3) { animation-delay: .16s; }
+.shake-now .fryer .food rect:nth-child(4) { animation-delay: .24s; }
+.shake-now .fryer .food rect:nth-child(5) { animation-delay: .32s; }
+.shake-now .fryer .food-top ellipse { animation: hop .5s ease-in-out infinite; }
+.shake-now .fryer .food-top ellipse:nth-child(2) { animation-delay: .1s; }
+.shake-now .fryer .food-top ellipse:nth-child(3) { animation-delay: .2s; }
+.shake-now .fryer .food-top ellipse:nth-child(4) { animation-delay: .3s; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes blink { 0%, 100% { opacity: .8; } 50% { opacity: .2; } }
@@ -142,9 +165,13 @@ const CARD_STYLES = `
   50% { opacity: 1; transform: scale(1); }
 }
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-5px) rotate(-1.2deg); }
+  60% { transform: translateX(5px) rotate(1.2deg); }
+}
+@keyframes hop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 `;
 
