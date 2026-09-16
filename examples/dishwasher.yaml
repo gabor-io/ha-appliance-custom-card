@@ -4,7 +4,7 @@ type: custom:aeg-dishwasher-card
 # ---------------------------------------------------------------------------
 # 2) Konkrét készülék + magyar felirat
 type: custom:aeg-dishwasher-card
-device: 6fd23c0061402c12a296ee8cd6b656a9   # a készülék device_id-ja
+device: 0123456789abcdef0123456789abcdef   # a készülék device_id-ja (helyőrző)
 name: Mosogatógép
 language: hu
 

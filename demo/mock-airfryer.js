@@ -139,7 +139,7 @@ export const SCENARIOS = {
 };
 
 const METHOD_OPTIONS = ['Manual', 'Auto Cook', 'Keep Warm', 'Recipe', 'No Selection'];
-const MY_PRESETS = ['Virslis Bagyu'];
+const MY_PRESETS = ['Saját program 1', 'Saját program 2'];
 
 function entity(id, state, attributes = {}) {
   return [id, { entity_id: id, state, attributes }];
