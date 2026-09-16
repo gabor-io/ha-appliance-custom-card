@@ -247,3 +247,13 @@ export const ALERT_SEVERITY = {
 
 /** Delayed-start shortcuts offered by the card, in minutes. */
 export const DELAY_PRESETS = [60, 120, 180, 240, 360, 480, 720];
+
+/**
+ * The appliance takes the delayed start in 10 minute steps (its capability
+ * document says `startTime` has step 600 s, max 86400 s), even where the Home
+ * Assistant number entity advertises a finer step.
+ */
+export const DELAY_STEP_MINUTES = 10;
+
+/** Longest delay the appliance accepts, in minutes. */
+export const DELAY_MAX_MINUTES = 24 * 60;

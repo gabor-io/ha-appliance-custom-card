@@ -24,6 +24,16 @@ const CARD_STYLES = `
 /* ---------- score meters ---------- */
 .meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; transition: opacity .3s ease; }
 .meters.stale { opacity: .4; }
+
+/* ---------- delayed start ---------- */
+.time-input {
+  flex: 1; font: inherit; font-size: 1rem; font-weight: 600; text-align: center;
+  padding: 4px 8px; border-radius: 10px; color: var(--ap-text);
+  border: 1px solid var(--ap-line); background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.time-input:focus { outline: none; border-color: var(--ap-accent); }
+.time-input[disabled] { opacity: .4; }
 .meter { display: grid; gap: 6px; }
 .meter .top { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--ap-muted); }
 .meter .top .icon { width: 15px; height: 15px; }
