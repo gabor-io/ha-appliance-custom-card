@@ -121,27 +121,32 @@ export function buildModel(hass, config) {
   const remote = normaliseKey(get('remote_control')?.state);
   const remoteEnabled = remote === '' || remote.includes('ENABLED');
 
-  const showsCountdown =
-    state === STATE.RUNNING || state === STATE.PAUSED || state === STATE.DELAYED_START;
-
   /**
-   * With a delayed start the appliance already counts the delay into
-   * `timeToEnd`; when it does not (or the sensor is missing), the delay plus the
-   * program's nominal duration is the next best estimate.
+   * How long until the dishes are done, in minutes.
+   *
+   * The appliance reports `timeToEnd` for the selected program even while it is
+   * only waiting to be started, and that value already accounts for the chosen
+   * options - so it is preferred over the program's nominal duration from the
+   * manual, which is the fallback. With a delayed start the appliance normally
+   * counts the delay into `timeToEnd` as well; when it does not, delay plus
+   * program duration is the next best estimate.
    */
   const programMinutes = PROGRAMS[programKey]?.duration || 0;
-  let minutesToFinish = remaining;
-  if (state === STATE.DELAYED_START && delay) {
-    const estimate = delay + programMinutes;
-    if (minutesToFinish === null || minutesToFinish <= delay) {
-      minutesToFinish = programMinutes ? estimate : null;
-    }
+  const reported = remaining !== null && remaining > 0 ? remaining : null;
+
+  let minutesToFinish = null;
+  if (state === STATE.RUNNING || state === STATE.PAUSED) {
+    minutesToFinish = remaining;
+  } else if (state === STATE.DELAYED_START) {
+    minutesToFinish =
+      reported !== null && reported > delay ? reported : programMinutes ? delay + programMinutes : null;
+  } else if (state === STATE.IDLE || state === STATE.READY_TO_START) {
+    // not started yet: the estimate assumes the cycle begins now
+    minutesToFinish = reported !== null ? reported : programMinutes || null;
   }
 
   const finishAt =
-    showsCountdown && minutesToFinish !== null
-      ? new Date(Date.now() + minutesToFinish * 60000)
-      : null;
+    minutesToFinish !== null ? new Date(Date.now() + minutesToFinish * 60000) : null;
   const startAt = state === STATE.DELAYED_START && delay ? new Date(Date.now() + delay * 60000) : null;
 
   const options = OPTIONS.map((option) => {

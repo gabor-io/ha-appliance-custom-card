@@ -205,9 +205,14 @@ export class AegDishwasherCard extends HTMLElement {
 
   _headerHtml(model, t) {
     const name = escapeHtml(model.name || t('card_name'));
+    // before the start the appliance knows the real length (options included)
+    const duration =
+      [STATE.IDLE, STATE.READY_TO_START].includes(model.state) && model.minutesToFinish
+        ? model.minutesToFinish
+        : PROGRAMS[model.program]?.duration;
     const sub =
-      model.program && PROGRAMS[model.program]
-        ? `${t(`program.${model.program}`)} · ${formatDuration(PROGRAMS[model.program].duration, t)}`
+      model.program && duration
+        ? `${t(`program.${model.program}`)} · ${formatDuration(duration, t)}`
         : model.programRaw || '';
 
     const badges = [];
@@ -332,11 +337,17 @@ export class AegDishwasherCard extends HTMLElement {
         : '';
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${at}</div>`;
     }
-    if (
-      model.program &&
-      PROGRAMS[model.program] &&
-      [STATE.OFF, STATE.IDLE, STATE.READY_TO_START].includes(model.state)
-    ) {
+    // powered on but not started yet: how long it takes and when it would be done
+    if ([STATE.IDLE, STATE.READY_TO_START].includes(model.state)) {
+      const parts = splitDuration(model.minutesToFinish ?? PROGRAMS[model.program]?.duration, t);
+      if (!parts) return '';
+      const at = model.finishAt
+        ? `<span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(model.finishAt, this._hass)}</span>`
+        : '';
+      return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${at}</div>`;
+    }
+    // switched off: only the program's length is meaningful
+    if (model.state === STATE.OFF && model.program && PROGRAMS[model.program]) {
       const parts = splitDuration(PROGRAMS[model.program].duration, t);
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>
         <span class="at">${icon('timer')}${escapeHtml(t('ui.duration'))}</span></div>`;

@@ -24,7 +24,13 @@ const BASE = {
 
 export const SCENARIOS = {
   off: {},
-  ready: { appliance_state: 'READY_TO_START', alerts: '', options: { xtra_dry_option: 'on' } },
+  ready: {
+    appliance_state: 'READY_TO_START',
+    alerts: '',
+    // the appliance reports the length of the selected program (ExtraDry included)
+    time_to_end: '325',
+    options: { xtra_dry_option: 'on' },
+  },
   running: {
     appliance_state: 'RUNNING',
     cycle_phase: 'Mainwash',

@@ -20,16 +20,21 @@ magyar és angol nyelven, világos és sötét témában.
 - **Ajtó és bekapcsolt állapot a képen**: nyitott ajtónál a gép ajtaja lehajlik
   és árnyékot vet, kikapcsolt gépnél sötét a kijelző, a jelzőfény és a belső
   világítás is.
-- **Hátralévő idő és pontos befejezés** (`Elkészül 14:12`) + előrehaladás-sáv.
-  A gép nem küld százalékot, ezért a ciklus alatt látott leghosszabb hátralévő
-  időből (illetve a program névleges hosszából) számol.
+- **Mindig látszik, mikor lesz kész**: bekapcsolt gépnél a kártya akkor is
+  kiírja a pontos befejezési időpontot (`Elkészül 19:51`), ha a program még el
+  sem indult – a géptől kapott időtartamot használja, ami a bekapcsolt
+  kiegészítő funkciókat (pl. ExtraDry, ExtraSilent) is tartalmazza, és csak
+  ennek hiányában esik vissza a gépkönyv névleges idejére.
+- **Futó ciklusnál** a hátralévő idő, a befejezés időpontja és egy
+  előrehaladás-sáv. A gép nem küld százalékot, ezért a ciklus alatt látott
+  leghosszabb hátralévő időből (illetve a program névleges hosszából) számol.
 - **Fázis-idővonal**: Előmosás → Mosogatás → Öblítés → Szárítás; a program által
   nem használt fázisok halványak.
 - **Programválasztó** a gépkönyv szerinti nevekkel, víz-/energiafogyasztással.
 - **Kiegészítő funkciók** csak ott, ahol az adott program elfogadja őket.
-- **Késleltetett indítás** 1–12 óra, egy kattintással – és kiírja, hogy a gép
-  mikor indul, illetve a késleltetéssel és a választott programmal együtt mikor
-  lesz kész (`Indul 16:28 · Elkészül 21:38`).
+- **Késleltetett indítás** 1–12 óra, egy kattintással – ilyenkor azt is kiírja,
+  hogy a gép mikor indul, illetve a késleltetéssel és a választott programmal
+  együtt mikor lesz kész (`Indul 16:28 · Elkészül 21:38`).
 - **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok.
 - Eco/energia/víz pontszámok, ciklusszám, öblítőszerszint, vízkeménység,
   Wi-Fi jelminőség, távvezérlés állapota.
