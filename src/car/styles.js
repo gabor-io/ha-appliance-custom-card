@@ -7,12 +7,13 @@ const CARD_STYLES = `
   --car-paint-light: #e6eaef;
   --car-paint-dark: #97a0ab;
   --car-cabin: #2b3138;
-  --car-glass: #8ea3b5;
+  --car-glass: #7f95a9;
   --car-glass-light: #c2d1dd;
-  --car-roof: #b6bec8;
+  --car-roof: #aeb7c1;
   --car-line: rgba(30,35,42,.42);
   --car-tyre: #4a5058;
   --car-light-off: #dfe4ea;
+  --car-rail: #5f6973;
   --car-open: #f2a63c;
   --car-open-line: #b9711a;
   --car-alarm: var(--error-color, #e03b2c);
@@ -25,12 +26,13 @@ const CARD_STYLES = `
   --car-paint-light: #c3cad2;
   --car-paint-dark: #6e767f;
   --car-cabin: #14181c;
-  --car-glass: #5d7183;
+  --car-glass: #566b7d;
   --car-glass-light: #8ea3b5;
-  --car-roof: #858e98;
+  --car-roof: #7e8791;
   --car-line: rgba(0,0,0,.5);
   --car-tyre: #23282e;
   --car-light-off: #aeb5bd;
+  --car-rail: #3c434b;
 }
 
 /* ---------- hero ---------- */
@@ -80,14 +82,17 @@ const CARD_STYLES = `
 /* ---------- vehicle illustration ---------- */
 .car { display: block; width: 100%; height: auto; overflow: visible; }
 .car .shadow { fill: rgba(0,0,0,.2); filter: blur(11px); }
-.car .tyres rect { fill: var(--car-tyre); opacity: .85; }
+.car .tyres rect { fill: var(--car-tyre); opacity: .55; }
 .car .paint { fill: url(#car-paint); }
 .car .aperture { fill: var(--car-cabin); }
-.car .bay { fill: color-mix(in srgb, var(--car-cabin) 62%, var(--car-paint-dark)); }
+.car .bay { fill: color-mix(in srgb, var(--car-cabin) 42%, var(--car-paint-dark)); }
 .car .glass { fill: url(#car-glass); stroke: var(--car-line); stroke-width: 1.2; }
-.car .roof { fill: var(--car-roof); stroke: var(--car-line); stroke-width: 1.2; }
-.car .sunroof-glass { stroke: none; fill: color-mix(in srgb, var(--car-glass) 62%, transparent); }
-.car .rail { fill: var(--car-paint-dark); stroke: var(--car-line); stroke-width: .8; }
+.car .roof { fill: var(--car-roof); stroke: var(--car-line); stroke-width: 1.2; stroke-linejoin: round; }
+.car .rail { fill: none; stroke: var(--car-rail); stroke-width: 8; stroke-linecap: round; opacity: .9; }
+.car .glass.tinted, .car .window.tinted { fill: color-mix(in srgb, var(--car-glass) 88%, #0a0f14); }
+.car .trim { stroke: color-mix(in srgb, var(--car-cabin) 70%, var(--car-paint-dark)); stroke-width: 5; stroke-linecap: round; }
+.car .seam.crease { stroke-width: 1; opacity: .3; }
+.car .seam.shoulder { stroke-width: 1.4; opacity: .35; }
 .car .antenna { fill: var(--car-paint-dark); stroke: var(--car-line); stroke-width: .8; }
 .car .outline { fill: none; stroke: var(--car-line); stroke-width: 2.6; }
 .car .seam { stroke: var(--car-line); stroke-width: 1.1; fill: none; opacity: .42; }
@@ -99,21 +104,21 @@ const CARD_STYLES = `
 .car .filler { fill: none; stroke: var(--car-line); stroke-width: 1; opacity: .5; }
 .car .sheen { fill: url(#car-sheen); pointer-events: none; }
 
-.car .lamp .lens { fill: var(--car-light-off); stroke: var(--car-line); stroke-width: .8; }
-.car .lamp .led { fill: color-mix(in srgb, #ffe082 60%, var(--car-light-off)); }
+.car .lamp .lens { fill: color-mix(in srgb, var(--car-light-off) 72%, var(--car-paint-dark)); stroke: var(--car-line); stroke-width: 1; stroke-linejoin: round; }
+.car .lamp .led { fill: none; stroke: color-mix(in srgb, #ffd54f 70%, var(--car-light-off)); stroke-width: 2.4; stroke-linecap: round; }
 .car .lamp.tail .lens { fill: color-mix(in srgb, #c62828 55%, var(--car-light-off)); }
 .car.lights-on .lamp.head .lens { fill: #fff3c4; filter: drop-shadow(0 0 7px rgba(255,214,86,.95)); }
 .car.lights-on .lamp.tail .lens { fill: #ff5f52; filter: drop-shadow(0 0 7px rgba(255,80,70,.9)); }
 .car.offline { opacity: .55; filter: grayscale(.45); }
 
 .car .door { transform-box: view-box; transform-origin: var(--hinge-x) var(--hinge-y); }
-.car .door .panel { fill: url(#car-paint); stroke: var(--car-line); stroke-width: 1.4; }
+.car .door .panel { fill: url(#car-paint); stroke: var(--car-line); stroke-width: 1; stroke-opacity: .38; }
 .car .door .window { fill: var(--car-glass); stroke: var(--car-line); stroke-width: 1; }
-.car .door .handle { fill: var(--car-paint-dark); stroke: var(--car-line); stroke-width: .6; }
+.car .door .handle { fill: var(--car-paint-dark); stroke: var(--car-line); stroke-width: .6; stroke-opacity: .6; }
 .car .mirror { fill: var(--car-paint-dark); stroke: var(--car-line); stroke-width: 1.1; }
 .car .mirror-glass { fill: var(--car-glass); }
 
-.car .door.open .panel { fill: var(--car-open); stroke: var(--car-open-line); }
+.car .door.open .panel { fill: var(--car-open); stroke: var(--car-open-line); stroke-opacity: 1; stroke-width: 1.5; }
 .car .door[data-door="fl"].open, .car .door[data-door="rl"].open {
   animation: car-door-left 900ms cubic-bezier(.22,.9,.28,1) forwards;
 }
@@ -132,11 +137,11 @@ const CARD_STYLES = `
 
 .car .lid { transform-box: view-box; }
 .car .bonnet { transform-origin: 120px 152px; }
-.car .trunk { transform-origin: 120px 356px; }
+.car .trunk { transform-origin: 120px 324px; }
 .car .lid.open { animation: car-lid 820ms cubic-bezier(.22,.9,.28,1) forwards; }
-.car .lid.open .paint { fill: var(--car-open); }
+.car .lid.open .paint { fill: color-mix(in srgb, var(--car-open) 82%, var(--car-paint)); }
 .car .lid.open .lamp, .car .lid.open .plate, .car .lid.open .grille { opacity: 0; }
-@keyframes car-lid { 0% { transform: scaleY(1); } 100% { transform: scaleY(.4); } }
+@keyframes car-lid { 0% { transform: scaleY(1); } 100% { transform: scaleY(.62); } }
 
 .car .sunroof { fill: none; stroke: none; }
 .car .sunroof.visible { stroke: var(--car-line); stroke-width: 1; stroke-dasharray: 4 3; }

@@ -10,41 +10,42 @@
  */
 
 const BODY =
-  'M66 44 C56 56 50 74 46 96 L41 150 C38 205 38 300 41 356 L45 420 '
-  + 'C47 442 52 456 62 462 L68 464 L172 464 L178 462 C188 456 193 442 195 420 '
-  + 'L199 356 C202 300 202 205 199 150 L194 96 C190 74 184 56 174 44 '
-  + 'C166 34 150 28 120 28 C90 28 74 34 66 44 Z';
+  'M66 30 C55 39 48 52 45 70 L43 140 C39 200 39 300 42 356 L46 420 '
+  + 'C48 444 56 458 70 463 L170 463 C184 458 192 444 194 420 L198 356 '
+  + 'C201 300 201 200 197 140 L195 70 C192 52 185 39 174 30 '
+  + 'C169 26 166 23 160 23 L80 23 C74 23 71 26 66 30 Z';
 
 /** Door geometry: `[x, y, width, height]` plus the hinge the door turns on. */
 const DOORS = {
-  fl: { x: 33, y: 202, w: 22, h: 70, hinge: [34, 202] },
-  rl: { x: 33, y: 274, w: 22, h: 62, hinge: [34, 274] },
-  fr: { x: 185, y: 202, w: 22, h: 70, hinge: [206, 202] },
-  rr: { x: 185, y: 274, w: 22, h: 62, hinge: [206, 274] },
+  fl: { x: 39, y: 202, w: 21, h: 70, hinge: [40, 202] },
+  rl: { x: 39, y: 274, w: 21, h: 62, hinge: [40, 274] },
+  fr: { x: 180, y: 202, w: 21, h: 70, hinge: [200, 202] },
+  rr: { x: 180, y: 274, w: 21, h: 62, hinge: [200, 274] },
 };
 
 const MIRRORS = {
-  fl: 'M34 212 L20 206 Q13 208 14 215 Q15 222 22 222 L34 222 Z',
-  fr: 'M206 212 L220 206 Q227 208 226 215 Q225 222 218 222 L206 222 Z',
+  fl: 'M40 211 L29 206 Q23 208 24 214 Q25 220 30 220 L40 220 Z',
+  fr: 'M200 211 L211 206 Q217 208 216 214 Q215 220 210 220 L200 220 Z',
 };
 
 const MIRROR_GLASS = {
-  fl: 'M32 211 L21 207 Q16 209 17 214 Q18 219 23 219 L32 219 Z',
-  fr: 'M208 211 L219 207 Q224 209 223 214 Q222 219 217 219 L208 219 Z',
+  fl: 'M38.5 210 L30 207 Q26 209 27 213 Q28 217 31 217 L38.5 217 Z',
+  fr: 'M201.5 210 L210 207 Q214 209 213 213 Q212 217 209 217 L201.5 217 Z',
 };
 
 function door(key) {
   const d = DOORS[key];
   const left = key === 'fl' || key === 'rl';
+  // the glazing sits inboard of the door skin, so it hugs the cabin side
   const handleX = left ? d.x + 1.5 : d.x + d.w - 4.5;
   const mirror = MIRRORS[key]
     ? `<path class="mirror" d="${MIRRORS[key]}"/><path class="mirror-glass" d="${MIRROR_GLASS[key]}"/>`
     : '';
   return `
     <g class="door" data-door="${key}" style="--hinge-x:${d.hinge[0]}px;--hinge-y:${d.hinge[1]}px;">
-      <rect class="panel" x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="5"/>
-      <rect class="window" data-window="${key}" x="${d.x + 4}" y="${d.y + 9}"
-        width="${d.w - 8}" height="${d.h - 18}" rx="3"/>
+      <rect class="panel" x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="2.5"/>
+      <rect class="window${key.startsWith('r') ? ' tinted' : ''}" data-window="${key}"
+        x="${left ? d.x + d.w - 10 : d.x + 2}" y="${d.y + 8}" width="8" height="${d.h - 16}" rx="3"/>
       <rect class="handle" x="${handleX}" y="${d.y + d.h - 26}" width="3" height="11" rx="1.5"/>
       ${mirror}
     </g>`;
@@ -67,75 +68,77 @@ export function renderCar() {
     </linearGradient>
     <linearGradient id="car-sheen" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#fff" stop-opacity="0"/>
-      <stop offset=".45" stop-color="#fff" stop-opacity=".30"/>
+      <stop offset=".45" stop-color="#fff" stop-opacity=".26"/>
       <stop offset=".7" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
   </defs>
 
-  <ellipse class="shadow" cx="120" cy="250" rx="92" ry="216"/>
+  <ellipse class="shadow" cx="120" cy="250" rx="90" ry="214"/>
 
   <g class="tyres">
-    <rect x="37" y="100" width="11" height="46" rx="5"/>
-    <rect x="192" y="100" width="11" height="46" rx="5"/>
-    <rect x="37" y="340" width="11" height="46" rx="5"/>
-    <rect x="192" y="340" width="11" height="46" rx="5"/>
+    <rect x="41" y="104" width="9" height="40" rx="4"/>
+    <rect x="190" y="104" width="9" height="40" rx="4"/>
+    <rect x="41" y="342" width="9" height="40" rx="4"/>
+    <rect x="190" y="342" width="9" height="40" rx="4"/>
   </g>
 
   <g clip-path="url(#car-body)">
-    <rect class="paint" x="20" y="10" width="200" height="478"/>
+    <rect class="paint" x="24" y="10" width="192" height="478"/>
 
     <!-- bonnet: hinged at the windscreen, tips up when open -->
-    <rect class="bay" x="32" y="18" width="176" height="132" rx="22"/>
+    <rect class="bay" x="48" y="46" width="144" height="104" rx="20"/>
     <g class="lid bonnet">
-      <rect class="paint" x="20" y="10" width="200" height="142"/>
-      <rect class="grille" x="86" y="20" width="68" height="9" rx="4"/>
-      <path class="seam bumper" d="M44 62 C72 44 168 44 196 62"/>
-      <path class="seam" d="M64 58 L61 148 M176 58 L179 148"/>
-      <path class="seam" d="M120 40 L120 150" />
+      <rect class="paint" x="24" y="10" width="192" height="142"/>
+      <rect class="grille" x="84" y="21" width="72" height="9" rx="4"/>
+      <path class="seam bumper" d="M47 62 C72 38 168 38 193 62"/>
+      <path class="seam crease" d="M80 42 C74 76 69 110 65 148 M160 42 C166 76 171 110 175 148"/>
+      <path class="seam crease" d="M104 36 C102 74 101 112 101 150 M136 36 C138 74 139 112 139 150"/>
       <g class="lamp head left">
-        <rect class="lens" x="50" y="34" width="46" height="15" rx="7"/>
-        <rect class="led" x="54" y="46" width="38" height="3" rx="1.5"/>
+        <path class="lens" d="M52 38 L96 30 Q100 30 100 34 L100 43 Q100 47 96 47 L56 53 Q52 53 51 49 L50 42 Q49 39 52 38 Z"/>
+        <path class="led" d="M56 47 L97 39"/>
       </g>
       <g class="lamp head right">
-        <rect class="lens" x="144" y="34" width="46" height="15" rx="7"/>
-        <rect class="led" x="148" y="46" width="38" height="3" rx="1.5"/>
+        <path class="lens" d="M188 38 L144 30 Q140 30 140 34 L140 43 Q140 47 144 47 L184 53 Q188 53 189 49 L190 42 Q191 39 188 38 Z"/>
+        <path class="led" d="M184 47 L143 39"/>
       </g>
     </g>
 
-    <!-- tailgate: hinged at the roof, tips up when open -->
-    <rect class="bay" x="32" y="358" width="176" height="100" rx="18"/>
+    <!-- tailgate: glass and all, hinged at the roof, tips up when open -->
+    <rect class="bay" x="52" y="338" width="136" height="108" rx="16"/>
     <g class="lid trunk">
-      <rect class="paint" x="20" y="356" width="200" height="132"/>
-      <path class="seam" d="M48 406 C72 400 168 400 192 406"/>
-      <path class="seam bumper" d="M46 452 C74 458 166 458 194 452"/>
+      <rect class="paint" x="24" y="324" width="192" height="164"/>
+      <path class="glass rear-window tinted" d="M68 326 L172 326 L184 414 L56 414 Z"/>
+      <path class="seam" d="M52 422 C76 416 164 416 188 422"/>
+      <path class="trim" d="M90 432 L150 432"/>
+      <rect class="plate" x="97" y="440" width="46" height="12" rx="2"/>
+      <path class="seam bumper" d="M50 456 C76 460 164 460 190 456"/>
       <g class="lamp tail left">
-        <rect class="lens" x="42" y="428" width="46" height="14" rx="6"/>
+        <path class="lens" d="M43 414 L74 418 Q78 419 78 422 L78 428 Q78 432 74 432 L45 434 Q41 434 40 430 L39.5 419 Q39.5 415 43 414 Z"/>
       </g>
       <g class="lamp tail right">
-        <rect class="lens" x="152" y="428" width="46" height="14" rx="6"/>
+        <path class="lens" d="M197 414 L166 418 Q162 419 162 422 L162 428 Q162 432 166 432 L195 434 Q199 434 200 430 L200.5 419 Q200.5 415 197 414 Z"/>
       </g>
-      <rect class="plate" x="97" y="440" width="46" height="13" rx="2"/>
     </g>
 
     <!-- the openings the doors leave behind when they swing out -->
-    <rect class="aperture" x="33" y="202" width="22" height="70" rx="5"/>
-    <rect class="aperture" x="33" y="274" width="22" height="62" rx="5"/>
-    <rect class="aperture" x="185" y="202" width="22" height="70" rx="5"/>
-    <rect class="aperture" x="185" y="274" width="22" height="62" rx="5"/>
+    <rect class="aperture" x="39" y="202" width="21" height="70" rx="2.5"/>
+    <rect class="aperture" x="39" y="274" width="21" height="62" rx="2.5"/>
+    <rect class="aperture" x="180" y="202" width="21" height="70" rx="2.5"/>
+    <rect class="aperture" x="180" y="274" width="21" height="62" rx="2.5"/>
 
     <!-- glazing -->
-    <path class="glass windscreen" d="M46 154 L194 154 L178 204 L62 204 Z"/>
-    <path class="wiper" d="M70 200 L104 184 M112 200 L146 184"/>
-    <rect class="roof" x="58" y="204" width="124" height="104" rx="12"/>
-    <rect class="glass sunroof-glass" x="78" y="212" width="84" height="84" rx="9"/>
-    <rect class="rail" x="58" y="208" width="9" height="96" rx="4.5"/>
-    <rect class="rail" x="173" y="208" width="9" height="96" rx="4.5"/>
-    <path class="antenna" d="M120 302 Q115 316 113 326 L127 326 Q125 316 120 302 Z"/>
-    <path class="seam spoiler" d="M58 308 L182 308"/>
-    <path class="glass rear-window" d="M60 310 L180 310 L190 354 L50 354 Z"/>
-    <path class="seam" d="M33 338 L207 338"/>
-    <circle class="filler" cx="196" cy="322" r="6"/>
-    <rect class="sheen" x="20" y="10" width="200" height="478"/>
+    <path class="glass windscreen" d="M52 154 L188 154 L177 202 L63 202 Z"/>
+    <path class="wiper" d="M74 198 L104 184 M114 198 L144 184"/>
+    <path class="roof" d="M63 202 L177 202 L172 322 L68 322 Z"/>
+    <path class="rail" d="M68 208 L65 316"/>
+    <path class="rail" d="M172 208 L175 316"/>
+    <path class="antenna" d="M120 298 Q115 310 113 320 L127 320 Q125 310 120 298 Z"/>
+    <path class="seam spoiler" d="M66 322 L174 322"/>
+    <path class="seam" d="M39 338 L201 338"/>
+    <path class="seam shoulder" d="M46 158 C42 176 41 190 41 202 M194 158 C198 176 199 190 199 202"/>
+    <path class="seam shoulder" d="M41 338 C41 366 43 396 46 418 M199 338 C199 366 197 396 194 418"/>
+    <circle class="filler" cx="192" cy="322" r="6"/>
+    <rect class="sheen" x="24" y="10" width="192" height="478"/>
   </g>
 
   <path class="outline" d="${BODY}"/>
@@ -143,7 +146,7 @@ export function renderCar() {
   ${Object.keys(DOORS).map(door).join('')}
 
   <!-- sunroof marker, only shown when the car reports one -->
-  <rect class="sunroof" x="78" y="212" width="84" height="84" rx="9"/>
+  <rect class="sunroof" x="80" y="214" width="80" height="80" rx="9"/>
 </svg>`;
 }
 
