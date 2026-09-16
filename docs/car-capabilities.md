@@ -67,7 +67,7 @@ Ha minden zárva, egyetlen zöld sor: „Minden nyílászáró zárva”.
 | --- | --- |
 | Menetadatok | külső hőmérséklet, AdBlue hatótáv, másodlagos hatótávok, gáz-/akkumulátorszint |
 | Utak | utolsó út (táv, idő, átlagsebesség, fogyasztás) és az összesített statisztika; a percben érkező időket órára váltja |
-| Szerviz | következő vizsga (nap és km), olajcsere (nap és km), szoftververzió |
+| Szerviz | kötelező (gyári) szerviz hátralévő ideje és távja, olajcsere (nap és km), szoftververzió |
 | Töltés | töltési állapot, teljesítmény, sebesség, hátralévő idő, cél töltöttség (csak elektromos/hibrid modelleknél) |
 | Klíma | a `climate` entitás állapota és hőmérsékletei – csak kijelzés; ha az autó alszik, `INVALID` állapotot küld, ilyenkor rejtve marad |
 | Pozíció és rendszer | cím, akkumulátor-védelem, utolsó adat, utolsó művelet, utolsó szervizesemény, camping mód vége |

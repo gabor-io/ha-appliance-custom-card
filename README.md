@@ -109,7 +109,7 @@ egy sorra kattintva megnyílik az adott entitás adatlapja.
 - **Figyelmeztetések**: nyitott ajtó/ablak/csomagtartó/motorháztető, lezáratlan
   autó, égve maradt parkolófény; kettőnél többnél összevont sor („4 ajtó nyitva”).
 - **Nyitható szekciók**: Menetadatok, Utak (utolsó út és összesítés), Szerviz
-  (vizsga, olajcsere, szoftver), Töltés (elektromos modelleknél), Klíma,
+  (kötelező szerviz, olajcsere, szoftver), Töltés (elektromos modelleknél), Klíma,
   Pozíció és rendszer. A `show_extra: true` minden további MySkoda szenzort is
   kilistáz.
 
