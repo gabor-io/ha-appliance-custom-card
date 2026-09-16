@@ -1,5 +1,3 @@
-import { registerCard } from './card.js';
-import { registerEditor } from './editor.js';
-
-registerEditor();
-registerCard();
+/** Registers every card in this repository. */
+import './dishwasher/index.js';
+import './airfryer/index.js';

@@ -15,7 +15,7 @@ import { getLanguage, translator } from './i18n.js';
 import { buildModel } from './model.js';
 import { listDishwasherDevices, normaliseKey } from './entities.js';
 import { renderMachine, updateMachineDisplay } from './graphics.js';
-import { icon } from './icons.js';
+import { icon } from '../shared/icons.js';
 import { STYLES } from './styles.js';
 import {
   displayTime,
@@ -24,9 +24,9 @@ import {
   formatDuration,
   formatNumber,
   splitDuration,
-} from './format.js';
+} from '../shared/format.js';
 
-const DEFAULTS = {
+export const DEFAULTS = {
   language: 'auto',
   compact: false,
   animate: true,
@@ -188,7 +188,7 @@ export class AegDishwasherCard extends HTMLElement {
     if (this._config.compact) classes.push('compact');
     if (!this._config.animate) classes.push('no-animation');
     classes.push(`accent-${model.accent}`);
-    if (model.state === STATE.RUNNING) classes.push('running');
+    if (model.state === STATE.RUNNING) classes.push('running', 'busy');
     if (model.state === STATE.PAUSED) classes.push('paused');
     if (model.state === STATE.END_OF_CYCLE) classes.push('done');
     if (model.state === STATE.OFF) classes.push('off');

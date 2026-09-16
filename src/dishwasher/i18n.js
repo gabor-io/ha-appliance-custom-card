@@ -1,3 +1,5 @@
+import { makeTranslator, pickLanguage } from '../shared/i18n.js';
+
 /** Hungarian / English strings for the card. */
 
 const HU = {
@@ -310,21 +312,12 @@ const EN = {
 
 const TRANSLATIONS = { hu: HU, en: EN };
 
+export const LANGUAGES = Object.keys(TRANSLATIONS);
+
 export function getLanguage(config, hass) {
-  const wanted = config?.language && config.language !== 'auto' ? config.language : null;
-  const haLang = (hass?.locale?.language || hass?.language || 'en').slice(0, 2).toLowerCase();
-  const lang = wanted || haLang;
-  return TRANSLATIONS[lang] ? lang : 'en';
+  return pickLanguage(config, hass, LANGUAGES);
 }
 
 export function translator(lang) {
-  const dict = TRANSLATIONS[lang] || EN;
-  return (path, fallback = '') => {
-    const value = path.split('.').reduce((acc, key) => (acc ? acc[key] : undefined), dict);
-    if (value !== undefined) return value;
-    const fromEn = path.split('.').reduce((acc, key) => (acc ? acc[key] : undefined), EN);
-    return fromEn !== undefined ? fromEn : fallback;
-  };
+  return makeTranslator(TRANSLATIONS, lang);
 }
-
-export const LANGUAGES = Object.keys(TRANSLATIONS);

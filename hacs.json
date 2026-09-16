@@ -1,6 +1,6 @@
 {
-  "name": "AEG / Electrolux Dishwasher Card",
+  "name": "Home Appliance Cards (AEG dishwasher + Philips airfryer)",
   "render_readme": true,
-  "filename": "aeg-dishwasher-card.js",
+  "filename": "ha-appliance-cards.js",
   "content_in_root": false
 }
