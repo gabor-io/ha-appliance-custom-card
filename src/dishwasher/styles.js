@@ -34,6 +34,8 @@ const CARD_STYLES = `
 }
 .time-input:focus { outline: none; border-color: var(--ap-accent); }
 .time-input[disabled] { opacity: .4; }
+.step-btn.wide { width: 38px; }
+.step-btn.wide .icon { width: 18px; height: 18px; }
 .meter { display: grid; gap: 6px; }
 .meter .top { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--ap-muted); }
 .meter .top .icon { width: 15px; height: 15px; }

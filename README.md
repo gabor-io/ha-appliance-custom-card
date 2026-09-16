@@ -34,10 +34,14 @@ magyar és angol nyelven, világos és sötét témában.
 - **Kiegészítő funkciók** csak ott, ahol az adott program elfogadja őket.
 - **Késleltetett indítás** három módon: gyorsgombok 1–12 óráig, ±10 perces
   léptető (a gép ekkora lépéseket fogad el, max. 24 óra), és **„Legyen kész"
-  időpont** – megadod, mikorra kell elkészülnie, a kártya pedig kiszámolja a
-  késleltetést, 10 percre lefelé kerekítve (pl. 00:05-kor az 5:10-es Eco
-  programmal 07:00-ra kérve 1:40 késleltetés lesz belőle). Mindig kiírja, hogy
-  a gép mikor indul és mikor lesz kész (`Indul 16:28 · Elkészül 21:38`).
+  időpont** – megadod, mikorra kell elkészülnie, majd a pipára kattintva a
+  kártya kiszámolja a késleltetést, 10 percre lefelé kerekítve (pl. 00:05-kor
+  az 5:10-es Eco programmal 07:00-ra kérve 1:40 késleltetés lesz belőle). A
+  beírt időpont addig marad, amíg meg nem erősíted. Mindig kiírja, hogy a gép
+  mikor indul és mikor lesz kész (`Indul 16:28 · Elkészül 21:38`).
+- **Kikapcsolt gépnél nincs félrevezető adat**: nincs kiválasztott program,
+  futásidő, kiegészítő funkció és hatékonysági mérce – a programválasztó
+  inaktív, a riasztások, a készülékbeállítások és a részletek maradnak.
 - **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok
   – a kódokat az `alerts` szenzor attribútumaiból olvassa ki (az állapota csak
   a riasztások darabszáma).
