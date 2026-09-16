@@ -72,6 +72,16 @@ Hibakódok a gépkönyv 13. fejezete szerint:
 | i97 / i98 / iC0–iC5 | Készülékhiba |
 | iF1 | Túl magas vízszint |
 
+## Eco / energia / víz pontszámok
+
+A gép programonként számolja őket (0–7), de **nem minden programhoz**: a
+képességleírás szerint az `ECO`, `AUTO`, `QUICK30`, `QUICK60`, `NORMAL90` és
+`120_MIN` küld `ecoScore` / `energyScore` / `waterScore` értéket, a `RINSE` és a
+`MACHINE_CARE` nem — ezeknél a szenzorok a korábbi program értékén maradnak,
+ezért a kártya el is rejti a mérőket. Programváltás után a gép néhány
+másodperccel később számolja újra a pontszámokat, addig a kártya halványítva
+mutatja a régieket.
+
 ## Két entitás, ami máshogy viselkedik, mint elsőre látszik
 
 - **`sensor.<prefix>_alerts`** állapota a riasztások **darabszáma** (pl. `2`), a

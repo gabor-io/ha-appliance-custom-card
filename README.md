@@ -38,8 +38,12 @@ magyar és angol nyelven, világos és sötét témában.
 - **Riasztások magyarul**: sóhiány, öblítőszer-hiány, i10/i20/i30/iF1 hibakódok
   – a kódokat az `alerts` szenzor attribútumaiból olvassa ki (az állapota csak
   a riasztások darabszáma).
-- Eco/energia/víz pontszámok, ciklusszám, öblítőszerszint, vízkeménység,
-  Wi-Fi jelminőség, távvezérlés állapota.
+- **Eco/energia/víz pontszámok a géptől**, programonként: az Öblítés és
+  várakozás, illetve a Gépápolás programnál a gép nem küld pontszámot, ott a
+  kártya el is rejti őket; programváltás után pedig halványan jelzi, hogy még a
+  régi értékek látszanak, amíg a gép ki nem számolja az újakat.
+- Ciklusszám, öblítőszerszint, vízkeménység, Wi-Fi jelminőség, távvezérlés
+  állapota.
 
 Részletek: [`docs/dishwasher-capabilities.md`](docs/dishwasher-capabilities.md),
 példák: [`examples/dishwasher.yaml`](examples/dishwasher.yaml).
