@@ -176,6 +176,8 @@ export class PhilipsAirfryerCard extends HTMLElement {
     if (this._signatures[name] === html) return;
     this._signatures[name] = html;
     this._sections[name].innerHTML = html;
+    // an empty section must not leave a gap in the card's grid
+    this._sections[name].hidden = !html;
   }
 
   _applyHostClasses(model) {

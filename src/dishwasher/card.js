@@ -42,8 +42,8 @@ export const DEFAULTS = {
   show_appliance_settings: true,
 };
 
-// programs can be picked while the appliance is off (the card powers it on first)
-const PROGRAM_STATES = [STATE.OFF, STATE.IDLE, STATE.READY_TO_START];
+// the appliance only accepts a program once it is awake
+const PROGRAM_STATES = [STATE.IDLE, STATE.READY_TO_START];
 // options and the delay timer are only writable once the appliance is awake
 const SETTABLE_STATES = [STATE.IDLE, STATE.READY_TO_START];
 
@@ -113,7 +113,8 @@ export class AegDishwasherCard extends HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'wrap';
     wrap.addEventListener('click', (ev) => this._onClick(ev));
-    wrap.addEventListener('change', (ev) => this._onChange(ev));
+    wrap.addEventListener('input', (ev) => this._onInput(ev));
+    wrap.addEventListener('keydown', (ev) => this._onKeyDown(ev));
 
     for (const name of [
       'header',
@@ -190,6 +191,9 @@ export class AegDishwasherCard extends HTMLElement {
     if (this._signatures[name] === html) return;
     this._signatures[name] = html;
     this._sections[name].innerHTML = html;
+    // an empty section must not leave a gap in the card's grid
+    this._sections[name].hidden = !html;
+    if (name === 'delay') this._restoreReadyBy();
   }
 
   _applyHostClasses(model) {
@@ -214,12 +218,13 @@ export class AegDishwasherCard extends HTMLElement {
 
   _headerHtml(model, t) {
     const name = escapeHtml(model.name || t('card_name'));
-    // before the start the appliance knows the real length (options included)
+    // switched off there is no selected program to talk about
     const duration = [STATE.IDLE, STATE.READY_TO_START].includes(model.state)
       ? this._cycleMinutes(model)
       : PROGRAMS[model.program]?.duration;
-    const sub =
-      model.program && duration
+    const sub = model.state === STATE.OFF
+      ? ''
+      : model.program && duration
         ? `${t(`program.${model.program}`)} · ${formatDuration(duration, t)}`
         : model.programRaw || '';
 
@@ -302,7 +307,7 @@ export class AegDishwasherCard extends HTMLElement {
         ${phase}
       </div>`);
 
-    if (model.program) {
+    if (model.program && model.state !== STATE.OFF) {
       lines.push(`
         <div class="program-line">
           ${icon(PROGRAMS[model.program]?.icon || 'dishwasher')}
@@ -386,20 +391,16 @@ export class AegDishwasherCard extends HTMLElement {
       ].join('');
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${chips}</div>`;
     }
-    // switched off: only the program's length is meaningful - unless a delay is
-    // still armed, in which case the appliance wakes up by itself to run it
-    if (model.state === STATE.OFF && model.program && PROGRAMS[model.program]) {
+    // switched off the card shows no program data - except a delay that is
+    // still armed, because the appliance wakes up by itself to run it
+    if (model.state === STATE.OFF && model.delay && model.program && PROGRAMS[model.program]) {
       const cycle = PROGRAMS[model.program].duration;
       const parts = splitDuration(cycle, t);
-      if (model.delay) {
-        const startAt = new Date(Date.now() + model.delay * 60000);
-        const finishAt = new Date(Date.now() + (cycle + model.delay) * 60000);
-        return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>
-          <span class="at">${icon('timer')}${escapeHtml(t('ui.starts_at'))} ${formatClock(startAt, this._hass)}</span>
-          <span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(finishAt, this._hass)}</span></div>`;
-      }
+      const startAt = new Date(Date.now() + model.delay * 60000);
+      const finishAt = new Date(Date.now() + (cycle + model.delay) * 60000);
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>
-        <span class="at">${icon('timer')}${escapeHtml(t('ui.duration'))}</span></div>`;
+        <span class="at">${icon('timer')}${escapeHtml(t('ui.starts_at'))} ${formatClock(startAt, this._hass)}</span>
+        <span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(finishAt, this._hass)}</span></div>`;
     }
     return '';
   }
@@ -454,15 +455,16 @@ export class AegDishwasherCard extends HTMLElement {
       ...PROGRAM_ORDER.map((key) => known.find((option) => option.key === key)).filter(Boolean),
       ...known.filter((option) => !PROGRAM_ORDER.includes(option.key)),
     ];
+    const selected = model.state === STATE.OFF ? null : model.program;
     const chips = sorted.map((option) => {
-      const active = option.key === model.program;
+      const active = option.key === selected;
       const meta = PROGRAMS[option.key];
       const title = `${t(`program_hint.${option.key}`)} · ${formatNumber(meta.water)} l · ${formatNumber(meta.energy, 3)} kWh · ${formatDuration(meta.duration, t)}`;
       return `<button class="chip" type="button" data-action="program" data-value="${escapeHtml(option.label)}"
         aria-pressed="${active}" title="${escapeHtml(title)}" ${selectable ? '' : 'disabled'}>
         ${icon(meta.icon)}<span>${escapeHtml(t(`program.${option.key}`))}</span></button>`;
     });
-    const hint = model.program ? escapeHtml(t(`program_hint.${model.program}`)) : '';
+    const hint = selected ? escapeHtml(t(`program_hint.${selected}`)) : '';
     return `
       <div class="section">
         <div class="section-title">${escapeHtml(t('ui.program'))}</div>
@@ -472,7 +474,7 @@ export class AegDishwasherCard extends HTMLElement {
   }
 
   _optionsHtml(model, t) {
-    if (!model.options.length) return '';
+    if (!model.options.length || model.state === STATE.OFF) return '';
     const editable = SETTABLE_STATES.includes(model.state) && model.remoteEnabled;
     const visible = model.options.filter((option) => option.supported || option.on);
     if (!visible.length) {
@@ -533,6 +535,9 @@ export class AegDishwasherCard extends HTMLElement {
           <span class="label">${escapeHtml(t('ui.ready_by'))}</span>
           <div class="row">
             <input class="time-input" type="time" data-action="ready-by" ${editable ? '' : 'disabled'}>
+            <button class="step-btn wide" type="button" data-action="ready-by-apply"
+              ${editable ? '' : 'disabled'} title="${escapeHtml(t('ui.ready_by_apply'))}">
+              ${icon('check')}</button>
           </div>
         </div>
       </div>`;
@@ -569,6 +574,7 @@ export class AegDishwasherCard extends HTMLElement {
   }
 
   _metersHtml(model, t) {
+    if (model.state === STATE.OFF) return '';
     const blocks = [];
     const { eco, energy, water } = model.scores;
     // Rinse & Hold and MachineCare report no scores at all
@@ -716,11 +722,36 @@ export class AegDishwasherCard extends HTMLElement {
 
   /* ---------------------------- actions ----------------------------- */
 
-  _onChange(ev) {
+  /**
+   * The time field is only remembered while it is typed - a native time input
+   * fires `change` as soon as the hour is filled, which used to apply a
+   * half-entered time. Applying happens on the button next to it, or Enter.
+   */
+  _onInput(ev) {
     const target = ev.target.closest('[data-action="ready-by"]');
-    if (!target || target.hasAttribute('disabled') || !this._model?.ok) return;
-    this._readyBy(target.value, this._t);
+    if (target) this._readyByValue = target.value;
+  }
+
+  _onKeyDown(ev) {
+    if (ev.key !== 'Enter') return;
+    const target = ev.target.closest('[data-action="ready-by"]');
+    if (!target || target.hasAttribute('disabled')) return;
+    ev.preventDefault();
+    this._applyReadyBy(target.value);
+  }
+
+  _applyReadyBy(value) {
+    if (!this._model?.ok || !/^\d{1,2}:\d{2}$/.test(value || '')) return;
+    this._readyByValue = value;
+    this._readyBy(value, this._t);
     this._render();
+  }
+
+  /** Keeps a typed-but-not-applied time across section re-renders. */
+  _restoreReadyBy() {
+    if (!this._readyByValue) return;
+    const input = this._sections.delay?.querySelector('[data-action="ready-by"]');
+    if (input && input.value !== this._readyByValue) input.value = this._readyByValue;
   }
 
   _onClick(ev) {
@@ -756,6 +787,11 @@ export class AegDishwasherCard extends HTMLElement {
         break;
       case 'delay-step':
         this._stepDelay(Number(target.dataset.dir));
+        break;
+      case 'ready-by-apply':
+        this._applyReadyBy(
+          this._sections.delay?.querySelector('[data-action="ready-by"]')?.value,
+        );
         break;
       default:
         break;
@@ -875,16 +911,10 @@ export class AegDishwasherCard extends HTMLElement {
     });
   }
 
-  /** Selecting a program while the appliance is off turns it on first. */
-  async _selectProgram(label) {
-    const model = this._model;
+  _selectProgram(label) {
     this._haptic('light');
-    if (model.state === STATE.OFF && model.entities.cmd_on) {
-      await this._call('button', 'press', { entity_id: model.entities.cmd_on });
-      await new Promise((resolve) => window.setTimeout(resolve, 1500));
-    }
-    await this._call('select', 'select_option', {
-      entity_id: model.entities.program,
+    return this._call('select', 'select_option', {
+      entity_id: this._model.entities.program,
       option: label,
     });
   }
