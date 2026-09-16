@@ -212,10 +212,9 @@ export class AegDishwasherCard extends HTMLElement {
   _headerHtml(model, t) {
     const name = escapeHtml(model.name || t('card_name'));
     // before the start the appliance knows the real length (options included)
-    const duration =
-      [STATE.IDLE, STATE.READY_TO_START].includes(model.state) && model.minutesToFinish
-        ? model.minutesToFinish
-        : PROGRAMS[model.program]?.duration;
+    const duration = [STATE.IDLE, STATE.READY_TO_START].includes(model.state)
+      ? this._cycleMinutes(model)
+      : PROGRAMS[model.program]?.duration;
     const sub =
       model.program && duration
         ? `${t(`program.${model.program}`)} · ${formatDuration(duration, t)}`
@@ -278,6 +277,8 @@ export class AegDishwasherCard extends HTMLElement {
 
   _displayText(model, t) {
     if (model.state === STATE.OFF) return '';
+    // during a delayed start the appliance counts down to the start, not to the end
+    if (model.state === STATE.DELAYED_START && model.delay) return displayTime(model.delay);
     if (model.remaining !== null && [STATE.RUNNING, STATE.PAUSED, STATE.DELAYED_START].includes(model.state)) {
       return displayTime(model.remaining);
     }
@@ -317,6 +318,29 @@ export class AegDishwasherCard extends HTMLElement {
     return lines.join('');
   }
 
+  /**
+   * Length of the selected cycle in minutes.
+   *
+   * The appliance needs a few seconds to recompute `timeToEnd` after a program
+   * change, so until the new value arrives the manual's duration for the newly
+   * selected program is the better answer than the stale reported one.
+   */
+  _cycleMinutes(model) {
+    const nominal = PROGRAMS[model.program]?.duration ?? null;
+    const reported = model.remaining !== null && model.remaining > 0 ? model.remaining : null;
+    if (![STATE.IDLE, STATE.READY_TO_START].includes(model.state)) return reported ?? nominal;
+
+    const track = this._durationTrack;
+    if (!track) {
+      this._durationTrack = { program: model.program, reported, stale: false };
+    } else if (track.program !== model.program) {
+      this._durationTrack = { program: model.program, reported, stale: true };
+    } else if (track.stale && reported !== track.reported) {
+      track.stale = false;
+    }
+    return this._durationTrack.stale ? (nominal ?? reported) : (reported ?? nominal);
+  }
+
   _countdownHtml(model, t) {
     if (model.state === STATE.END_OF_CYCLE) {
       return `<div class="countdown"><span class="at">${icon('check')}${escapeHtml(t('ui.finished_hint'))}</span></div>`;
@@ -343,18 +367,34 @@ export class AegDishwasherCard extends HTMLElement {
         : '';
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${at}</div>`;
     }
-    // powered on but not started yet: how long it takes and when it would be done
+    // powered on but not started yet: how long it takes and when it would be
+    // done, counting a delay that is already dialled in
     if ([STATE.IDLE, STATE.READY_TO_START].includes(model.state)) {
-      const parts = splitDuration(model.minutesToFinish ?? PROGRAMS[model.program]?.duration, t);
+      const cycle = this._cycleMinutes(model);
+      const parts = splitDuration(cycle, t);
       if (!parts) return '';
-      const at = model.finishAt
-        ? `<span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(model.finishAt, this._hass)}</span>`
-        : '';
-      return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${at}</div>`;
+      const startAt = model.delay ? new Date(Date.now() + model.delay * 60000) : null;
+      const finishAt = new Date(Date.now() + (cycle + model.delay) * 60000);
+      const chips = [
+        startAt
+          ? `<span class="at">${icon('timer')}${escapeHtml(t('ui.starts_at'))} ${formatClock(startAt, this._hass)}</span>`
+          : '',
+        `<span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(finishAt, this._hass)}</span>`,
+      ].join('');
+      return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>${chips}</div>`;
     }
-    // switched off: only the program's length is meaningful
+    // switched off: only the program's length is meaningful - unless a delay is
+    // still armed, in which case the appliance wakes up by itself to run it
     if (model.state === STATE.OFF && model.program && PROGRAMS[model.program]) {
-      const parts = splitDuration(PROGRAMS[model.program].duration, t);
+      const cycle = PROGRAMS[model.program].duration;
+      const parts = splitDuration(cycle, t);
+      if (model.delay) {
+        const startAt = new Date(Date.now() + model.delay * 60000);
+        const finishAt = new Date(Date.now() + (cycle + model.delay) * 60000);
+        return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>
+          <span class="at">${icon('timer')}${escapeHtml(t('ui.starts_at'))} ${formatClock(startAt, this._hass)}</span>
+          <span class="at">${icon('clock')}${escapeHtml(t('ui.ready_at'))} ${formatClock(finishAt, this._hass)}</span></div>`;
+      }
       return `<div class="countdown"><span class="value">${parts.value}</span><span class="unit">${parts.unit}</span>
         <span class="at">${icon('timer')}${escapeHtml(t('ui.duration'))}</span></div>`;
     }
@@ -382,9 +422,13 @@ export class AegDishwasherCard extends HTMLElement {
     if (model.doorOpen && model.state !== STATE.OFF) {
       items.push({ severity: 'warning', text: t('ui.door_open'), iconName: 'door' });
     }
-    for (const code of model.alerts) {
-      const severity = ALERT_SEVERITY[code] || 'warning';
-      const text = t(`alert.${code}`, `${t('alert_generic')}: ${code}`);
+    for (const alert of model.alerts) {
+      const { code, count } = alert;
+      const reported = alert.severity === 'ERROR' || alert.severity === 'CRITICAL' ? 'error' : '';
+      const severity = reported || ALERT_SEVERITY[code] || 'warning';
+      const text = code
+        ? t(`alert.${code}`, `${t('alert_generic')}: ${code.replace(/^DISH_ALARM_/, '')}`)
+        : `${t('alert_generic')}: ${count}`;
       items.push({ severity, text, iconName: severity === 'error' ? 'error' : 'alert' });
     }
     if (!model.online) {
@@ -648,15 +692,28 @@ export class AegDishwasherCard extends HTMLElement {
         this._stepBrightness(Number(target.dataset.dir));
         break;
       case 'delay':
-        this._haptic('light');
-        this._call('number', 'set_value', {
-          entity_id: model.entities.start_time,
-          value: Number(value),
-        });
+        this._setDelay(Number(value));
         break;
       default:
         break;
     }
+  }
+
+  /** Writes the delay in whatever unit the number entity uses (minutes or seconds). */
+  _setDelay(minutes) {
+    const model = this._model;
+    const entityId = model.entities.start_time;
+    if (!entityId) return;
+    const control = model.delayControl;
+    let value = minutes;
+    if (minutes < 0) {
+      value = control ? control.min : -1;
+    } else {
+      if (control?.seconds) value *= 60;
+      if (control?.step > 1) value = Math.round(value / control.step) * control.step;
+    }
+    this._haptic('light');
+    this._call('number', 'set_value', { entity_id: entityId, value });
   }
 
   /** Floor light and the end-of-cycle sound are selects, the key tone a switch. */
