@@ -1,14 +1,16 @@
 # Home Appliance Cards
 
-Két Lovelace kártya háztartási gépekhez, közös alapokon:
+Három Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
 | `custom:aeg-dishwasher-card` | AEG / Electrolux mosogatógép (fejlesztve: **GI8200X5TN**) | [TTLucian/ha-electrolux](https://github.com/TTLucian/ha-electrolux) |
 | `custom:philips-airfryer-card` | Philips airfryer (fejlesztve: **HD9880 Combi 7000 XXL**) | [renaudallard/homeassistant_philips_homeid](https://github.com/renaudallard/homeassistant_philips_homeid) |
+| `custom:skoda-car-card` | Škoda személyautó (fejlesztve: **Superb Combi**) | [skodaconnect/homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) |
 
-Mindkét kártya animált géprajzot, valós állapotkövetést és vezérlést ad,
-magyar és angol nyelven, világos és sötét témában.
+Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
+nyelven, világos és sötét témában. A két konyhai kártya vezérel is; **az autó
+kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
 
@@ -85,6 +87,39 @@ példák: [`examples/airfryer.yaml`](examples/airfryer.yaml).
 | --- | --- |
 | ![Sötét](docs/images/airfryer-dark.png) | ![Mobil](docs/images/airfryer-mobile.png) |
 
+## Autó kártya
+
+![Autó kártya](docs/images/car-light.png)
+
+**Csak állapotjelzés – a kártya nem vezérli az autót.** Egyetlen interakció van:
+egy sorra kattintva megnyílik az adott entitás adatlapja.
+
+- **Felülnézeti rajz**: kombi arányokkal rajzolt SVG (tetősín, panorámatető,
+  ablaktörlők, antenna, kilincsek, lámpák, rendszámtábla-hely, tanksapka), a
+  témához igazodó fényezéssel.
+- **Animált ajtónyitás**: nyitott ajtónál a lap a zsanér körül kifordul,
+  sárgára vált, és alatta látszik a sötét ajtónyílás.
+- **Lehúzott ablak pirosan**: az érintett ajtó ablaka piros és villog.
+- **Csomagtartó és motorháztető** felnyílik, alatta a sötét csomag-, illetve
+  motortér; **parkolófénynél** felizzanak a lámpák; **offline** autónál a rajz
+  kiszürkül.
+- **Mindig látható**: állapot (Parkol / Úton / Nem elérhető) a parkolási címmel,
+  üzemanyagszint-csík a hatótávval (25 % alatt sárga, 10 % alatt piros), km óra,
+  zárás a fejlécben.
+- **Figyelmeztetések**: nyitott ajtó/ablak/csomagtartó/motorháztető, lezáratlan
+  autó, égve maradt parkolófény; kettőnél többnél összevont sor („4 ajtó nyitva”).
+- **Nyitható szekciók**: Menetadatok, Utak (utolsó út és összesítés), Szerviz
+  (kötelező szerviz, olajcsere, szoftver), Töltés (elektromos modelleknél), Klíma,
+  Pozíció és rendszer. A `show_extra: true` minden további MySkoda szenzort is
+  kilistáz.
+
+Részletek: [`docs/car-capabilities.md`](docs/car-capabilities.md),
+példák: [`examples/car.yaml`](examples/car.yaml).
+
+| Sötét téma | Minden nyitva |
+| --- | --- |
+| ![Sötét](docs/images/car-dark.png) | ![Minden nyitva](docs/images/car-open.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -93,9 +128,9 @@ példák: [`examples/airfryer.yaml`](examples/airfryer.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mindkét
-   kártyát. (Ha csak az egyik kell: `dist/aeg-dishwasher-card.js`, illetve
-   `dist/philips-airfryer-card.js`.)
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a három
+   kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
+   `dist/philips-airfryer-card.js`, illetve `dist/skoda-car-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -188,6 +223,10 @@ type: custom:aeg-dishwasher-card
 
 ```yaml
 type: custom:philips-airfryer-card
+```
+
+```yaml
+type: custom:skoda-car-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő

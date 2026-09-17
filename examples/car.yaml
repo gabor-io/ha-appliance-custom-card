@@ -1,0 +1,51 @@
+# 1) A legegyszerűbb: a kártya magától megkeresi a MySkoda autót
+type: custom:skoda-car-card
+
+# ---------------------------------------------------------------------------
+# 2) Konkrét autó + magyar felirat (több autónál kötelező a device)
+type: custom:skoda-car-card
+device: 0123456789abcdef0123456789abcdef   # a jármű device_id-ja (helyőrző)
+name: Superb Combi
+language: hu
+
+# ---------------------------------------------------------------------------
+# 3) Kompakt nézet mobilra: csak a kép, az állapot és a figyelmeztetések
+type: custom:skoda-car-card
+compact: true
+show_trip: false
+show_service: false
+show_system: false
+
+# ---------------------------------------------------------------------------
+# 4) Minden entitás látszik, a kártya által nem ismertek is
+type: custom:skoda-car-card
+show_extra: true
+
+# ---------------------------------------------------------------------------
+# 5) Entitások kézzel megadva (ha az elnevezés eltér, pl. két azonos nevű
+#    szenzor miatt a sorszámozott `_2` végződés máshova került)
+type: custom:skoda-car-card
+name: Superb Combi
+prefix: superb_combi
+entities:
+  lock_vehicle: binary_sensor.superb_combi_vehicle_locked
+  door_front_left: binary_sensor.superb_combi_door_front_left
+  door_front_right: binary_sensor.superb_combi_door_front_right
+  door_rear_left: binary_sensor.superb_combi_door_rear_left
+  door_rear_right: binary_sensor.superb_combi_door_rear_right
+  window_front_left: binary_sensor.superb_combi_window_front_left
+  window_front_right: binary_sensor.superb_combi_window_front_right
+  window_rear_left: binary_sensor.superb_combi_window_rear_left
+  window_rear_right: binary_sensor.superb_combi_window_rear_right
+  trunk: binary_sensor.superb_combi_trunk
+  bonnet: binary_sensor.superb_combi_bonnet
+  lights: binary_sensor.superb_combi_parking_lights
+  mileage: sensor.superb_combi_mileage
+  range: sensor.superb_combi_range
+  fuel_level: sensor.superb_combi_fuel_level
+  inspection: sensor.superb_combi_next_inspection
+  inspection_in_km: sensor.superb_combi_next_inspection_2
+  oil_service_in_days: sensor.superb_combi_oil_service
+  oil_service_in_km: sensor.superb_combi_oil_service_2
+  car_captured: sensor.superb_combi_last_updated
+  position: device_tracker.superb_combi
