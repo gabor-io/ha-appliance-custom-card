@@ -104,6 +104,12 @@ export const ENTITY_MAP = {
   remaining_charging_time: ['sensor', 'remaining_charging_time', 'remaining_charging_time'],
   target_battery_percentage: ['sensor', 'target_battery_percentage', 'target_battery_percentage'],
 
+  // --- driving score: no MySkoda entity exists yet, so these resolve only
+  //     from `entities:` overrides (e.g. template sensors) -----------------
+  score_daily: ['sensor', 'driving_score_daily', 'driving_score_daily'],
+  score_weekly: ['sensor', 'driving_score_weekly', 'driving_score_weekly'],
+  score_monthly: ['sensor', 'driving_score_monthly', 'driving_score_monthly'],
+
   // --- other platforms ----------------------------------------------------
   position: ['device_tracker', 'device_tracker', null],
   climate: ['climate', 'climate', 'air_conditioning'],

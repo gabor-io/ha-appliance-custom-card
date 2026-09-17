@@ -52,11 +52,11 @@ export const SERVICE_ROWS = [
   ['inspection_in_km', 'service'],
   ['oil_service_in_days', 'adblue'],
   ['oil_service_in_km', 'adblue'],
-  ['software_version', 'software'],
 ];
 
 /** Rows of the "position and system" section. */
 export const SYSTEM_ROWS = [
+  ['software_version', 'software'],
   ['car_captured', 'history'],
   ['operation', 'info'],
   ['service_event', 'info'],

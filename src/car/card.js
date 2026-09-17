@@ -12,6 +12,7 @@ export const DEFAULTS = {
   compact: false,
   animate: true,
   show_alerts: true,
+  show_panels: true,
   show_drive: true,
   show_trip: true,
   show_service: true,
@@ -99,7 +100,7 @@ export class SkodaCarCard extends HTMLElement {
     wrap.addEventListener('click', (ev) => this._onClick(ev));
     wrap.addEventListener('toggle', (ev) => this._onToggle(ev), true);
 
-    for (const name of ['header', 'hero', 'alerts', 'folds']) {
+    for (const name of ['header', 'hero', 'alerts', 'panels', 'folds', 'footer']) {
       const node = document.createElement('div');
       node.dataset.section = name;
       this._sections[name] = node;
@@ -130,7 +131,9 @@ export class SkodaCarCard extends HTMLElement {
     this._section('header', this._headerHtml(model, t));
     this._heroSection(model, t);
     this._section('alerts', this._config.show_alerts ? this._alertsHtml(model, t) : '');
+    this._section('panels', this._config.show_panels ? this._panelsHtml(model, t) : '');
     this._section('folds', this._foldsHtml(model, t));
+    this._section('footer', this._footerHtml(model, t));
   }
 
   _renderEmpty(model, t) {
@@ -177,7 +180,7 @@ export class SkodaCarCard extends HTMLElement {
 
   _headerHtml(model, t) {
     const name = escapeHtml(model.name || t('card_name'));
-    const sub = model.lastUpdate?.text ? `${t('ui.updated')} ${model.lastUpdate.text}` : '';
+    const sub = model.spec || '';
 
     const badges = [];
     if (model.lights) {
@@ -229,14 +232,20 @@ export class SkodaCarCard extends HTMLElement {
   _primaryHtml(model, t) {
     const parts = [];
     const status = model.offline ? 'offline' : model.moving ? 'moving' : 'parked';
-    const sub = [];
-    if (model.position?.address) sub.push(model.position.address);
-    else if (model.position?.zone) sub.push(model.position.zone);
+
+    // the line under the state says what the car is doing, not where it is
+    const facts = [];
+    if (model.reachable !== null) {
+      facts.push(t(model.reachable ? 'ui.reachable' : 'ui.not_reachable'));
+    }
+    if (model.lights) facts.push(t('ui.lights_on'));
+    if (model.chargerConnected) facts.push(t('ui.charging_plug'));
+    if (model.batteryProtection) facts.push(t('ui.battery_protection'));
 
     parts.push(`
-      <div class="state-line">
-        <span class="state-text">${escapeHtml(t(`status.${status}`))}</span>
-        ${sub.length ? `<span class="state-sub">${escapeHtml(sub.join(' · '))}</span>` : ''}
+      <div class="state-block">
+        <div class="state-text">${escapeHtml(t(`status.${status}`))}</div>
+        ${facts.length ? `<div class="state-sub">${escapeHtml(facts.join(' · '))}</div>` : ''}
       </div>`);
 
     if (model.level) {
@@ -259,22 +268,57 @@ export class SkodaCarCard extends HTMLElement {
     if (model.odometer?.text) {
       parts.push(this._lineHtml('odometer', t('ui.odometer'), model.odometer.text, model.odometer.entityId));
     }
-
-    const facts = [];
-    if (model.moving) facts.push(`<span class="fact">${icon('motion')}${escapeHtml(t('ui.in_motion'))}</span>`);
-    if (model.reachable !== null) {
-      facts.push(
-        `<span class="fact">${icon(model.reachable ? 'online' : 'wifi_off')}${escapeHtml(
-          t(model.reachable ? 'ui.reachable' : 'ui.not_reachable'),
-        )}</span>`,
-      );
+    for (const row of model.primaryRows) {
+      parts.push(this._lineHtml(row.icon, t(`primary.${row.key}`, t(`entity.${row.key}`, row.key)), row.value, row.entityId));
     }
-    if (model.chargerConnected) {
-      facts.push(`<span class="fact">${icon('charger')}${escapeHtml(t('ui.charging_plug', 'Plug'))}</span>`);
-    }
-    if (facts.length) parts.push(`<div class="facts">${facts.join('')}</div>`);
 
     return parts.join('');
+  }
+
+  /** The three summary panels under the alerts: service, last trip, score. */
+  _panelsHtml(model, t) {
+    const panel = (name, rows) => {
+      if (!rows.length) return '';
+      const lines = rows
+        .map(
+          (row) => `
+          <div class="line" data-action="more-info" data-entity="${escapeHtml(row.entityId)}">
+            <span>${escapeHtml(t(`panel.${row.key}`, t(`entity.${row.key}`, row.key)))}</span>
+            <b>${escapeHtml(row.value)}</b>
+          </div>`,
+        )
+        .join('');
+      return `
+        <div class="panel">
+          <h4>${escapeHtml(t(`section.${name}`))}</h4>
+          ${lines}
+        </div>`;
+    };
+
+    const blocks = [
+      panel('service', model.panels.service),
+      panel('last_trip', model.panels.trip),
+      panel('score', model.panels.score),
+    ].filter(Boolean);
+
+    if (!blocks.length) return '';
+    return `<div class="panels">${blocks.join('')}</div>`;
+  }
+
+  /** Where the car is parked and how fresh the data is. */
+  _footerHtml(model, t) {
+    const place = model.position?.address || model.position?.zone;
+    const entityId = model.position?.entityId || model.entities.car_captured || '';
+    const line =
+      place || model.lastUpdate
+        ? `
+        <div class="footer" data-action="more-info" data-entity="${escapeHtml(entityId)}">
+          <span class="k">${icon('marker')}<span>${escapeHtml(place || t('ui.position'))}</span></span>
+          ${model.lastUpdate ? `<span class="v">${escapeHtml(model.lastUpdate.text)}</span>` : ''}
+        </div>`
+        : '';
+    return `${line}
+      <div class="readonly">${icon('info')}<span>${escapeHtml(t('ui.read_only'))}</span></div>`;
   }
 
   _lineHtml(iconName, label, value, entityId) {
@@ -425,9 +469,7 @@ export class SkodaCarCard extends HTMLElement {
       blocks.push(this._foldHtml('extra', 'info', t('section.extra'), body));
     }
 
-    if (!blocks.length) return '';
-    return `${blocks.join('')}
-      <div class="readonly">${icon('info')}<span>${escapeHtml(t('ui.read_only'))}</span></div>`;
+    return blocks.join('');
   }
 
   /** Rows of the system section that do not come from a single entity. */

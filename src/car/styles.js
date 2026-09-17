@@ -28,7 +28,7 @@ const CARD_STYLES = `
   --car-open: #f2a63c;
   --car-open-line: #b9711a;
   --car-alarm: var(--error-color, #e03b2c);
-  --car-stage: 168px;
+  --car-stage: 150px;
 }
 
 /* the drawn car keeps its own palette on a dark theme so it stays a silver car */
@@ -58,16 +58,40 @@ const CARD_STYLES = `
 }
 
 /* ---------- hero ---------- */
-.split { display: grid; grid-template-columns: var(--car-stage) minmax(0, 1fr); gap: 16px; align-items: start; }
+.split { display: grid; grid-template-columns: var(--car-stage) minmax(0, 1fr); gap: 16px; align-items: stretch; }
 .compact .split { --car-stage: 120px; gap: 12px; }
 @container (max-width: 340px) { .split { grid-template-columns: 1fr; justify-items: center; } .split .primary { width: 100%; } }
 
 .stage { width: 100%; max-width: var(--car-stage); margin: 0 auto; }
-.primary { display: grid; gap: 10px; min-width: 0; }
-.state-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.state-text { font-size: 1.35rem; font-weight: 700; color: var(--ap-accent); line-height: 1.1; }
-.compact .state-text { font-size: 1.15rem; }
+.primary { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.state-block { display: grid; gap: 2px; }
+.state-text { font-size: 1.5rem; font-weight: 750; color: var(--ap-accent); line-height: 1.1; }
+.compact .state-text { font-size: 1.2rem; }
 .state-sub { font-size: .78rem; color: var(--ap-muted); }
+
+/* ---------- summary panels ---------- */
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.compact .panels { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+@container (max-width: 380px) { .panels { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); } }
+.panel { border: 1px solid var(--ap-line); border-radius: 13px; padding: 9px 10px; display: grid; gap: 5px; }
+.panel h4 {
+  margin: 0; font-size: .66rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ap-muted);
+}
+.panel .line { display: flex; justify-content: space-between; gap: 8px; font-size: .78rem; cursor: pointer; }
+.panel .line > span { color: var(--ap-muted); }
+.panel .line > b { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ap-text); }
+
+/* ---------- footer ---------- */
+.footer {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  border-top: 1px solid var(--ap-line); padding-top: 10px; margin-bottom: 6px;
+  font-size: .78rem; color: var(--ap-muted);
+}
+.footer .k { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.footer .k .icon { width: 15px; height: 15px; }
+.footer .k span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.footer .v { margin-left: auto; white-space: nowrap; }
 
 .metric { display: grid; gap: 5px; }
 .metric .top { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--ap-muted); }

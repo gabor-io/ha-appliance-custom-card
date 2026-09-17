@@ -8,6 +8,7 @@ export const SkodaCarCardEditor = createEditorClass({
   cardName: CARD_NAME,
   toggles: [
     'show_alerts',
+    'show_panels',
     'show_drive',
     'show_trip',
     'show_service',

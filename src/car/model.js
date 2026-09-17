@@ -12,6 +12,13 @@ import {
 } from './const.js';
 import { isUnavailable, resolveEntities } from './entities.js';
 
+/** Rows that sit next to the car, under the fuel bar. */
+const PRIMARY_ROWS = [
+  ['outside_temperature', 'temperature'],
+  ['adblue_range', 'adblue'],
+  ['inspection', 'service'],
+];
+
 const DRIVE_ROWS = [
   ['outside_temperature', 'temperature'],
   ['adblue_range', 'adblue'],
@@ -133,6 +140,16 @@ function rows(hass, entities, definitions, skipValues = []) {
   return out;
 }
 
+/** "Superb · 2024" from the device registry, unless the card names it. */
+function vehicleSpec(hass, config, entities) {
+  if (config?.subtitle !== undefined) return config.subtitle || null;
+  const device = entities.device ? hass.devices?.[entities.device] : null;
+  if (!device) return null;
+  const year = /(\d{4})$/.exec(device.hw_version || '')?.[1];
+  const parts = [device.model, year].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
 function vehicleName(hass, config, entities) {
   if (config?.name) return config.name;
   const device = entities.device ? hass.devices?.[entities.device] : null;
@@ -195,7 +212,28 @@ export function buildModel(hass, config) {
   const capturedDate = parseDate(get('car_captured')?.state);
 
   // rows already shown at the top of the card must not repeat in the sections
-  const shown = new Set([levelKey, rangeKey, 'mileage', 'car_captured'].filter(Boolean));
+  const panels = config?.show_panels !== false;
+  const shown = new Set(
+    [
+      levelKey,
+      rangeKey,
+      'mileage',
+      'car_captured',
+      'outside_temperature',
+      'adblue_range',
+      'inspection',
+      ...(panels
+        ? [
+            'inspection_in_km',
+            'oil_service_in_days',
+            'last_trip_mileage',
+            'last_trip_travel_time',
+            'last_trip_average_fuel_consumption',
+            'last_trip_average_electric_consumption',
+          ]
+        : []),
+    ].filter(Boolean),
+  );
   const filter = (definitions) => definitions.filter(([key]) => !shown.has(key));
   const headline = [rangeState ? displayState(hass, rangeState) : null].filter(Boolean);
 
@@ -203,6 +241,7 @@ export function buildModel(hass, config) {
     ok: true,
     entities,
     name: vehicleName(hass, config, entities),
+    spec: vehicleSpec(hass, config, entities),
     locked: locked(get('lock_vehicle')) ?? locked(get('lock_doors')),
     lockEntity: entities.lock_vehicle || entities.lock_doors || null,
     moving: bool(get('in_motion')) === true,
@@ -261,6 +300,25 @@ export function buildModel(hass, config) {
           };
         })()
       : null,
+    primaryRows: rows(hass, entities, PRIMARY_ROWS),
+    panels: {
+      service: rows(hass, entities, [
+        ['inspection', 'service'],
+        ['oil_service_in_days', 'adblue'],
+        ['inspection_in_km', 'service'],
+      ]),
+      trip: rows(hass, entities, [
+        ['last_trip_mileage', 'range'],
+        ['last_trip_travel_time', 'travel_time'],
+        ['last_trip_average_fuel_consumption', 'fuel'],
+        ['last_trip_average_electric_consumption', 'charger'],
+      ]).slice(0, 3),
+      score: rows(hass, entities, [
+        ['score_daily', 'trophy'],
+        ['score_weekly', 'trophy'],
+        ['score_monthly', 'trophy'],
+      ]),
+    },
     rows: {
       drive: rows(hass, entities, filter(DRIVE_ROWS), headline),
       trip: rows(hass, entities, filter(TRIP_ROWS)),

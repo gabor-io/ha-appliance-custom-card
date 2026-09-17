@@ -39,11 +39,22 @@ A fényezés a világos/sötét témához igazodik (`hass.themes.darkMode`), a
 karosszéria ezüst marad. Részletek: tetősín, panoráma-tetőüveg, ablaktörlők,
 antenna, kilincsek, rendszámtábla-hely, tanksapka, első rács, hátsó lámpák.
 
+## Elrendezés
+
+A kártya felülről lefelé: fejléc (név + műszaki felirat + zárás plakett) → autó
+és mellette az adatoszlop → figyelmeztetések → három összegző panel → nyitható
+szekciók → lábléc a parkolási hellyel és az adat korával.
+
+A fejléc alcíme a jármű leírása: alapból az eszköz modellje és évjárata
+(`Superb · 2024`, a device registry `model` és `hw_version` mezőjéből), de a
+`subtitle:` beállítással szabadon átírható (pl. `2.0 TDI L&K · 2024 · Pebble
+Silver`), üres sztringgel pedig elrejthető.
+
 ## Mindig látható blokk
 
-- **Állapot**: Parkol / Úton (`vehicle_in_motion`) / Nem elérhető (`vehicle_reachable`),
-  mellette a parkolási cím a `device_tracker` `parking_address` attribútumából
-  (ha nincs, a zóna neve).
+- **Állapot**: Parkol / Úton (`vehicle_in_motion`) / Nem elérhető
+  (`vehicle_reachable`), alatta egy sor arról, mit csinál az autó: online /
+  offline, parkolófény, töltőkábel, akkumulátor-védelem.
 - **Zárás**: a fejléc plakettje a `vehicle_lock` (illetve `doors_lock`) alapján.
   Figyelem: a MySkoda ezeket `lock` device_class-szal adja, ahol a `on` a
   **nyitott** állapot – a kártya ezt fordítja.
@@ -51,8 +62,8 @@ antenna, kilincsek, rendszámtábla-hely, tanksapka, első rács, hátsó lámp�
   `battery_percentage`, mellette a hatótáv (`range`, ennek hiányában
   `combustion_range` / `electric_range` / `gas_range`). 25 % alatt sárga,
   10 % alatt piros.
-- **Km óra**: `mileage`.
-- **Chipek**: mozgásban, online/offline, csatlakoztatott töltőkábel.
+- **Km óra**: `mileage`, alatta külső hőmérséklet, AdBlue hatótáv és a
+  kötelező szervizig hátralévő idő.
 
 ## Figyelmeztetések
 
@@ -61,16 +72,39 @@ lezáratlan autó, égve maradt parkolófény, nem elérhető autó. Kettőnél 
 nyitott ajtó vagy ablak esetén egy összevont sor jelenik meg („4 ajtó nyitva”).
 Ha minden zárva, egyetlen zöld sor: „Minden nyílászáró zárva”.
 
+## Összegző panelek
+
+A figyelmeztetések alatt három kis panel áll egymás mellett (`show_panels`):
+
+| Panel | Sorok |
+| --- | --- |
+| Szerviz | kötelező szervizig (nap), olajcseréig (nap), szervizig hátralévő táv |
+| Utolsó út | táv, idő, fogyasztás |
+| Pontszám | napi / heti / havi vezetési pontszám |
+
+A MySkoda **nem hoz létre entitást a vezetési pontszámhoz**, ezért a harmadik
+panel csak akkor jelenik meg, ha megadod a saját (pl. template) szenzoraidat:
+
+```yaml
+entities:
+  score_daily: sensor.superb_combi_driving_score_daily
+  score_weekly: sensor.superb_combi_driving_score_weekly
+  score_monthly: sensor.superb_combi_driving_score_monthly
+```
+
+A paneleken szereplő sorok nem ismétlődnek a nyitható szekciókban; ha
+`show_panels: false`, visszakerülnek oda.
+
 ## Nyitható szekciók
 
 | Szekció | Tartalom |
 | --- | --- |
 | Menetadatok | külső hőmérséklet, AdBlue hatótáv, másodlagos hatótávok, gáz-/akkumulátorszint |
-| Utak | utolsó út (táv, idő, átlagsebesség, fogyasztás) és az összesített statisztika; a percben érkező időket órára váltja |
-| Szerviz | kötelező (gyári) szerviz hátralévő ideje és távja, olajcsere (nap és km), szoftververzió |
+| Összesített utak | a teljes futásteljesítmény, menetidő, átlagsebesség és fogyasztás; a percben érkező időket órára váltja |
+| Szerviz | ami nem fért a panelre: olajcseréig hátralévő táv |
 | Töltés | töltési állapot, teljesítmény, sebesség, hátralévő idő, cél töltöttség (csak elektromos/hibrid modelleknél) |
 | Klíma | a `climate` entitás állapota és hőmérsékletei – csak kijelzés; ha az autó alszik, `INVALID` állapotot küld, ilyenkor rejtve marad |
-| Pozíció és rendszer | cím, akkumulátor-védelem, utolsó adat, utolsó művelet, utolsó szervizesemény, camping mód vége |
+| Pozíció és rendszer | cím, akkumulátor-védelem, szoftververzió, utolsó adat, utolsó művelet, utolsó szervizesemény, camping mód vége |
 | További entitások | `show_extra: true` esetén a jármű minden olyan szenzora és bináris szenzora, amelyre a kártyának nincs külön sora |
 
 A nyitott szekciókat a kártya megjegyzi, így egy állapotfrissítés nem csukja be
@@ -92,10 +126,12 @@ A nyitott szekciókat a kártya megjegyzi, így egy állapotfrissítés nem csuk
 | `prefix` | automatikus | objektum-azonosító előtag |
 | `entities` | – | entitás-felülírások |
 | `name` | eszköz neve | fejléc felirat |
+| `subtitle` | modell + évjárat | fejléc alcím (üres sztring: elrejtve) |
 | `language` | `auto` | `hu` / `en` |
 | `compact` | `false` | kisebb rajz és sűrűbb elrendezés |
 | `animate` | `true` | animációk ki/be |
 | `show_alerts` | `true` | figyelmeztetések |
+| `show_panels` | `true` | Szerviz / Utolsó út / Pontszám panelek |
 | `show_drive` | `true` | Menetadatok |
 | `show_trip` | `true` | Utak |
 | `show_service` | `true` | Szerviz |
