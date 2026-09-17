@@ -1,7 +1,7 @@
 {
   "name": "ha-appliance-cards",
-  "version": "1.6.0",
-  "description": "Lovelace cards for AEG / Electrolux dishwashers, Philips airfryers and Škoda vehicles in Home Assistant",
+  "version": "1.6.1",
+  "description": "Lovelace cards for AEG / Electrolux dishwashers, Philips airfryers and \u0160koda vehicles in Home Assistant",
   "type": "module",
   "homepage": "https://github.com/gabor-io/ha-appliance-custom-card",
   "license": "MIT",

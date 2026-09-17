@@ -62,8 +62,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "v$VERSION" \
-            dist/ha-appliance-cards.js \
-            dist/aeg-dishwasher-card.js \
-            dist/philips-airfryer-card.js \
+            dist/*.js \
             --title "v$VERSION" \
             --generate-notes
