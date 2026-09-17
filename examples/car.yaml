@@ -17,12 +17,21 @@ show_service: false
 show_system: false
 
 # ---------------------------------------------------------------------------
-# 4) Minden entitás látszik, a kártya által nem ismertek is
+# 4) Saját fejléc-alcím és vezetési pontszám (pl. template szenzorokból)
+type: custom:skoda-car-card
+subtitle: 2.0 TDI L&K · 2024 · Pebble Silver
+entities:
+  score_daily: sensor.superb_combi_driving_score_daily
+  score_weekly: sensor.superb_combi_driving_score_weekly
+  score_monthly: sensor.superb_combi_driving_score_monthly
+
+# ---------------------------------------------------------------------------
+# 5) Minden entitás látszik, a kártya által nem ismertek is
 type: custom:skoda-car-card
 show_extra: true
 
 # ---------------------------------------------------------------------------
-# 5) Entitások kézzel megadva (ha az elnevezés eltér, pl. két azonos nevű
+# 6) Entitások kézzel megadva (ha az elnevezés eltér, pl. két azonos nevű
 #    szenzor miatt a sorszámozott `_2` végződés máshova került)
 type: custom:skoda-car-card
 name: Superb Combi

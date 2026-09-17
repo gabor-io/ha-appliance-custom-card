@@ -103,15 +103,19 @@ egy sorra kattintva megnyílik az adott entitás adatlapja.
 - **Csomagtartó és motorháztető** felnyílik, alatta a sötét csomag-, illetve
   motortér; **parkolófénynél** felizzanak a lámpák; **offline** autónál a rajz
   kiszürkül.
-- **Mindig látható**: állapot (Parkol / Úton / Nem elérhető) a parkolási címmel,
-  üzemanyagszint-csík a hatótávval (25 % alatt sárga, 10 % alatt piros), km óra,
-  zárás a fejlécben.
+- **Műszerfal elrendezés**: fejlécben a név és a jármű leírása (modell +
+  évjárat, `subtitle:`-lel átírható), mellette a zárás; az autó mellett nagy
+  állapotfelirat (Parkol / Úton / Nem elérhető), üzemanyagszint-csík a
+  hatótávval (25 % alatt sárga, 10 % alatt piros), km óra, külső hőmérséklet,
+  AdBlue és a szervizig hátralévő idő.
+- **Három összegző panel** a figyelmeztetések alatt: Szerviz, Utolsó út,
+  Pontszám (ez utóbbi saját, pl. template szenzorokból), a lábléc pedig a
+  parkolási helyet és az adat korát mutatja.
 - **Figyelmeztetések**: nyitott ajtó/ablak/csomagtartó/motorháztető, lezáratlan
   autó, égve maradt parkolófény; kettőnél többnél összevont sor („4 ajtó nyitva”).
-- **Nyitható szekciók**: Menetadatok, Utak (utolsó út és összesítés), Szerviz
-  (kötelező szerviz, olajcsere, szoftver), Töltés (elektromos modelleknél), Klíma,
-  Pozíció és rendszer. A `show_extra: true` minden további MySkoda szenzort is
-  kilistáz.
+- **Nyitható szekciók**: Menetadatok, Összesített utak, Szerviz, Töltés
+  (elektromos modelleknél), Klíma, Pozíció és rendszer. A `show_extra: true`
+  minden további MySkoda szenzort is kilistáz.
 
 Részletek: [`docs/car-capabilities.md`](docs/car-capabilities.md),
 példák: [`examples/car.yaml`](examples/car.yaml).

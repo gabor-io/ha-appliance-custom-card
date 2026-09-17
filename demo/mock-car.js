@@ -141,7 +141,14 @@ export function makeHass(scenario = 'zart') {
     states,
     entities,
     devices: {
-      [DEVICE]: { id: DEVICE, name: 'Superb Combi', manufacturer: 'Škoda', model: 'Superb' },
+      [DEVICE]: {
+        id: DEVICE,
+        name: 'Superb Combi',
+        manufacturer: 'Škoda',
+        model: 'Superb',
+        hw_version: 'NP3-2024',
+        sw_version: '1946',
+      },
     },
     language: 'hu',
     locale: { language: 'hu', time_format: '24' },
