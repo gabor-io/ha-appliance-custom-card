@@ -1,16 +1,17 @@
 # Home Appliance Cards
 
-Három Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Négy Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
 | `custom:aeg-dishwasher-card` | AEG / Electrolux mosogatógép (fejlesztve: **GI8200X5TN**) | [TTLucian/ha-electrolux](https://github.com/TTLucian/ha-electrolux) |
 | `custom:philips-airfryer-card` | Philips airfryer (fejlesztve: **HD9880 Combi 7000 XXL**) | [renaudallard/homeassistant_philips_homeid](https://github.com/renaudallard/homeassistant_philips_homeid) |
 | `custom:skoda-car-card` | Škoda személyautó (fejlesztve: **Superb Combi**) | [skodaconnect/homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) |
+| `custom:liebherr-fridge-card` | Liebherr hűtő / fagyasztó (fejlesztve: **Rd 5000-150 2**) | beépített [`liebherr`](https://www.home-assistant.io/integrations/liebherr) integráció |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A két konyhai kártya vezérel is; **az autó
-kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
+nyelven, világos és sötét témában. A három háztartási kártya vezérel is; **az
+autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
 
@@ -124,6 +125,31 @@ példák: [`examples/car.yaml`](examples/car.yaml).
 | --- | --- |
 | ![Sötét](docs/images/car-dark.png) | ![Minden nyitva](docs/images/car-open.png) |
 
+## Hűtő kártya
+
+![Hűtő kártya](docs/images/fridge-light.png)
+
+- **Animált készülékrajz**: annyi ajtó, ahány zónát a gép jelent (1–3);
+  hűtés közben hideg levegő áramlik a belső térben, SuperCool / SuperFrost
+  alatt kékre vált és hópelyhek szállnak, éjszakai módban elhalványul a
+  kijelző, a belső világítás meleg fénnyel tölti meg a teret. Az aktuális
+  hőmérséklet az ajtó kijelzőjén is látszik.
+- **Hőmérséklet-állítás zónánként**: −/+ léptető a gép saját tartományában és
+  lépésközével, mellette gyorsgombok (a fagyasztó tartományán kívül esők nem
+  jelennek meg).
+- **Üzemmódok**: SuperCool, SuperFrost, éjszakai mód, PartyMode, belső
+  világítás; **BioFresh-Plus, HydroBreeze és jégkészítő** választósorral,
+  zónánként.
+- **Állapotsor**: hőmérsékleten van-e, mennyivel tér el a beállítottól, illetve
+  hogy épp gyorshűtés fut.
+
+Részletek: [`docs/fridge-capabilities.md`](docs/fridge-capabilities.md),
+példák: [`examples/fridge.yaml`](examples/fridge.yaml).
+
+| Sötét téma | Hűtő-fagyasztó (két zóna) |
+| --- | --- |
+| ![Sötét](docs/images/fridge-dark.png) | ![Két zóna](docs/images/fridge-combi.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -132,9 +158,10 @@ példák: [`examples/car.yaml`](examples/car.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a három
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a négy
    kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
-   `dist/philips-airfryer-card.js`, illetve `dist/skoda-car-card.js`.)
+   `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`, illetve
+   `dist/liebherr-fridge-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -231,6 +258,10 @@ type: custom:philips-airfryer-card
 
 ```yaml
 type: custom:skoda-car-card
+```
+
+```yaml
+type: custom:liebherr-fridge-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő

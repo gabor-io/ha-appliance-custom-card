@@ -91,6 +91,14 @@ import {
   mdiWindowClosedVariant,
   mdiWindowOpenVariant,
   mdiWrenchClock,
+  mdiCubeOutline,
+  mdiFridgeOutline,
+  mdiLightbulbOutline,
+  mdiPartyPopper,
+  mdiSnowflakeVariant,
+  mdiTargetVariant,
+  mdiWeatherFog,
+  mdiWeatherNight,
 } from '@mdi/js';
 
 export const ICONS = {
@@ -193,6 +201,16 @@ export const ICONS = {
   sunroof: mdiCarConvertible,
   window_closed: mdiWindowClosedVariant,
   window_open: mdiWindowOpenVariant,
+
+  // fridge
+  bulb: mdiLightbulbOutline,
+  fridge: mdiFridgeOutline,
+  frost: mdiSnowflakeVariant,
+  ice: mdiCubeOutline,
+  mist: mdiWeatherFog,
+  night: mdiWeatherNight,
+  party: mdiPartyPopper,
+  target: mdiTargetVariant,
 };
 
 

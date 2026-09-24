@@ -1,0 +1,33 @@
+# 1) A legegyszerűbb: a kártya magától megkeresi a Liebherr készüléket
+type: custom:liebherr-fridge-card
+
+# ---------------------------------------------------------------------------
+# 2) Konkrét készülék + magyar felirat (több Liebherrnél kötelező a device)
+type: custom:liebherr-fridge-card
+device: 0123456789abcdef0123456789abcdef   # a készülék device_id-ja (helyőrző)
+name: Hűtő
+language: hu
+
+# ---------------------------------------------------------------------------
+# 3) Kompakt nézet: csak a rajz, a hőmérséklet és az üzemmódok
+type: custom:liebherr-fridge-card
+compact: true
+show_selects: false
+show_details: false
+
+# ---------------------------------------------------------------------------
+# 4) Minden Liebherr entitás látszik, a kártya által nem ismertek is
+type: custom:liebherr-fridge-card
+show_extra: true
+
+# ---------------------------------------------------------------------------
+# 5) Entitások kézzel megadva (zone1 = felső zóna, zone2 = következő, …)
+type: custom:liebherr-fridge-card
+name: Liebherr cooler
+subtitle: Rd 5000-150 2
+prefix: liebherr_cooler
+entities:
+  nightmode: switch.liebherr_cooler_nightmode
+  zone1_temp: sensor.liebherr_cooler
+  zone1_setpoint: number.liebherr_cooler_setpoint
+  zone1_supercool: switch.liebherr_cooler_supercool
