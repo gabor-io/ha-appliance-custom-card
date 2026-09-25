@@ -62,6 +62,7 @@ const CARD_STYLES = `
 .fridge .seam { stroke: var(--fr-line); stroke-width: 1.4; opacity: .6; }
 .fridge .feet rect { fill: var(--fr-body-dark); }
 .fridge .cavity { fill: url(#fridge-cavity); }
+.fridge .door-inset { fill: color-mix(in srgb, var(--fr-body) 88%, #ffffff); opacity: .9; }
 .fridge .inner-frame { fill: none; stroke: var(--fr-line); stroke-width: 1; opacity: .7; }
 .fridge .shelves rect { fill: var(--fr-shelf); }
 .fridge .shelves .drawer { fill: color-mix(in srgb, var(--fr-cavity) 55%, #ffffff); opacity: .85; }
@@ -101,6 +102,19 @@ const CARD_STYLES = `
 }
 .fridge.boost .cavity { fill: color-mix(in srgb, var(--fr-cold) 22%, var(--fr-cavity)); }
 .fridge.night .door-panel { filter: brightness(.9); }
+
+/* an open door swings towards the viewer around its left hinge */
+.fridge .door { transform-box: view-box; transform-origin: 22px var(--hinge-y); }
+.fridge .door.open {
+  animation: fridge-door 900ms cubic-bezier(.22, .9, .28, 1) forwards;
+  filter: drop-shadow(6px 0 8px rgba(10, 16, 22, .35));
+}
+@keyframes fridge-door {
+  0% { transform: scaleX(1) skewY(0deg); }
+  70% { transform: scaleX(.34) skewY(1.6deg); }
+  100% { transform: scaleX(.4) skewY(1.2deg); }
+}
+.fridge.door-open .cavity { fill: color-mix(in srgb, var(--fr-cavity) 78%, #ffffff); }
 `;
 
 export const STYLES = `${BASE_STYLES}\n${CARD_STYLES}`;

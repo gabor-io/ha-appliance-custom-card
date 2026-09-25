@@ -33,6 +33,12 @@ export const SCENARIOS = {
   hut: { zones: singleZone, overrides: { sensor: '6.8' } },
   supercool: { zones: singleZone, overrides: { supercool: 'on', sensor: '2.4' } },
   ejszaka: { zones: singleZone, overrides: { nightmode: 'on' } },
+  ajto_nyitva: {
+    zones: singleZone,
+    overrides: { sensor: '7.2' },
+    door: 'on',
+    config: { entities: { door: 'binary_sensor.liebherr_cooler_door' } },
+  },
   kombi: { zones: twoZones, overrides: {} },
   kombi_boost: {
     zones: twoZones,
@@ -70,6 +76,18 @@ export function makeHass(scenario = 'alap') {
       platform: 'liebherr',
       translation_key: translationKey,
     };
+  }
+
+  if (spec.door !== undefined) {
+    // a door contact does not come from the Liebherr integration; the card
+    // takes any entity the configuration points at
+    const doorId = 'binary_sensor.liebherr_cooler_door';
+    states[doorId] = {
+      entity_id: doorId,
+      state: spec.door,
+      attributes: { friendly_name: 'Hűtő ajtó', device_class: 'door' },
+    };
+    entities[doorId] = { entity_id: doorId, device_id: DEVICE, platform: 'mqtt' };
   }
 
   return {

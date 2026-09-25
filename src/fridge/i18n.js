@@ -38,6 +38,9 @@ const HU = {
     zero_minus_two: '0 °C | -2 °C',
     zero_zero: '0 °C | 0 °C',
   },
+  alert: {
+    door_open: 'Az ajtó nyitva – csukd be, hogy tartsa a hőmérsékletet',
+  },
   status: {
     normal: 'Normál üzem',
     cooling: 'Hűt',
@@ -62,6 +65,8 @@ const HU = {
     model: 'Típus',
     zone_count: 'Zónák száma',
     door: 'AutoDoor',
+    door_open: 'Az ajtó nyitva',
+    door_state: 'Ajtó',
     light_level: 'Fényerő',
     other: 'További entitások',
     not_configured: 'Nem található Liebherr készülék. Válaszd ki az eszközt a kártya beállításaiban.',
@@ -124,6 +129,9 @@ const EN = {
     zero_minus_two: '0 °C | -2 °C',
     zero_zero: '0 °C | 0 °C',
   },
+  alert: {
+    door_open: 'The door is open - close it to keep the temperature',
+  },
   status: {
     normal: 'Running',
     cooling: 'Cooling',
@@ -148,6 +156,8 @@ const EN = {
     model: 'Model',
     zone_count: 'Zones',
     door: 'AutoDoor',
+    door_open: 'The door is open',
+    door_state: 'Door',
     light_level: 'Brightness',
     other: 'Other entities',
     not_configured: 'No Liebherr appliance found. Pick the device in the card settings.',
