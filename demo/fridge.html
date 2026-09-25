@@ -49,14 +49,19 @@
   const grid = document.getElementById('grid');
   const toolbar = document.getElementById('toolbar');
 
-  let current = new Set(['alap', 'supercool', 'ejszaka', 'kombi']);
+  let current = new Set(['alap', 'supercool', 'ajto_nyitva', 'kombi']);
 
   function draw() {
     grid.replaceChildren();
     for (const key of current) {
       const wrapper = document.createElement('div');
       const card = document.createElement('liebherr-fridge-card');
-      card.setConfig({ type: 'custom:liebherr-fridge-card', device: 'demo-fridge', language: 'hu' });
+      card.setConfig({
+        type: 'custom:liebherr-fridge-card',
+        device: 'demo-fridge',
+        language: 'hu',
+        ...(SCENARIOS[key].config || {}),
+      });
       const hass = makeHass(key);
       hass.themes = { darkMode: document.body.classList.contains('dark') };
       card.hass = hass;

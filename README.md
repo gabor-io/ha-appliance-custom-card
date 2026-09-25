@@ -142,13 +142,18 @@ példák: [`examples/car.yaml`](examples/car.yaml).
   zónánként.
 - **Állapotsor**: hőmérsékleten van-e, mennyivel tér el a beállítottól, illetve
   hogy épp gyorshűtés fut.
+- **Ajtónyitás**: a Liebherr API nem ad ajtó-entitást (az app riasztásai más
+  csatornán jönnek), de a kártya bármilyen ajtó-szenzort elfogad
+  (`entities: { door: binary_sensor.… }`), és ahol van AutoDoor, azt magától
+  használja: nyitott ajtónál a rajzon kinyílik az ajtó, és figyelmeztető sor
+  jelenik meg.
 
 Részletek: [`docs/fridge-capabilities.md`](docs/fridge-capabilities.md),
 példák: [`examples/fridge.yaml`](examples/fridge.yaml).
 
-| Sötét téma | Hűtő-fagyasztó (két zóna) |
-| --- | --- |
-| ![Sötét](docs/images/fridge-dark.png) | ![Két zóna](docs/images/fridge-combi.png) |
+| Nyitott ajtó | Sötét téma | Hűtő-fagyasztó (két zóna) |
+| --- | --- | --- |
+| ![Nyitott ajtó](docs/images/fridge-door.png) | ![Sötét](docs/images/fridge-dark.png) | ![Két zóna](docs/images/fridge-combi.png) |
 
 ## Telepítés
 

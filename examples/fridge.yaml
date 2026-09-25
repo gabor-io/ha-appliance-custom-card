@@ -21,7 +21,13 @@ type: custom:liebherr-fridge-card
 show_extra: true
 
 # ---------------------------------------------------------------------------
-# 5) Entitások kézzel megadva (zone1 = felső zóna, zone2 = következő, …)
+# 5) Ajtónyitás-érzékelő (bármilyen entitás: kontakt, MQTT, template)
+type: custom:liebherr-fridge-card
+entities:
+  door: binary_sensor.huto_ajto
+
+# ---------------------------------------------------------------------------
+# 6) Entitások kézzel megadva (zone1 = felső zóna, zone2 = következő, …)
 type: custom:liebherr-fridge-card
 name: Liebherr cooler
 subtitle: Rd 5000-150 2

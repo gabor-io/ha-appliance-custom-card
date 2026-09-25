@@ -27,6 +27,15 @@ function control(stateObj) {
   };
 }
 
+/** `on`/`open`/`opening` all mean the door is not shut. */
+function doorOpen(stateObj) {
+  if (!stateObj || isUnavailable(stateObj)) return null;
+  const state = String(stateObj.state).toLowerCase();
+  if (['on', 'open', 'opening'].includes(state)) return true;
+  if (['off', 'closed', 'closing'].includes(state)) return false;
+  return null;
+}
+
 function select(stateObj) {
   if (!stateObj || isUnavailable(stateObj)) return null;
   const options = stateObj.attributes?.options;
@@ -90,6 +99,12 @@ export function buildModel(hass, config) {
       switches,
       selects,
       autodoor: zone.autodoor ? { entityId: zone.autodoor, state: get(zone.autodoor)?.state } : null,
+      // an explicit door sensor wins; AutoDoor doubles as one where fitted
+      door: (() => {
+        const entityId = zone.door || zone.autodoor;
+        if (!entityId) return null;
+        return { entityId, open: doorOpen(get(entityId)) };
+      })(),
       // the appliance is warmer than asked while it is still pulling down
       warming: current !== null && target !== null ? current - target > AT_TARGET_TOLERANCE : false,
       atTarget:
@@ -101,6 +116,14 @@ export function buildModel(hass, config) {
   for (const key of Object.keys(DEVICE_SWITCHES)) {
     modes[key] = entities[key] ? { entityId: entities[key], on: isOn(get(entities[key])) } : null;
   }
+
+  const deviceDoor = entities.door
+    ? { entityId: entities.door, open: doorOpen(get(entities.door)) }
+    : null;
+  const openDoors = zones
+    .map((zone, index) => ({ index, zone }))
+    .filter(({ zone }) => zone.door?.open === true);
+  if (deviceDoor?.open === true && !openDoors.length) openDoors.push({ index: 0, zone: zones[0] });
 
   const lightState = get(entities.light);
   const boosting = zones.some((zone) => zone.switches.supercool?.on || zone.switches.superfrost?.on);
@@ -120,6 +143,9 @@ export function buildModel(hass, config) {
         }
       : null,
     boosting,
+    door: deviceDoor,
+    openDoors: openDoors.map(({ index }) => index),
+    doorOpen: openDoors.length > 0,
     nightMode: modes.nightmode?.on === true,
     partyMode: modes.partymode?.on === true,
     cooling: boosting || zones.some((zone) => zone.warming),

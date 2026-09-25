@@ -74,7 +74,7 @@ export class LiebherrFridgeCard extends HTMLElement {
     wrap.className = 'wrap';
     wrap.addEventListener('click', (ev) => this._onClick(ev));
 
-    for (const name of ['header', 'hero', 'zones', 'modes', 'selects', 'details']) {
+    for (const name of ['header', 'hero', 'alerts', 'zones', 'modes', 'selects', 'details']) {
       const node = document.createElement('div');
       node.dataset.section = name;
       this._sections[name] = node;
@@ -104,6 +104,7 @@ export class LiebherrFridgeCard extends HTMLElement {
     this._applyHostClasses(model);
     this._section('header', this._headerHtml(model, t));
     this._heroSection(model, t);
+    this._section('alerts', this._alertsHtml(model, t));
     this._section('zones', this._config.show_zones ? this._zonesHtml(model, t) : '');
     this._section('modes', this._config.show_modes ? this._modesHtml(model, t) : '');
     this._section('selects', this._config.show_selects ? this._selectsHtml(model, t) : '');
@@ -161,6 +162,9 @@ export class LiebherrFridgeCard extends HTMLElement {
 
   _headerHtml(model, t) {
     const badges = [];
+    if (model.doorOpen) {
+      badges.push(`<span class="warn" title="${escapeHtml(t('ui.door_open'))}">${icon('door')}</span>`);
+    }
     if (model.nightMode) badges.push(`<span title="${escapeHtml(t('mode.nightmode'))}">${icon('night')}</span>`);
     if (model.partyMode) badges.push(`<span title="${escapeHtml(t('mode.partymode'))}">${icon('party')}</span>`);
     if (model.light?.on) badges.push(`<span title="${escapeHtml(t('mode.light'))}">${icon('bulb')}</span>`);
@@ -176,6 +180,22 @@ export class LiebherrFridgeCard extends HTMLElement {
         <div class="badges">${badges.join('')}</div>
         <div class="pill">${icon(status === 'night' ? 'night' : status === 'party' ? 'party' : 'snowflake')}
           ${escapeHtml(t(`status.${status}`))}</div>
+      </div>`;
+  }
+
+  /** The appliance reports no alarms, so the only alert is an open door. */
+  _alertsHtml(model, t) {
+    if (!model.doorOpen) return '';
+    const entityId = model.door?.entityId || model.zones[model.openDoors[0]]?.door?.entityId || '';
+    const zoneLabel =
+      model.zones.length > 1 && model.openDoors.length
+        ? ` · ${t(`zone.${model.zones[model.openDoors[0]].position || 'single'}`)}`
+        : '';
+    return `
+      <div class="alerts">
+        <div class="alert pulse" data-action="more-info" data-entity="${escapeHtml(entityId)}">
+          ${icon('door')}<span>${escapeHtml(t('alert.door_open') + zoneLabel)}</span>
+        </div>
       </div>`;
   }
 
@@ -205,6 +225,10 @@ export class LiebherrFridgeCard extends HTMLElement {
       svg.classList.toggle('boost', model.boosting);
       svg.classList.toggle('night', model.nightMode);
       svg.classList.toggle('light-on', !!model.light?.on);
+      svg.classList.toggle('door-open', model.doorOpen);
+      svg.querySelectorAll('.door').forEach((node) => {
+        node.classList.toggle('open', model.openDoors.includes(Number(node.dataset.zone)));
+      });
     }
     const lead = model.zones[0];
     updateFridgeDisplay(

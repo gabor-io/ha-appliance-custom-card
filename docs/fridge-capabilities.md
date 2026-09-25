@@ -68,10 +68,37 @@ indulnak újra egy frissítéskor:
 6. **Részletek**: zónák száma, AutoDoor állapota, világítás fényereje, és
    `show_extra: true` esetén minden további Liebherr entitás.
 
+## Ajtónyitás
+
+A Liebherr SmartDevice **app** jelez ajtónyitást („The door is still open"), a
+Home API viszont – amiből a HA integráció és a `pyliebherrhomeapi` könyvtár
+dolgozik – nem ad ajtó-entitást: a `controls` végponton csak a hőmérséklet, a
+kapcsolók, a választók, a világítás és az AutoDoor szerepel. Az app riasztásai
+más csatornán érkeznek.
+
+Ezért a kártya **bármilyen** ajtó-entitást elfogad, akárhonnan is jön
+(ajtónyitás-érzékelő a hűtőn, MQTT, template szenzor):
+
+```yaml
+type: custom:liebherr-fridge-card
+entities:
+  door: binary_sensor.huto_ajto        # az egész készülékre
+  # vagy zónánként:
+  zone1_door: binary_sensor.huto_felso_ajto
+```
+
+Nyitott ajtónál a rajzon **kinyílik az ajtó** és látszik a belső tér, a
+fejlécben ikon jelenik meg, és egy figyelmeztető sor is kiírja. `on`, `open` és
+`opening` állapot számít nyitottnak, `off`, `closed`, `closing` zártnak. Ahol a
+gépnek van **AutoDoor**-ja, ott a kártya külön beállítás nélkül is azt
+használja ajtóállapotnak.
+
 ## Amit az integráció nem ad
 
-Nincs ajtónyitás-érzékelő és nincs riasztás-entitás, ezért a kártya sem tud
-ilyet mutatni. A készülék típusától függ, mely vezérlők jelennek meg: az
+Nincs riasztás-entitás (ajtónyitás, hőmérséklet-riasztás, szűrőcsere), és
+nincs holiday mód sem – a `pyliebherrhomeapi` 0.5.1 vezérlőlistája:
+`temperature`, `supercool`, `superfrost`, `nightmode`, `partymode`,
+`presentationlight`, `icemaker`, `hydrobreeze`, `biofreshplus`, `autodoor`. A készülék típusától függ, mely vezérlők jelennek meg: az
 Rd 5000-150 2 például hőmérsékletet, SuperCool-t és éjszakai módot küld, a
 BioFresh, HydroBreeze, jégkészítő és AutoDoor sorok csak azoknál a gépeknél
 jelennek meg, amelyek jelentik őket.
@@ -82,7 +109,7 @@ jelennek meg, amelyek jelentik őket.
 | --- | --- | --- |
 | `device` | automatikus | a készülék device_id-ja |
 | `prefix` | automatikus | objektum-azonosító előtag |
-| `entities` | – | entitás-felülírások (`zone1_…`, `nightmode`, …) |
+| `entities` | – | entitás-felülírások (`zone1_…`, `nightmode`, `door`, …) |
 | `name` | eszköz neve | fejléc felirat |
 | `subtitle` | típus | fejléc alcím (üres sztring: elrejtve) |
 | `language` | `auto` | `hu` / `en` |

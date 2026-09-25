@@ -30,16 +30,11 @@ function doorRects(zoneCount) {
   return rects;
 }
 
-function door(rect, index, count) {
+function compartment(rect, index) {
   const { y, height } = rect;
   const inner = { x: 34, y: y + 22, w: 108, h: height - 36 };
-  const showDisplay = index === 0;
   return `
-  <g class="door" data-zone="${index}">
-    <rect class="door-panel" x="22" y="${y}" width="156" height="${height}" rx="8"/>
-    <rect class="door-shade" x="22" y="${y}" width="156" height="${height}" rx="8"/>
-
-    <!-- interior seen through the door -->
+  <g class="compartment" data-zone="${index}">
     <g class="interior" clip-path="url(#fridge-inner-${index})">
       <rect class="cavity" x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="5"/>
       <rect class="glow" x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="5"/>
@@ -70,6 +65,19 @@ function door(rect, index, count) {
       </g>
     </g>
     <rect class="inner-frame" x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="5"/>
+  </g>`;
+}
+
+/** The door leaf: hinged on the left, it swings open over the interior. */
+function door(rect, index, count) {
+  const { y, height } = rect;
+  const inner = { x: 34, y: y + 22, w: 108, h: height - 36 };
+  const showDisplay = index === 0;
+  return `
+  <g class="door" data-zone="${index}" style="--hinge-y:${(y + height / 2).toFixed(1)}px">
+    <rect class="door-panel" x="22" y="${y}" width="156" height="${height}" rx="8"/>
+    <rect class="door-shade" x="22" y="${y}" width="156" height="${height}" rx="8"/>
+    <rect class="door-inset" x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="5"/>
 
     ${
       showDisplay
@@ -81,7 +89,6 @@ function door(rect, index, count) {
         : ''
     }
 
-    <!-- handle -->
     <rect class="handle" x="150" y="${y + 12}" width="7" height="${Math.max(24, height - 30)}" rx="3.5"/>
     ${count > 1 && index < count - 1 ? `<path class="seam" d="M22 ${(y + height + GAP / 2).toFixed(1)} H178"/>` : ''}
   </g>`;
@@ -125,6 +132,7 @@ export function renderFridge(zoneCount = 1) {
 
   <ellipse class="shadow" cx="100" cy="258" rx="78" ry="8"/>
   <rect class="cabinet" x="16" y="4" width="168" height="256" rx="11"/>
+  ${rects.map((rect, index) => compartment(rect, index)).join('')}
   ${rects.map((rect, index) => door(rect, index, rects.length)).join('')}
   <g class="feet"><rect x="26" y="258" width="14" height="5" rx="2"/><rect x="160" y="258" width="14" height="5" rx="2"/></g>
 </svg>`;
