@@ -1,0 +1,38 @@
+# 1) A legegyszerűbb: a kártya magától megkeresi a szellőztetőt
+type: custom:fisher-erv-card
+
+# ---------------------------------------------------------------------------
+# 2) Konkrét készülék + magyar felirat
+type: custom:fisher-erv-card
+device: 0123456789abcdef0123456789abcdef   # a készülék device_id-ja (helyőrző)
+name: Szellőztető
+language: hu
+
+# ---------------------------------------------------------------------------
+# 3) PM2,5 csempe elrejtése (ha a gépben nincs részecskeérzékelő)
+type: custom:fisher-erv-card
+show_pm25: false
+
+# ---------------------------------------------------------------------------
+# 4) Kompakt nézet mobilra
+type: custom:fisher-erv-card
+compact: true
+show_filter: false
+show_speeds: false
+
+# ---------------------------------------------------------------------------
+# 5) Entitások kézzel megadva
+type: custom:fisher-erv-card
+name: Fisher szellőztető
+entities:
+  fan: fan.fisher_f_ervq_b150co2_i
+  co2: sensor.fisher_f_ervq_b150co2_i_szen_dioxid
+  pm25: sensor.fisher_f_ervq_b150co2_i_szallo_por_25_mm
+  temperature: sensor.fisher_f_ervq_b150co2_i_homerseklet
+  humidity: sensor.fisher_f_ervq_b150co2_i_paratartalom
+  filter_life: sensor.fisher_f_ervq_b150co2_i_szuro_elettartam
+  filter_lifespan: select.fisher_f_ervq_b150co2_i_filter_lifespan
+  filter_reset: button.fisher_f_ervq_b150co2_i_szuro_visszaallitas
+  problem: binary_sensor.fisher_f_ervq_b150co2_i_problema
+  supply: number.fisher_f_ervq_b150co2_i_supply_fan_speed
+  exhaust: number.fisher_f_ervq_b150co2_i_exhaust_fan_speed

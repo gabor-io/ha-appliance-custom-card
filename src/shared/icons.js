@@ -99,6 +99,13 @@ import {
   mdiTargetVariant,
   mdiWeatherFog,
   mdiWeatherNight,
+  mdiGrain,
+  mdiHomeExportOutline,
+  mdiHomeImportOutline,
+  mdiMoleculeCo2,
+  mdiPowerSleep,
+  mdiRestart,
+  mdiWeatherWindy,
 } from '@mdi/js';
 
 export const ICONS = {
@@ -211,6 +218,16 @@ export const ICONS = {
   night: mdiWeatherNight,
   party: mdiPartyPopper,
   target: mdiTargetVariant,
+
+  // ventilation
+  co2: mdiMoleculeCo2,
+  exhaust: mdiHomeExportOutline,
+  filter: mdiAirFilter,
+  pm25: mdiGrain,
+  reset: mdiRestart,
+  sleep: mdiPowerSleep,
+  supply: mdiHomeImportOutline,
+  wind: mdiWeatherWindy,
 };
 
 
