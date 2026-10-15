@@ -1,6 +1,6 @@
 # Home Appliance Cards
 
-Négy Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Öt Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -8,9 +8,10 @@ Négy Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:philips-airfryer-card` | Philips airfryer (fejlesztve: **HD9880 Combi 7000 XXL**) | [renaudallard/homeassistant_philips_homeid](https://github.com/renaudallard/homeassistant_philips_homeid) |
 | `custom:skoda-car-card` | Škoda személyautó (fejlesztve: **Superb Combi**) | [skodaconnect/homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) |
 | `custom:liebherr-fridge-card` | Liebherr hűtő / fagyasztó (fejlesztve: **Rd 5000-150 2**) | beépített [`liebherr`](https://www.home-assistant.io/integrations/liebherr) integráció |
+| `custom:fisher-erv-card` | Hővisszanyerős szellőztető (fejlesztve: **Fisher F-ERVQ-B150CO2-I**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A három háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. A négy háztartási kártya vezérel is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
@@ -155,6 +156,30 @@ példák: [`examples/fridge.yaml`](examples/fridge.yaml).
 | --- | --- | --- |
 | ![Nyitott ajtó](docs/images/fridge-door.png) | ![Sötét](docs/images/fridge-dark.png) | ![Két zóna](docs/images/fridge-combi.png) |
 
+## Szellőztető kártya
+
+![Szellőztető kártya](docs/images/erv-light.png)
+
+- **Animált készülékrajz**: a valódi előlap a jobb oldali kijelzővel, amin
+  ugyanaz látszik, mint a gépen – nagy CO₂ érték, alatta hőmérséklet és
+  páratartalom, mellette a fordulatszám számjegye. A fehér előlapon friss és
+  elhasznált levegő áramlik, a sebesség a befúvó fokozatát követi; kikapcsolt
+  gépnél megáll és a kijelző elhalványul.
+- **Levegőminőség**: CO₂ és PM2,5 színsávval és szöveges minősítéssel
+  (Kiváló → Rossz), mellette hőmérséklet és páratartalom. Magas CO₂-nél
+  figyelmeztet.
+- **Üzemmódok**: a gép által kínált presetek (Kézi, Automata, Alvó, Pure L/M/H)
+  és a be-/kikapcsolás; **fordulatszám** befúvásra és elszívásra külön (1–8).
+- **Szűrő**: hátralévő élettartam, nullázó gomb, élettartam-választó; lejáró
+  szűrőnél figyelmeztet, és a rajzon is jelzi.
+
+Részletek: [`docs/erv-capabilities.md`](docs/erv-capabilities.md),
+példák: [`examples/erv.yaml`](examples/erv.yaml).
+
+| Szellőztet (magas CO₂) | Hiba + lejáró szűrő |
+| --- | --- |
+| ![Szellőztet](docs/images/erv-co2.png) | ![Hiba](docs/images/erv-alert.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -163,10 +188,10 @@ példák: [`examples/fridge.yaml`](examples/fridge.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a négy
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind az öt
    kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
-   `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`, illetve
-   `dist/liebherr-fridge-card.js`.)
+   `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
+   `dist/liebherr-fridge-card.js`, illetve `dist/fisher-erv-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -267,6 +292,10 @@ type: custom:skoda-car-card
 
 ```yaml
 type: custom:liebherr-fridge-card
+```
+
+```yaml
+type: custom:fisher-erv-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő

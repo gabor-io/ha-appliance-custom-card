@@ -1,0 +1,161 @@
+import { makeTranslator, pickLanguage } from '../shared/i18n.js';
+
+const HU = {
+  card_name: 'Szellőztető',
+  preset: {
+    manual: 'Kézi',
+    auto: 'Automata',
+    sleep: 'Alvó',
+    pure_l: 'Pure L',
+    pure_m: 'Pure M',
+    pure_h: 'Pure H',
+  },
+  preset_hint: {
+    manual: 'A két ventilátor fordulatszámát te állítod.',
+    auto: 'A gép a mért CO₂ alapján szabályoz.',
+    sleep: 'Halk éjszakai üzem, minimális fordulatszámon.',
+    pure_l: 'Tisztítás alacsony fokozaton.',
+    pure_m: 'Tisztítás közepes fokozaton.',
+    pure_h: 'Tisztítás magas fokozaton.',
+  },
+  level: {
+    excellent: 'Kiváló',
+    good: 'Jó',
+    fair: 'Megfelelő',
+    poor: 'Mérsékelt',
+    bad: 'Rossz',
+  },
+  alert: {
+    problem: 'A készülék hibát jelez',
+    problem_code: 'A készülék hibát jelez (kód: {code})',
+    filter_due: 'A szűrő élettartama lejár: {days} nap van hátra',
+    filter_over: 'A szűrő élettartama lejárt – cseréld ki, majd nullázd',
+    co2_high: 'Magas CO₂-szint: {value} ppm – érdemes szellőztetni',
+  },
+  ui: {
+    co2: 'Szén-dioxid',
+    pm25: 'Szálló por (PM2,5)',
+    temperature: 'Hőmérséklet',
+    humidity: 'Páratartalom',
+    modes: 'Üzemmódok',
+    speeds: 'Fordulatszám',
+    supply: 'Befúvás',
+    exhaust: 'Elszívás',
+    filter: 'Szűrő',
+    filter_left: 'Hátralévő élettartam',
+    filter_lifespan: 'Szűrő élettartama',
+    filter_reset: 'Szűrő nullázása',
+    details: 'Részletek',
+    other: 'További entitások',
+    off: 'Kikapcsolva',
+    on: 'Működik',
+    power_on: 'Bekapcsolás',
+    power_off: 'Kikapcsolás',
+    not_configured: 'Nem található Tuya szellőztető. Válaszd ki az eszközt a kártya beállításaiban.',
+    unavailable: 'A készülék entitásai nem érhetők el.',
+    days: 'nap',
+    no_pm25: 'A készülék nem küld PM2,5 értéket',
+  },
+  editor: {
+    device: 'Eszköz',
+    device_auto: 'Automatikus felismerés',
+    name: 'Név',
+    language: 'Nyelv',
+    language_auto: 'Automatikus (HA nyelve)',
+    sections: 'Látható szekciók',
+    show_air: 'Levegőminőség',
+    show_pm25: 'PM2,5 csempe',
+    show_modes: 'Üzemmódok',
+    show_speeds: 'Fordulatszámok',
+    show_filter: 'Szűrő',
+    show_extra: 'További entitások',
+    compact: 'Kompakt elrendezés',
+    animate: 'Animációk',
+  },
+};
+
+const EN = {
+  card_name: 'Ventilator',
+  preset: {
+    manual: 'Manual',
+    auto: 'Auto',
+    sleep: 'Sleep',
+    pure_l: 'Pure L',
+    pure_m: 'Pure M',
+    pure_h: 'Pure H',
+  },
+  preset_hint: {
+    manual: 'You set both fan speeds yourself.',
+    auto: 'The appliance follows the measured CO₂.',
+    sleep: 'Quiet night mode at the lowest speed.',
+    pure_l: 'Cleaning at low speed.',
+    pure_m: 'Cleaning at medium speed.',
+    pure_h: 'Cleaning at high speed.',
+  },
+  level: {
+    excellent: 'Excellent',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Poor',
+    bad: 'Bad',
+  },
+  alert: {
+    problem: 'The appliance reports a fault',
+    problem_code: 'The appliance reports a fault (code {code})',
+    filter_due: 'Filter life is running out: {days} days left',
+    filter_over: 'Filter life is over - replace it and reset the counter',
+    co2_high: 'High CO₂: {value} ppm - time to ventilate',
+  },
+  ui: {
+    co2: 'Carbon dioxide',
+    pm25: 'Particulates (PM2.5)',
+    temperature: 'Temperature',
+    humidity: 'Humidity',
+    modes: 'Modes',
+    speeds: 'Fan speed',
+    supply: 'Supply',
+    exhaust: 'Exhaust',
+    filter: 'Filter',
+    filter_left: 'Life left',
+    filter_lifespan: 'Filter lifespan',
+    filter_reset: 'Reset filter',
+    details: 'Details',
+    other: 'Other entities',
+    off: 'Off',
+    on: 'Running',
+    power_on: 'Turn on',
+    power_off: 'Turn off',
+    not_configured: 'No Tuya ventilator found. Pick the device in the card settings.',
+    unavailable: 'The appliance entities are unavailable.',
+    days: 'days',
+    no_pm25: 'The appliance reports no PM2.5 value',
+  },
+  editor: {
+    device: 'Device',
+    device_auto: 'Auto detect',
+    name: 'Name',
+    language: 'Language',
+    language_auto: 'Automatic (HA language)',
+    sections: 'Visible sections',
+    show_air: 'Air quality',
+    show_pm25: 'PM2.5 tile',
+    show_modes: 'Modes',
+    show_speeds: 'Fan speeds',
+    show_filter: 'Filter',
+    show_extra: 'Other entities',
+    compact: 'Compact layout',
+    animate: 'Animations',
+  },
+};
+
+const TRANSLATIONS = { hu: HU, en: EN };
+
+export const LANGUAGES = Object.keys(TRANSLATIONS);
+
+export function getLanguage(config, hass) {
+  return pickLanguage(config, hass, LANGUAGES);
+}
+
+export function translator(lang) {
+  return makeTranslator(TRANSLATIONS, lang);
+}
