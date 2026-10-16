@@ -5,7 +5,9 @@ import {
   mdiAlertCircle,
   mdiAlertOutline,
   mdiArrowExpandVertical,
+  mdiArrowOscillating,
   mdiAutorenew,
+  mdiBagSuitcaseOutline,
   mdiBellRingOutline,
   mdiBrightness6,
   mdiBroom,
@@ -13,6 +15,7 @@ import {
   mdiCheckCircle,
   mdiChefHat,
   mdiChevronDown,
+  mdiChevronUp,
   mdiClockOutline,
   mdiCounter,
   mdiCupWater,
@@ -86,6 +89,7 @@ import {
   mdiSnowflake,
   mdiSpeedometer,
   mdiSteering,
+  mdiSunThermometerOutline,
   mdiTimerOutline,
   mdiUpdate,
   mdiWindowClosedVariant,
@@ -102,6 +106,7 @@ import {
   mdiGrain,
   mdiHomeExportOutline,
   mdiHomeImportOutline,
+  mdiHomeThermometerOutline,
   mdiMoleculeCo2,
   mdiPowerSleep,
   mdiRestart,
@@ -113,6 +118,7 @@ export const ICONS = {
   alert: mdiAlertOutline,
   check: mdiCheckCircle,
   chevron: mdiChevronDown,
+  chevron_up: mdiChevronUp,
   clock: mdiClockOutline,
   counter: mdiCounter,
   dots: mdiDotsHorizontal,
@@ -228,6 +234,12 @@ export const ICONS = {
   sleep: mdiPowerSleep,
   supply: mdiHomeImportOutline,
   wind: mdiWeatherWindy,
+
+  // air conditioning
+  away: mdiBagSuitcaseOutline,
+  indoor: mdiHomeThermometerOutline,
+  outdoor: mdiSunThermometerOutline,
+  swing: mdiArrowOscillating,
 };
 
 

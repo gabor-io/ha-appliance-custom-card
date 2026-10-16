@@ -1,0 +1,45 @@
+# Daikin klíma kártya – példák
+# Részletek: docs/daikin-capabilities.md
+
+# 1) A lehető legegyszerűbb: egyetlen Daikin klímánál még az entitás sem kell
+- type: custom:daikin-ac-card
+
+# 2) Egy gép, szobában mérő hőmérővel és konnektormérővel
+- type: custom:daikin-ac-card
+  entity: climate.halo_szoba
+  name: Hálószoba
+  language: hu
+  sources:
+    temperature: sensor.halo_szoba_homerseklet
+    humidity: sensor.halo_szoba_paratartalom
+    power: sensor.halo_szoba_klima_teljesitmeny
+
+# 3) Négy gép egy kártyán, climate_group entitással.
+#    A tagokat nem kell felsorolni - a csoport maga adja meg oket.
+- type: custom:daikin-ac-card
+  entity: climate.daikin_acs
+  name: Klímák
+  units:
+    climate.halo_szoba:
+      name: Hálószoba
+      sources:
+        temperature: sensor.halo_szoba_homerseklet
+        power: sensor.halo_szoba_klima_teljesitmeny
+    climate.nappali:
+      name: Nappali
+      sources:
+        temperature: sensor.nappali_homerseklet
+        power: sensor.nappali_klima_teljesitmeny
+    # a tobbi gep a sajat homerojet hasznalja, amig nincs szenzor a szobaban
+
+# 4) Kompakt, csak a lényeg - mobil dashboardra
+- type: custom:daikin-ac-card
+  entity: climate.gyerekszoba
+  compact: true
+  show_art: false
+  show_presets: false
+
+# 5) Ha a gépedben tényleg van oldalirányú terelés
+- type: custom:daikin-ac-card
+  entity: climate.nappali
+  show_all_swing: true

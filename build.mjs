@@ -11,6 +11,7 @@ const TARGETS = [
   { in: 'src/car/index.js', out: 'dist/skoda-car-card.js' },
   { in: 'src/fridge/index.js', out: 'dist/liebherr-fridge-card.js' },
   { in: 'src/erv/index.js', out: 'dist/fisher-erv-card.js' },
+  { in: 'src/daikin/index.js', out: 'dist/daikin-ac-card.js' },
 ];
 
 const dev = process.argv.includes('--dev');

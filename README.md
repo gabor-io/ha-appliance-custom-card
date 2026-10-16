@@ -1,6 +1,6 @@
 # Home Appliance Cards
 
-Öt Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Hat Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -9,9 +9,10 @@
 | `custom:skoda-car-card` | Škoda személyautó (fejlesztve: **Superb Combi**) | [skodaconnect/homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) |
 | `custom:liebherr-fridge-card` | Liebherr hűtő / fagyasztó (fejlesztve: **Rd 5000-150 2**) | beépített [`liebherr`](https://www.home-assistant.io/integrations/liebherr) integráció |
 | `custom:fisher-erv-card` | Hővisszanyerős szellőztető (fejlesztve: **Fisher F-ERVQ-B150CO2-I**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
+| `custom:daikin-ac-card` | Daikin klíma, egy gép vagy egy egész csoport (fejlesztve: **FTXC35**) | beépített [`daikin`](https://www.home-assistant.io/integrations/daikin) integráció |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A négy háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. Az öt háztartási kártya vezérel is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
@@ -180,6 +181,34 @@ példák: [`examples/erv.yaml`](examples/erv.yaml).
 | --- | --- |
 | ![Szellőztet](docs/images/erv-co2.png) | ![Hiba](docs/images/erv-alert.png) |
 
+## Klíma kártya
+
+![Klíma kártya](docs/images/daikin-light.png)
+
+- **Sűrű elrendezés**: fejléc a mért értékekkel, egy hero sor a rajzzal, az
+  állapottal és a nagy célhőmérséklettel, alatta szegmentált üzemmód-sáv,
+  ventilátor-ticksor és a kapcsolók. Egy képernyő, görgetés nélkül.
+- **Animált készülékrajz**: a lamella elölnézetben lebillen és „rövidül",
+  mögötte előbújik a sötét kifúvó; a légáram színe a mód (fűtés narancs, hűtés
+  kék, párátlanítás türkiz), a sebessége a ventilátor fokozata. A mód színe
+  végigfut az egész kártyán.
+- **Szobában mérő hőmérő**: a `sources.temperature`-rel megadott szenzor
+  veszi át a gép saját hőmérőjének helyét – az a beltéri egység beszívójában
+  ül, és fűtésnél többet, hűtésnél kevesebbet mutat a valóságnál. A gép értéke
+  halványan mellette marad.
+- **Fogyasztásmérő**: 100 W alatt a kártya kimondja, hogy a kompresszor áll és
+  csak a ventilátor forog – ezt a Daikin saját szenzorai nem árulják el.
+- **Csoport egy kártyán**: egy `climate_group` entitást megadva minden gép egy
+  sor, saját animált rajzzal; a sorra koppintva helyben nyílnak a vezérlői.
+  Vegyes üzemnél a kártya nem tesz úgy, mintha a gépek egyformán állnának.
+
+Részletek: [`docs/daikin-capabilities.md`](docs/daikin-capabilities.md),
+példák: [`examples/daikin.yaml`](examples/daikin.yaml).
+
+| Négy gép egy kártyán | Kinyitott gép | Sötét téma |
+| --- | --- | --- |
+| ![Csoport](docs/images/daikin-group.png) | ![Kinyitva](docs/images/daikin-group-open.png) | ![Sötét](docs/images/daikin-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -188,10 +217,11 @@ példák: [`examples/erv.yaml`](examples/erv.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind az öt
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a hat
    kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
-   `dist/liebherr-fridge-card.js`, illetve `dist/fisher-erv-card.js`.)
+   `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`, illetve
+   `dist/daikin-ac-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -296,6 +326,10 @@ type: custom:liebherr-fridge-card
 
 ```yaml
 type: custom:fisher-erv-card
+```
+
+```yaml
+type: custom:daikin-ac-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő
