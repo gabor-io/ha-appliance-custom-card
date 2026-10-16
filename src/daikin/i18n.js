@@ -1,0 +1,230 @@
+import { makeTranslator, pickLanguage } from '../shared/i18n.js';
+
+const HU = {
+  card_name: 'Klíma',
+  group_name: 'Klímák',
+  mode: {
+    off: 'Ki',
+    heat_cool: 'Auto',
+    heat: 'Fűtés',
+    cool: 'Hűtés',
+    dry: 'Pára',
+    fan_only: 'Vent',
+  },
+  mode_long: {
+    off: 'Kikapcsolva',
+    heat_cool: 'Automata',
+    heat: 'Fűtés',
+    cool: 'Hűtés',
+    dry: 'Párátlanítás',
+    fan_only: 'Ventilátor',
+  },
+  fan: {
+    auto: 'Auto',
+    silence: 'Csendes',
+    1: '1. fok',
+    2: '2. fok',
+    3: '3. fok',
+    4: '4. fok',
+    5: '5. fok',
+  },
+  swing: {
+    off: 'Ki',
+    vertical: 'Függőleges',
+    horizontal: 'Vízszintes',
+    '3d': '3D',
+  },
+  preset: {
+    boost: 'Turbó',
+    eco: 'Eco',
+    away: 'Távollét',
+  },
+  state: {
+    standby: 'Készenlétben',
+    unavailable: 'Nem elérhető',
+    drying: 'Párátlanít',
+    fan_only: 'Csak keringet',
+    holding: 'Tartja a {target} °C-ot',
+    heating_to: 'Fűt {target} °C-ra',
+    cooling_to: 'Hűt {target} °C-ra',
+    above_target: 'A célhőfok felett',
+    below_target: 'A célhőfok alatt',
+  },
+  sub: {
+    unavailable: 'A gép nem válaszol',
+    last_target: 'Legutóbbi cél {target} °C',
+    reached: 'Elérte a célhőmérsékletet',
+    above_by: '{diff} °C-kal a cél felett',
+    below_by: '{diff} °C-kal a cél alatt',
+    compressor_idle: 'A kompresszor áll',
+    compressor_idle_power: 'A kompresszor áll · {power} W',
+  },
+  group: {
+    running: '{running} / {total} gép megy',
+    all_off: 'Mind áll',
+    mixed: 'Vegyes üzem',
+    mixed_note: 'A számok átlagok – a gépek eltérően állnak',
+    in_step: 'Minden gép egyformán áll',
+    units: 'Gépek',
+    unit_count: '{total} gép',
+    average: 'átlag',
+    tap_hint: 'koppints a részletekért',
+  },
+  alert: {
+    away: 'Távollét mód – a gép csak fagyvédelemre fűt',
+  },
+  ui: {
+    inside: 'Bent',
+    outside: 'Kint',
+    humidity: 'Páratartalom',
+    power: 'Fogyasztás',
+    energy: 'Havi fogyasztás',
+    device_reads: 'gép',
+    fan: 'Vent',
+    swing: 'Lamella',
+    warmer: 'Melegebb',
+    cooler: 'Hidegebb',
+    standby_short: 'Áll',
+    no_entity: 'Nem találtam Daikin klímát. Add meg az `entity` beállítást.',
+    missing_entity: 'A megadott entitás nem létezik.',
+    empty_group: 'A csoportnak nincs egyetlen klíma tagja sem.',
+  },
+  editor: {
+    device: 'Készülék',
+    device_auto: 'Automatikus',
+    language: 'Nyelv',
+    language_auto: 'Automatikus',
+    show_art: 'Készülékrajz',
+    show_readings: 'Mért értékek',
+    show_modes: 'Üzemmódok',
+    show_fan: 'Ventilátor',
+    show_presets: 'Turbó / Eco / Távollét',
+    show_all_swing: 'Minden lamella-opció',
+    compact: 'Kompakt',
+    animate: 'Animációk',
+  },
+};
+
+const EN = {
+  card_name: 'Air conditioner',
+  group_name: 'Air conditioners',
+  mode: {
+    off: 'Off',
+    heat_cool: 'Auto',
+    heat: 'Heat',
+    cool: 'Cool',
+    dry: 'Dry',
+    fan_only: 'Fan',
+  },
+  mode_long: {
+    off: 'Off',
+    heat_cool: 'Automatic',
+    heat: 'Heating',
+    cool: 'Cooling',
+    dry: 'Drying',
+    fan_only: 'Fan only',
+  },
+  fan: {
+    auto: 'Auto',
+    silence: 'Silence',
+    1: 'Step 1',
+    2: 'Step 2',
+    3: 'Step 3',
+    4: 'Step 4',
+    5: 'Step 5',
+  },
+  swing: {
+    off: 'Off',
+    vertical: 'Vertical',
+    horizontal: 'Horizontal',
+    '3d': '3D',
+  },
+  preset: {
+    boost: 'Powerful',
+    eco: 'Econo',
+    away: 'Away',
+  },
+  state: {
+    standby: 'Standing by',
+    unavailable: 'Unavailable',
+    drying: 'Drying',
+    fan_only: 'Moving air only',
+    holding: 'Holding {target} °C',
+    heating_to: 'Heating to {target} °C',
+    cooling_to: 'Cooling to {target} °C',
+    above_target: 'Above the target',
+    below_target: 'Below the target',
+  },
+  sub: {
+    unavailable: 'The unit is not answering',
+    last_target: 'Last target {target} °C',
+    reached: 'Target reached',
+    above_by: '{diff} °C above target',
+    below_by: '{diff} °C below target',
+    compressor_idle: 'Compressor idle',
+    compressor_idle_power: 'Compressor idle · {power} W',
+  },
+  group: {
+    running: '{running} of {total} running',
+    all_off: 'All off',
+    mixed: 'Mixed',
+    mixed_note: 'These are averages – the units differ',
+    in_step: 'All units in step',
+    units: 'Units',
+    unit_count: '{total} units',
+    average: 'avg',
+    tap_hint: 'tap for controls',
+  },
+  alert: {
+    away: 'Away mode – frost protection only',
+  },
+  ui: {
+    inside: 'Inside',
+    outside: 'Outside',
+    humidity: 'Humidity',
+    power: 'Power',
+    energy: 'Energy this month',
+    device_reads: 'unit',
+    fan: 'Fan',
+    swing: 'Swing',
+    warmer: 'Warmer',
+    cooler: 'Cooler',
+    standby_short: 'Off',
+    no_entity: 'No Daikin climate entity found. Set the `entity` option.',
+    missing_entity: 'That entity does not exist.',
+    empty_group: 'The group has no climate members.',
+  },
+  editor: {
+    device: 'Device',
+    device_auto: 'Automatic',
+    language: 'Language',
+    language_auto: 'Automatic',
+    show_art: 'Unit drawing',
+    show_readings: 'Readings',
+    show_modes: 'Modes',
+    show_fan: 'Fan',
+    show_presets: 'Powerful / Econo / Away',
+    show_all_swing: 'All swing options',
+    compact: 'Compact',
+    animate: 'Animations',
+  },
+};
+
+const DICTIONARIES = { hu: HU, en: EN };
+export const LANGUAGES = Object.keys(DICTIONARIES);
+
+export function getLanguage(config, hass) {
+  return pickLanguage(config, hass, LANGUAGES);
+}
+
+export function translator(lang) {
+  return makeTranslator(DICTIONARIES, lang);
+}
+
+/** `t('state.heating_to')` with `{target}` filled in. */
+export function fill(text, values = {}) {
+  return Object.entries(values).reduce(
+    (acc, [key, value]) => acc.replace(`{${key}}`, String(value)),
+    text,
+  );
+}
