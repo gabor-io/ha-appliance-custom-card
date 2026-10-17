@@ -146,18 +146,37 @@ function objectId(entityId) {
 /**
  * Splits a contact's object id into the window it belongs to and its role.
  *
- * `binary_sensor.halo_ablak_top_contact` -> base `halo_ablak`, role `top`.
- * Returns null when the id carries no position word, which is the ordinary
- * case of one contact per window.
+ * The position word is looked for **anywhere** in the id, not only at the
+ * end. On a real installation the ids run
+ * `<room>_window_top_sensor_<which window>_contact`: the position sits in
+ * the middle and the last word says which of the room's windows it is.
+ * Matching only a suffix pairs nothing there, and every contact ends up
+ * counted as a window of its own.
+ *
+ * The word has to be a whole underscore-delimited segment, so `laptop` and
+ * `rooftop` are not positions. The base is the id with that one segment
+ * taken out, which is what makes the two contacts of one sash meet:
+ *
+ *   bedroom_window_top_sensor_street     -> bedroom_window_sensor_street
+ *   bedroom_window_bottom_sensor_street  -> bedroom_window_sensor_street
+ *
+ * and keeps a different window of the same room apart, because its last
+ * segment differs (`..._garden`).
+ *
+ * Returns null when the id carries no position word at all, which is the
+ * ordinary case of one contact per window.
  */
 function splitPosition(entityId, pairs) {
-  let id = objectId(entityId).replace(TAIL, '');
+  const id = objectId(entityId).replace(TAIL, '');
   for (const [top, bottom] of pairs) {
     for (const [word, role] of [[top, 'top'], [bottom, 'bottom']]) {
-      const suffix = `_${word}`;
-      if (id.length > suffix.length && id.endsWith(suffix)) {
-        return { base: id.slice(0, -suffix.length), role, word };
-      }
+      /* a whole segment: `_top_` in the middle, or `_top` at the end */
+      const match = new RegExp(`_${word}(?=_|$)`, 'g');
+      let last = null;
+      for (let hit = match.exec(id); hit; hit = match.exec(id)) last = hit;
+      if (!last) continue;
+      const base = id.slice(0, last.index) + id.slice(last.index + last[0].length);
+      if (base) return { base, role, word };
     }
   }
   return null;
@@ -169,24 +188,23 @@ function fold(text) {
 }
 
 /**
- * Strips the position word off a friendly name, so the pair reads as one.
+ * Strips the position word out of a friendly name, so the pair reads as one.
  *
- * The word comes from the object id, which Home Assistant has already
- * slugified - `felső` arrives here as `felso`. Matching has to ignore the
- * accents or the Hungarian pair keeps "felső" in its name.
+ * The word is taken out wherever it sits, for the same reason the id is
+ * matched that way: "Bedroom window top sensor street" has it in the
+ * middle. Folding drops the accents, because the word comes from the
+ * slugified object id - `felső` arrives here as `felso`.
  */
 function windowName(parts) {
   const first = parts[0];
   const word = first.position?.word;
   if (!word) return first.name;
 
-  const folded = fold(first.name);
-  const match = new RegExp(`[\\s_-]*${fold(word)}[\\s_-]*$`).exec(folded);
-  if (match) {
-    const stripped = first.name.slice(0, match.index).trim();
-    if (stripped) return stripped;
-  }
-  return first.name;
+  /* split on the same separators a name uses, then drop the matching word */
+  const pieces = first.name.split(/([\s_-]+)/);
+  const kept = pieces.filter((piece, index) => !(index % 2 === 0 && fold(piece) === fold(word)));
+  const stripped = kept.join('').replace(/[\s_-]{2,}/g, ' ').trim().replace(/[\s_-]+$/, '');
+  return stripped || first.name;
 }
 
 /**

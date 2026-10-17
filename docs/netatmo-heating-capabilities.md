@@ -82,10 +82,31 @@ A kártya ezért kontaktusok helyett **ablakokat** számol: a sarkig kitárt
 bukó-nyíló ablak két kontaktust húz el, és továbbra is egy nyitott ablak –
 nem „2 nyitva".
 
-A párosítás a végződésből megy. Alapból a `_top`/`_bottom`, a `_felso`/`_also`
-és az `_upper`/`_lower` párokat ismeri fel, a végükön megtűrve egy
-`_contact`, `_sensor`, `_nyitas`, `_allapot` vagy `_state` szót is. Az első
-végződés mindig a **felső** kontaktus – abból derül ki a bukó állapot.
+A párosítás az azonosítóból megy, és a pozíciószó **bárhol** lehet benne, nem
+csak a végén. Éles rendszeren ugyanis így néznek ki:
+
+```
+binary_sensor.<szoba>_window_top_sensor_street_contact
+binary_sensor.<szoba>_window_bottom_sensor_street_contact
+```
+
+A pozíció középen ül, az utolsó szó pedig azt mondja meg, a szoba *melyik*
+ablakáról van szó. A kártya a pozíciószót kiveszi, és ami marad, az a közös
+alap – így talál egymásra a két kontaktus:
+
+```
+<szoba>_window_top_sensor_street     ->  <szoba>_window_sensor_street
+<szoba>_window_bottom_sensor_street  ->  <szoba>_window_sensor_street
+```
+
+Ugyanebből következik, hogy a szoba **másik** ablaka külön marad, mert az
+utolsó szava más (`..._garden`).
+
+Alapból a `_top`/`_bottom`, `_felso`/`_also` és `_upper`/`_lower` szavakat
+ismeri fel; az első mindig a **felső** kontaktus. A szónak teljes, aláhúzással
+határolt szakasznak kell lennie, tehát a `laptop` és a `rooftop` nem pozíció.
+A végén megtűr egy `_contact`, `_sensor`, `_nyitas`, `_allapot` vagy `_state`
+szót is.
 
 Ha az azonosítóid nem követnek konvenciót, párosítsd kézzel. **Az első entitás
 a felső kontaktus:**
