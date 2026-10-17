@@ -2,6 +2,16 @@
 
 const PREFIX = 'aeg_gi8200x5tn';
 
+/**
+ * The salt and rinse-aid contacts do **not** follow the appliance prefix.
+ *
+ * Home Assistant builds an object id from the entity's name when it first
+ * sees it, so entities the integration added later sit under whatever the
+ * appliance was called then - here the room. The card has to find them
+ * through the device registry, not by guessing the prefix.
+ */
+const CONSUMABLE_PREFIX = 'kitchen';
+
 const BASE = {
   appliance_state: 'OFF',
   cycle_phase: 'Unavailable',
@@ -18,6 +28,8 @@ const BASE = {
   link: 'Very good',
   start_time: '-1',
   rinse_aid: '8',
+  salt: 'off',
+  rinse_aid_low: 'off',
   hardness: 'Step 5',
   brightness: '9',
   floor_light: 'Green',
@@ -70,6 +82,24 @@ export const SCENARIOS = {
     water: '4',
   },
   offline: { appliance_state: 'OFF', connectivity: 'off', alerts: '' },
+  /* salt and rinse aid both out, reported only as binary sensors - the
+     `alerts` sensor says nothing, which is how this appliance behaves */
+  utantoltes: {
+    appliance_state: 'READY_TO_START',
+    alerts: [],
+    time_to_end: '325',
+    salt: 'on',
+    rinse_aid_low: 'on',
+    rinse_aid: '0',
+  },
+  /* the same shortage reported twice, once each way: the card must show it
+     once */
+  utantoltes_duplan: {
+    appliance_state: 'READY_TO_START',
+    alerts: ['DISH_ALARM_SALT_MISSING'],
+    time_to_end: '325',
+    salt: 'on',
+  },
 };
 
 const PROGRAM_OPTIONS = ['120 Min', 'Auto', 'Eco', 'Machine Care', 'Normal90', 'Quick30', 'Quick60', 'Rinse'];
@@ -129,6 +159,8 @@ export function makeHass(scenarioKey) {
     entity(`binary_sensor.${PREFIX}_door_state`, s.door, { device_class: 'opening' }),
     entity(`binary_sensor.${PREFIX}_connectivity_state`, s.connectivity, { device_class: 'connectivity' }),
     entity(`binary_sensor.${PREFIX}_miscellaneous_state_eco_mode`, 'on'),
+    entity(`binary_sensor.${CONSUMABLE_PREFIX}_salt_missing`, s.salt, { device_class: 'problem' }),
+    entity(`binary_sensor.${CONSUMABLE_PREFIX}_rinse_aid_low`, s.rinse_aid_low, { device_class: 'problem' }),
     entity(`select.${PREFIX}_program_uid`, s.program, { options: PROGRAM_OPTIONS }),
     entity(`select.${PREFIX}_water_hardness`, s.hardness, { options: ['Soft', 'Medium', 'Hard'] }),
     entity(`select.${PREFIX}_display_light`, `Display Light ${s.brightness}`, {

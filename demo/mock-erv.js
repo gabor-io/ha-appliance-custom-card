@@ -49,6 +49,13 @@ export const SCENARIOS = {
     [`sensor.${PREFIX}_szuro_elettartam`]: '6',
     [`binary_sensor.${PREFIX}_problema`]: { state: 'on', fault_code: 2 },
   },
+  /* The appliance is off the network. tuya_local keeps every entity and
+     turns them all unavailable at once - the fan entity included, which is
+     what the card has to notice: an unavailable fan is not a fan that was
+     switched off. */
+  nem_elerheto: Object.fromEntries(
+    baseEntities().map(([entityId]) => [entityId, 'unavailable']),
+  ),
 };
 
 export function makeHass(scenario = 'alap') {

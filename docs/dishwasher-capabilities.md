@@ -59,6 +59,20 @@ Az AutoOpen (`userSelections/autoDoorOpener`) minden programnál elérhető.
 
 Figyelmeztetés: `DISH_ALARM_SALT_MISSING`, `DISH_ALARM_RINSE_AID_LOW`.
 
+A só és az öblítőszer **kétféleképpen** is megérkezhet: az `alerts` szenzor
+attribútumaiban, és a gép saját binary sensorain
+(`binary_sensor.<...>_salt_missing`, `binary_sensor.<...>_rinse_aid_low`).
+Hogy melyiket tölti ki egy adott gép, az változó, ezért a kártya mindkettőt
+olvassa, és ha mindkettő szól, **egyszer** írja ki.
+
+Ezeknek a kontaktusoknak az objektum-azonosítója nem feltétlenül követi a
+készülék prefixét: a Home Assistant abból a névből gyártja az id-t, ami az
+entitás első felbukkanásakor érvényes volt, így egy később hozzáadott entitás
+a szoba nevén is landolhat (`binary_sensor.kitchen_salt_missing` a
+`sensor.aeg_gi8200x5tn_appliance_state` mellett). Amit a prefix nem talál meg,
+azt a kártya az **eszközregiszterből** szedi össze – az nem törődik azzal,
+hogy mi hogy van elnevezve.
+
 Hibakódok a gépkönyv 13. fejezete szerint:
 
 | Kód | Jelentés |
@@ -107,6 +121,8 @@ mutatja a régieket.
 | `cycle_phase` | `sensor.<prefix>_cycle_phase` |
 | `time_to_end` | `sensor.<prefix>_time_to_end` |
 | `alerts` | `sensor.<prefix>_alerts` |
+| `salt_missing` | `binary_sensor.<...>_salt_missing` (eszközről is) |
+| `rinse_aid_low` | `binary_sensor.<...>_rinse_aid_low` (eszközről is) |
 | `eco_score` / `energy_score` / `water_score` | `sensor.<prefix>_*_score` |
 | `total_cycle_counter` | `sensor.<prefix>_total_cycle_counter` |
 | `remote_control` | `sensor.<prefix>_remote_control` |

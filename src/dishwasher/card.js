@@ -426,6 +426,20 @@ export class AegDishwasherCard extends HTMLElement {
     if (model.doorOpen && model.state !== STATE.OFF) {
       items.push({ severity: 'warning', text: t('ui.door_open'), iconName: 'door' });
     }
+    /* the same shortage can arrive twice: once in the `alerts` sensor and
+       once as the appliance's own binary sensor. Collect the codes already
+       shown so the second copy is dropped rather than repeated. */
+    const shown = new Set(model.alerts.map((alert) => alert.code).filter(Boolean));
+    const consumable = (on, code) => {
+      if (!on || shown.has(code)) return;
+      shown.add(code);
+      items.push({
+        severity: ALERT_SEVERITY[code] || 'warning',
+        text: t(`alert.${code}`),
+        iconName: 'alert',
+      });
+    };
+
     for (const alert of model.alerts) {
       const { code, count } = alert;
       const reported = alert.severity === 'ERROR' || alert.severity === 'CRITICAL' ? 'error' : '';
@@ -435,6 +449,9 @@ export class AegDishwasherCard extends HTMLElement {
         : `${t('alert_generic')}: ${count}`;
       items.push({ severity, text, iconName: severity === 'error' ? 'error' : 'alert' });
     }
+    consumable(model.consumables.salt, 'DISH_ALARM_SALT_MISSING');
+    consumable(model.consumables.rinseAid, 'DISH_ALARM_RINSE_AID_LOW');
+
     if (!model.online) {
       items.push({ severity: 'error', text: t('ui.offline'), iconName: 'wifi_off' });
     }

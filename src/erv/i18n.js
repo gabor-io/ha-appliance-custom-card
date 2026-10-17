@@ -31,6 +31,7 @@ const HU = {
     filter_due: 'A szűrő élettartama lejár: {days} nap van hátra',
     filter_over: 'A szűrő élettartama lejárt – cseréld ki, majd nullázd',
     co2_high: 'Magas CO₂-szint: {value} ppm – érdemes szellőztetni',
+    offline: 'A készülék nem válaszol – ezek nem friss adatok',
   },
   ui: {
     co2: 'Szén-dioxid',
@@ -49,6 +50,7 @@ const HU = {
     other: 'További entitások',
     off: 'Kikapcsolva',
     on: 'Működik',
+    offline: 'Nem elérhető',
     power_on: 'Bekapcsolás',
     power_off: 'Kikapcsolás',
     not_configured: 'Nem található Tuya szellőztető. Válaszd ki az eszközt a kártya beállításaiban.',
@@ -105,6 +107,7 @@ const EN = {
     filter_due: 'Filter life is running out: {days} days left',
     filter_over: 'Filter life is over - replace it and reset the counter',
     co2_high: 'High CO₂: {value} ppm - time to ventilate',
+    offline: 'The appliance is not responding - these readings are not current',
   },
   ui: {
     co2: 'Carbon dioxide',
@@ -123,6 +126,7 @@ const EN = {
     other: 'Other entities',
     off: 'Off',
     on: 'Running',
+    offline: 'Unavailable',
     power_on: 'Turn on',
     power_off: 'Turn off',
     not_configured: 'No Tuya ventilator found. Pick the device in the card settings.',

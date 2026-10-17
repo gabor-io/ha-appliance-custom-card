@@ -154,7 +154,7 @@ export class FisherErvCard extends HTMLElement {
   }
 
   _accent(model) {
-    if (!model.on) return 'idle';
+    if (!model.available || !model.on) return 'idle';
     if (model.problem?.on) return 'alarm';
     const level = model.co2?.level;
     if (level === 'bad' || level === 'poor') return 'paused';
@@ -172,11 +172,13 @@ export class FisherErvCard extends HTMLElement {
       badges.push(`<span class="warn" title="${escapeHtml(t('ui.filter'))}">${icon('filter')}</span>`);
     }
 
-    const label = model.on
-      ? model.preset
-        ? t(`preset.${model.preset.key}`)
-        : model.presetOption || t('ui.on')
-      : t('ui.off');
+    const label = !model.available
+      ? t('ui.offline')
+      : model.on
+        ? model.preset
+          ? t(`preset.${model.preset.key}`)
+          : model.presetOption || t('ui.on')
+        : t('ui.off');
 
     return `
       <div class="header">
@@ -186,7 +188,9 @@ export class FisherErvCard extends HTMLElement {
         </div>
         <div class="spacer"></div>
         <div class="badges">${badges.join('')}</div>
-        <div class="pill">${icon(model.on ? 'fan' : 'power')}${escapeHtml(label)}</div>
+        <div class="pill">${icon(
+          !model.available ? 'offline' : model.on ? 'fan' : 'power',
+        )}${escapeHtml(label)}</div>
       </div>`;
   }
 
@@ -261,6 +265,10 @@ export class FisherErvCard extends HTMLElement {
 
   _alertsHtml(model, t) {
     const items = [];
+    if (!model.available) {
+      items.push({ severity: 'error', text: t('alert.offline'), iconName: 'offline',
+        entityId: model.entities.fan });
+    }
     if (model.problem?.on) {
       items.push({
         severity: 'error',
@@ -320,7 +328,8 @@ export class FisherErvCard extends HTMLElement {
         <div class="section-title">${escapeHtml(t('ui.modes'))}</div>
         <div class="chips">${chips.join('')}</div>
         <div class="controls">
-          <button class="btn ${model.on ? '' : 'primary'}" type="button" data-action="power">
+          <button class="btn ${model.on || !model.available ? '' : 'primary'}" type="button"
+            data-action="power" ${model.available ? '' : 'disabled'}>
             ${icon('power')}<span>${escapeHtml(t(model.on ? 'ui.power_off' : 'ui.power_on'))}</span>
           </button>
         </div>

@@ -60,6 +60,46 @@ export function findPrefix(hass, config, anchor) {
 }
 
 /**
+ * Fills in whatever the prefix could not find, from the entity registry.
+ *
+ * The prefix assumes every entity of an appliance shares one object-id stem,
+ * and that holds for most of them - but not all. Home Assistant builds an
+ * object id from the entity's name at the moment it is first seen, so an
+ * entity added later, or renamed once, can end up under a different stem
+ * entirely (`binary_sensor.kitchen_salt_missing` next to
+ * `sensor.aeg_gi8200x5tn_appliance_state`). The device registry does not
+ * care what anything is called, so it finds those too.
+ *
+ * Only gaps are filled: an explicit override and a prefix hit both win, so
+ * this can add an entity but never move one.
+ */
+export function fillFromDevice(hass, map, suffixes, deviceId) {
+  if (!deviceId || !hass?.entities) return map;
+  for (const [key, suffix] of Object.entries(suffixes)) {
+    if (map[key] || !suffix) continue;
+    const [domain, tail] = suffix;
+    const entry = Object.values(hass.entities).find(
+      (item) =>
+        item.device_id === deviceId &&
+        item.entity_id.startsWith(`${domain}.`) &&
+        item.entity_id.endsWith(`_${tail}`) &&
+        hass.states?.[item.entity_id],
+    );
+    if (entry) map[key] = entry.entity_id;
+  }
+  return map;
+}
+
+/** The device an appliance's entities belong to, from any one of them. */
+export function deviceOf(hass, entityIds) {
+  for (const entityId of entityIds) {
+    const deviceId = hass?.entities?.[entityId]?.device_id;
+    if (deviceId) return deviceId;
+  }
+  return null;
+}
+
+/**
  * Maps logical keys to entity ids. Explicit overrides win; resolved ids are kept
  * only when the entity exists in the state machine.
  */

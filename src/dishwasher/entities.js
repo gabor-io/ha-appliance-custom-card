@@ -5,7 +5,7 @@
  * only needs the common object-id prefix, e.g. `aeg_gi8200x5tn`.
  */
 
-import { findPrefix, listDevices, resolveByPrefix } from '../shared/entities.js';
+import { deviceOf, fillFromDevice, findPrefix, listDevices, resolveByPrefix } from '../shared/entities.js';
 
 export { normaliseKey, isUnavailable } from '../shared/entities.js';
 
@@ -25,6 +25,11 @@ export const ENTITY_SUFFIXES = {
   remote_control: ['sensor', 'remote_control'],
   link_quality: ['sensor', 'network_interface_link_quality_indicator'],
   door_state: ['binary_sensor', 'door_state'],
+  /* the consumables: the integration reports these both in the `alerts`
+     sensor and as binary sensors of their own, and which of the two a given
+     appliance fills in varies - so the card reads both and de-duplicates */
+  salt_missing: ['binary_sensor', 'salt_missing'],
+  rinse_aid_low: ['binary_sensor', 'rinse_aid_low'],
   connectivity: ['binary_sensor', 'connectivity_state'],
   eco_mode: ['binary_sensor', 'miscellaneous_state_eco_mode'],
   program: ['select', 'program_uid'],
@@ -62,6 +67,12 @@ export function resolvePrefix(hass, config) {
 export function resolveEntities(hass, config) {
   const prefix = resolvePrefix(hass, config);
   const map = resolveByPrefix(hass, config, ENTITY_SUFFIXES, prefix);
+
+  /* anything whose object id does not follow the prefix - see
+     `fillFromDevice` - is picked up from the device instead */
+  const deviceId = config?.device || deviceOf(hass, Object.values(map));
+  fillFromDevice(hass, map, ENTITY_SUFFIXES, deviceId);
+  map.device = deviceId || null;
 
   // wash options live on switches that follow the same naming scheme
   map.options = {};

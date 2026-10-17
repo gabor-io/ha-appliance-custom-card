@@ -279,6 +279,12 @@ export function buildModel(hass, config) {
     remote,
     remoteEnabled,
     alerts: parseAlerts(get('alerts')),
+    /* the consumables as the appliance's own binary sensors; `null` means
+       this appliance does not publish one, which is not the same as "full" */
+    consumables: {
+      salt: get('salt_missing') ? get('salt_missing').state === 'on' : null,
+      rinseAid: get('rinse_aid_low') ? get('rinse_aid_low').state === 'on' : null,
+    },
     scores: {
       eco: num(get('eco_score')),
       energy: num(get('energy_score')),
