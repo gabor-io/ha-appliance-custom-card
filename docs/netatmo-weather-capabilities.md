@@ -24,8 +24,35 @@ device_class viszont mindkettőn `carbon_dioxide`.
 | kapcsolat | `connectivity` (binary_sensor) |
 
 A trendszenzoroknak nincs device_class-uk – felsorolás-típusúak
-(`up` / `down` / `stable`) –, azokat a `translation_key` adja
+(`up` / `down` / `stable`) –, azokat elsősorban a `translation_key` adja
 (`temp_trend`, `pressure_trend`).
+
+Élesen viszont az azonosító `..._temperature_trend`-re végződik, ami **nem**
+egyezik a `temp_trend` kulccsal, ezért az azonosító tartaléknak is számít
+(`_temperature_trend`, `_temp_trend`, `_pressure_trend`). Így a nyíl akkor
+is megjelenik, ha a kulcs valaha megváltozik, vagy az entitás régebbi nála.
+`pressure_trend` csak az alapegységen van, a kiegészítő moduloknak nincs
+légnyomásmérőjük.
+
+### A publikus „weather area"-k ki vannak zárva
+
+A Netatmo integráció a követett **publikus** állomásokat (nálad: `Budapest`
+és `Home`) ugyanazon a platformon, ugyanazokkal a device_class-okkal hozza
+létre, mint a saját hardveredet: hőmérséklet, páratartalom, **légnyomás**.
+
+Ha bent maradnának, a kártya egyiküket választaná alapegységnek, és egy
+idegen kert levegőjét mutatná a házadként. Éles adaton pontosan ez történt:
+
+```
+alapegység : Budapest | légnyomás: 1011.1   (a valódi: 1021.6)
+kültéri    : Home     | 18.7 °C             (a valódi: 14.7)
+szobák     : Budapest, Étkező, Étkező Kültéri, Étkező Hálószoba
+```
+
+Két jelből ismeri fel őket: a `model` kimondja („Public Weather station"),
+és a mérések is árulkodnak — egy publikus terület esőt és szelet is közöl a
+hőmérséklet mellett, míg a saját eső- és szélmérőd külön eszköz, aminek
+nincs hőmérséklete, tehát ide el sem jut.
 
 ### Hogyan tudja, melyik modul melyik
 
@@ -38,6 +65,14 @@ Nem a nevéből. A hardver abban különbözik, hogy mit mér:
 A fűtési oldal – a termosztát és a szelepek – ugyanazon a `netatmo`
 platformon van, de **csak elemszenzort** hoz létre, hőmérsékletet nem (ez
 éles rendszeren derült ki), ezért magától kiesik a listából.
+
+### A modul neve
+
+A Home Assistant a láncolt modulokat az alapegység nevével előtagozza:
+`Étkező Hálószoba`, `Étkező Kültéri` – így a ház neve minden soron
+megismétlődik. A kártya ezt az előtagot levágja, tehát „Hálószoba" és
+„Kültéri" marad. Ha a modulnak van **területe**, az továbbra is erősebb,
+mint bármelyik eszköznév.
 
 Ha a házad alakja ettől eltér (például két kültéri modul van), felülírhatod:
 

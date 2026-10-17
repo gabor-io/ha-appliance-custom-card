@@ -19,25 +19,28 @@ const MODULES = [
     id: 'main',
     device: 'dev-main',
     area: 'etkezo',
-    name: 'Étkező (beltéri modul)',
+    name: 'Étkező',
     sensors: { temperature: 21.5, humidity: 55, co2: 1510, noise: 36, pressure: 1025.6 },
     trend: { temperature: 'stable', pressure: 'stable' },
     connected: true,
   },
   {
+    /* no area, and the device is named after the base station it hangs off,
+       exactly as Home Assistant leaves a linked Netatmo module */
     id: 'outdoor',
     device: 'dev-outdoor',
-    area: 'kert',
-    name: 'Kültéri modul',
+    area: null,
+    name: 'Étkező Kültéri',
     sensors: { temperature: 7, humidity: 80, battery: 54 },
     trend: { temperature: 'down' },
     connected: false, // dropped off the radio; the values are frozen
   },
   {
+    /* same again: the row has to read "Hálószoba", not "Étkező Hálószoba" */
     id: 'bedroom',
     device: 'dev-bedroom',
-    area: 'halo',
-    name: 'Hálószoba (beltéri modul)',
+    area: null,
+    name: 'Étkező Hálószoba',
     sensors: { temperature: 20.6, humidity: 47, co2: 640, battery: 4 },
     trend: { temperature: 'stable' },
     connected: true,
@@ -46,9 +49,19 @@ const MODULES = [
 
 const AREAS = {
   etkezo: 'Étkező',
-  kert: 'Kert',
-  halo: 'Hálószoba',
 };
+
+/**
+ * Public weather stations - the "weather areas" the account follows.
+ *
+ * Same integration, same device classes, somebody else's garden. Without
+ * an explicit exclusion the card picks one as the base station and reports
+ * a stranger's air pressure as the house's.
+ */
+const PUBLIC = [
+  { id: 'budapest', name: 'Budapest' },
+  { id: 'home', name: 'Home' },
+];
 
 /** The heating devices: a battery sensor and nothing else, as in real life. */
 const HEATING = [
@@ -63,6 +76,8 @@ const CLASSES = {
   noise: { device_class: 'sound_pressure', unit_of_measurement: 'dB' },
   pressure: { device_class: 'atmospheric_pressure', unit_of_measurement: 'hPa' },
   battery: { device_class: 'battery', unit_of_measurement: '%' },
+  rain: { device_class: 'precipitation', unit_of_measurement: 'mm' },
+  wind: { device_class: 'wind_speed', unit_of_measurement: 'km/h' },
 };
 
 export const SCENARIOS = {
@@ -116,7 +131,7 @@ export function makeHass(scenario = 'most') {
     const connected = patch.connected ?? module.connected;
     const dead = Boolean(patch.dead);
 
-    devices[module.device] = { id: module.device, name: module.name, area_id: module.area };
+    devices[module.device] = { id: module.device, name: module.name, area_id: module.area || null };
 
     for (const [key, value] of Object.entries(sensors)) {
       const id = `sensor.${module.id}_${key}`;
@@ -134,14 +149,18 @@ export function makeHass(scenario = 'most') {
     }
 
     for (const [key, value] of Object.entries(trend)) {
+      /* On a live system these come back as `..._temperature_trend`, which
+         does not match the integration's `temp_trend` translation key - so
+         only the pressure trend carries a key here, and the temperature
+         ones have to be found from the object id alone. */
       put(
-        `sensor.${module.id}_${key}_trend`,
+        `sensor.${module.id}_${key === 'pressure' ? 'pressure' : 'temperature'}_trend`,
         dead ? 'unavailable' : value,
         { friendly_name: `${module.name} ${key} trend` },
         {
           platform: 'netatmo',
           device_id: module.device,
-          translation_key: key === 'pressure' ? 'pressure_trend' : 'temp_trend',
+          ...(key === 'pressure' ? { translation_key: 'pressure_trend' } : {}),
         },
       );
     }
@@ -152,6 +171,25 @@ export function makeHass(scenario = 'most') {
       { device_class: 'connectivity', friendly_name: `${module.name} kapcsolat` },
       { platform: 'netatmo', device_id: module.device, original_device_class: 'connectivity' },
     );
+  }
+
+  // the public weather areas: must never reach the card
+  for (const station of PUBLIC) {
+    devices[`dev-${station.id}`] = {
+      id: `dev-${station.id}`,
+      name: station.name,
+      model: 'Public Weather station',
+    };
+    for (const [key, value] of Object.entries({
+      temperature: 18.7, pressure: 1011.1, humidity: 49.4, rain: 0, wind: 2.6,
+    })) {
+      put(
+        `sensor.${station.id}_${key}`,
+        value,
+        { ...CLASSES[key], friendly_name: `${station.name} ${key}` },
+        { platform: 'netatmo', device_id: `dev-${station.id}`, original_device_class: CLASSES[key].device_class },
+      );
+    }
   }
 
   // the heating side: battery only, so the card must not list these
