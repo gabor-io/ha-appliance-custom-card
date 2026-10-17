@@ -38,6 +38,25 @@ export function displayTime(minutes) {
   return h ? `${h}:${String(m).padStart(2, '0')}` : `0:${String(m).padStart(2, '0')}`;
 }
 
+/**
+ * A number in the user's own locale.
+ *
+ * `toFixed` always writes a decimal point, which is wrong in most of Europe -
+ * a Hungarian dashboard wants 20,5 and not 20.5.
+ */
+export function formatDecimal(value, hass, digits = 1) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '–';
+  const locale = hass?.locale?.language || hass?.language || 'en';
+  try {
+    return new Intl.NumberFormat(locale, {
+      maximumFractionDigits: digits,
+      minimumFractionDigits: 0,
+    }).format(Number(value));
+  } catch (err) {
+    return formatNumber(Number(value), digits);
+  }
+}
+
 export function formatNumber(value, digits = 1) {
   if (value === null || value === undefined || !Number.isFinite(value)) return '–';
   return value.toFixed(digits).replace(/\.0$/, '');

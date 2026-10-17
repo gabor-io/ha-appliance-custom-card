@@ -8,9 +8,11 @@ import {
   mdiArrowOscillating,
   mdiAutorenew,
   mdiBagSuitcaseOutline,
+  mdiBatteryOutline,
   mdiBellRingOutline,
   mdiBrightness6,
   mdiBroom,
+  mdiCalendarMonthOutline,
   mdiCarrot,
   mdiCheckCircle,
   mdiChefHat,
@@ -46,9 +48,11 @@ import {
   mdiProjector,
   mdiPotSteam,
   mdiPower,
+  mdiRadiator,
   mdiRemote,
   mdiShakerOutline,
   mdiShimmer,
+  mdiSnowflakeAlert,
   mdiSnowflakeMelt,
   mdiSprayBottle,
   mdiStarOutline,
@@ -240,6 +244,13 @@ export const ICONS = {
   indoor: mdiHomeThermometerOutline,
   outdoor: mdiSunThermometerOutline,
   swing: mdiArrowOscillating,
+
+  // heating
+  battery: mdiBatteryOutline,
+  boost: mdiLightningBolt,
+  calendar: mdiCalendarMonthOutline,
+  frost_guard: mdiSnowflakeAlert,
+  radiator: mdiRadiator,
 };
 
 

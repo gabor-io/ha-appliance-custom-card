@@ -1,0 +1,33 @@
+# Netatmo fűtés kártya – példák
+# Részletek: docs/netatmo-heating-capabilities.md
+
+# 1) A legegyszerűbb: a kártya magától megtalálja a szobákat és az ütemtervet
+- type: custom:netatmo-heating-card
+
+# 2) Kültéri hőmérséklettel. A csatlakozás-jelző azért kell, mert egy leszakadt
+#    Netatmo modul nem unavailable lesz, hanem megtartja a régi értékét.
+- type: custom:netatmo-heating-card
+  language: hu
+  sources:
+    outside: sensor.netatmo_weather_station_outdoor_module_temperature
+    outside_connectivity: binary_sensor.netatmo_weather_station_outdoor_module_csatlakozas
+
+# 3) Nyitásérzékelőkkel. Terület alapján magától párosít; itt csak a
+#    kivételeket soroljuk fel.
+- type: custom:netatmo-heating-card
+  openings:
+    ignore:
+      - binary_sensor.belso_ajto_contact
+    rooms:
+      # ez az érzékelő Node-RED-ből jön, nincs eszköze, ezért nincs területe
+      climate.halo_szoba_netatmo_valve:
+        - binary_sensor.terasz_ajto_sensor
+  open_delay: 60
+
+# 4) Saját szobanevek, kompakt elrendezés
+- type: custom:netatmo-heating-card
+  compact: true
+  show_art: false
+  rooms:
+    climate.kis_szoba_netatmo_valve:
+      name: Vendégszoba
