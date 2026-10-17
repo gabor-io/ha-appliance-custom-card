@@ -25,11 +25,16 @@ const HEADS = {
  * Window contacts, by area - the dining room deliberately has none.
  *
  * The bedroom window is a bukó-nyíló with two contacts on the **same**
- * sash: `_top` and `_bottom`. Top alone means the window is on the latch;
- * both mean it is swung open. Either way it is one window, not two.
+ * sash. Top alone means the window is on the latch; both mean it is swung
+ * open. Either way it is one window, not two.
+ *
+ * Their ids carry the shape a real installation uses: the position sits in
+ * the **middle** and the last segment says which of the room's windows it
+ * is (`..._top_sensor_street`). An earlier version of the pairing only
+ * looked at the end of the id and so found nothing here.
  */
 const WINDOWS = {
-  halo: ['halo_window_top', 'halo_window_bottom'],
+  halo: ['halo_window_top_sensor_street', 'halo_window_bottom_sensor_street'],
   furdo: ['furdo_window_1', 'furdo_window_2'],
   gyerek: ['gyerek_window_street', 'gyerek_window_garden'],
   kis: ['kis_window'],
@@ -95,7 +100,7 @@ export const SCENARIOS = {
       'climate.furdo': { state: 'auto', temperature: 23, heating_power_request: 0, preset_mode: 'schedule' },
       'climate.gyerek': { state: 'auto', temperature: 21, heating_power_request: 0, preset_mode: 'schedule' },
     },
-    windows: { halo_window_top: 'on' },
+    windows: { halo_window_top_sensor_street: 'on' },
     windowAgeMinutes: 35,
   },
   /* the same window swung fully open: both contacts, still one window */
@@ -107,7 +112,7 @@ export const SCENARIOS = {
       'climate.furdo': { state: 'auto', temperature: 23, heating_power_request: 0, preset_mode: 'schedule' },
       'climate.gyerek': { state: 'auto', temperature: 21, heating_power_request: 0, preset_mode: 'schedule' },
     },
-    windows: { halo_window_top: 'on', halo_window_bottom: 'on' },
+    windows: { halo_window_top_sensor_street: 'on', halo_window_bottom_sensor_street: 'on' },
     windowAgeMinutes: 8,
   },
   tavollet: {
