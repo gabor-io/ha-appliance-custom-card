@@ -67,7 +67,13 @@ export function buildModel(hass, config) {
     };
   }
 
-  const on = fanState.state === 'on';
+  /* An unreachable appliance keeps its fan entity and reports `unavailable`.
+     Treating that as "not running" makes the card say the unit is switched
+     off, which reads as "someone turned it off" rather than "the house has
+     lost the appliance" - the opposite of useful when the device has
+     dropped off the network. */
+  const available = !isUnavailable(fanState);
+  const on = available && fanState.state === 'on';
   const presetOption = fanState.attributes?.preset_mode || null;
   const presetOptions = Array.isArray(fanState.attributes?.preset_modes)
     ? fanState.attributes.preset_modes
@@ -90,6 +96,7 @@ export function buildModel(hass, config) {
   return {
     ok: true,
     entities,
+    available,
     name: applianceName(hass, config, entities),
     model: applianceModel(hass, config, entities, applianceName(hass, config, entities)),
     on,

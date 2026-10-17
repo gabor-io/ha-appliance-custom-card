@@ -63,6 +63,19 @@ Mielőtt elrejted, érdemes ellenőrizni: a gép saját kijelzője mutat-e PM2,5
 értéket, a Tuya/Smart Life app mutat-e ilyen csempét, és változik-e az érték
 „Pure H" fokozaton pár perc után.
 
+## Ha a gép nem elérhető
+
+A `fan` entitás ilyenkor megmarad, csak `unavailable` lesz. Ez nem ugyanaz,
+mint hogy valaki kikapcsolta a gépet: a kártya ezért külön állapotként kezeli.
+
+| | Kikapcsolva | Nem elérhető |
+| --- | --- | --- |
+| a `fan` entitás állapota | `off` | `unavailable` |
+| a fejlécben | „Kikapcsolva" | „Nem elérhető", wifi-ikonnal |
+| figyelmeztetés | nincs | „A készülék nem válaszol – ezek nem friss adatok" |
+| a bekapcsoló gomb | aktív, kiemelve | letiltva |
+| a kijelzőn | az utolsó mért értékek | `---` |
+
 ## Készülékrajz
 
 A rajz a valódi előlapot követi: fehér test, jobb oldali fekete oszlop a

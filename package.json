@@ -1,6 +1,6 @@
 {
   "name": "ha-appliance-cards",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Lovelace cards for AEG / Electrolux dishwashers, Philips airfryers, Škoda vehicles, Liebherr fridges and Tuya ventilators in Home Assistant",
   "type": "module",
   "homepage": "https://github.com/gabor-io/ha-appliance-custom-card",
