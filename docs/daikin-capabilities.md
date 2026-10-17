@@ -92,6 +92,55 @@ késleltetés: éles előzményen a legrövidebb valódi szellőztetés 47 máso
 volt, a hamis záródások viszont 1–2 másodpercesek, ezért a hosszú késleltetés
 elrejtené a rövid szellőztetéseket.
 
+### Bukó-nyíló ablak: két kontaktus, egy ablak
+
+Ha egy ablakon **két** kontaktus van – egy a szárny tetején, egy az alján –,
+az nem két ablak. A bukó-nyíló szárny az alsó élén billen, ezért:
+
+| top | bottom | Az ablak |
+| --- | --- | --- |
+| zárva | zárva | zárva |
+| **nyitva** | zárva | **bukóra** van |
+| nyitva | nyitva | teljesen nyitva |
+
+A kártya ezért kontaktusok helyett **ablakokat** számol: a sarkig kitárt
+bukó-nyíló ablak két kontaktust húz el, és továbbra is egy nyitott ablak –
+nem „2 nyitva".
+
+A párosítás a végződésből megy. Alapból a `_top`/`_bottom`, a `_felso`/`_also`
+és az `_upper`/`_lower` párokat ismeri fel, a végükön megtűrve egy
+`_contact`, `_sensor`, `_nyitas`, `_allapot` vagy `_state` szót is. Az első
+végződés mindig a **felső** kontaktus – abból derül ki a bukó állapot.
+
+Ha az azonosítóid nem követnek konvenciót, párosítsd kézzel. **Az első entitás
+a felső kontaktus:**
+
+```yaml
+openings:
+  windows:
+    Hálószoba ablak:
+      - binary_sensor.zigbee_0x001   # felső
+      - binary_sensor.zigbee_0x002   # alsó
+```
+
+Vagy ha csak a végződésed más:
+
+```yaml
+openings:
+  pairs:
+    - [bukó, nyíló]
+```
+
+Bukót csak akkor tud megkülönböztetni, ha **mindkét** kontaktus megvan: egy
+magányos felső kontaktus nyitott állapota lehet bukó is, teljesen nyitott is,
+ezért a kártya ilyenkor „nyitva"-t mond, nem találgat. Ha csak az **alsó** van
+nyitva, az nem olyan alak, amit a vasalat elő tud állítani (elcsúszott mágnes
+vagy halott felső kontaktus), ezért az is „nyitva".
+
+A figyelmeztetés ugyanúgy szól bukóra, mint teljesen nyitott ablakra – a
+bukóra hagyott ablak a klasszikus módja annak, hogy az utcát fűtsük –, csak
+kimondja, melyikről van szó.
+
 Mit mutat:
 
 | Helyzet | Mit látsz |
@@ -125,6 +174,8 @@ open_delay: 120                  # 2 perc, ha sokat nyitogatjátok
 | `openings.classes` | mely `device_class`-ok számítanak (alap: `[window]`) |
 | `openings.entities` | kontaktusok név szerint, terület nélkül is |
 | `openings.ignore` | kihagyandó kontaktusok |
+| `openings.pairs` | bukó-nyíló végződés-párok, felső elöl (alap: top/bottom, felso/also, upper/lower) |
+| `openings.windows` | kézi párosítás: `név: [felső, alsó]` |
 | `open_delay` | hány másodperc nyitás után szóljon (alap: 30) |
 
 Csoportnál a tagonkénti blokk felülírja a kártyaszintűt:

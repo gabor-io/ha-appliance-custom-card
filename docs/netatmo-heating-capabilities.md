@@ -67,6 +67,56 @@ másodperctől előfordul, a kontaktpattogás viszont másodperc alatti.
 Ahol **nincs** érzékelő, a kártya ezt ki is írja („nincs érzékelő") – nem tesz
 úgy, mintha zárva lenne.
 
+### Bukó-nyíló ablak: két kontaktus, egy ablak
+
+Ha egy ablakon **két** kontaktus van – egy a szárny tetején, egy az alján –,
+az nem két ablak. A bukó-nyíló szárny az alsó élén billen, ezért:
+
+| top | bottom | Az ablak |
+| --- | --- | --- |
+| zárva | zárva | zárva |
+| **nyitva** | zárva | **bukóra** van |
+| nyitva | nyitva | teljesen nyitva |
+
+A kártya ezért kontaktusok helyett **ablakokat** számol: a sarkig kitárt
+bukó-nyíló ablak két kontaktust húz el, és továbbra is egy nyitott ablak –
+nem „2 nyitva".
+
+A párosítás a végződésből megy. Alapból a `_top`/`_bottom`, a `_felso`/`_also`
+és az `_upper`/`_lower` párokat ismeri fel, a végükön megtűrve egy
+`_contact`, `_sensor`, `_nyitas`, `_allapot` vagy `_state` szót is. Az első
+végződés mindig a **felső** kontaktus – abból derül ki a bukó állapot.
+
+Ha az azonosítóid nem követnek konvenciót, párosítsd kézzel. **Az első entitás
+a felső kontaktus:**
+
+```yaml
+openings:
+  windows:
+    Hálószoba ablak:
+      - binary_sensor.zigbee_0x001   # felső
+      - binary_sensor.zigbee_0x002   # alsó
+```
+
+Vagy ha csak a végződésed más:
+
+```yaml
+openings:
+  pairs:
+    - [bukó, nyíló]
+```
+
+Bukót csak akkor tud megkülönböztetni, ha **mindkét** kontaktus megvan: egy
+magányos felső kontaktus nyitott állapota lehet bukó is, teljesen nyitott is,
+ezért a kártya ilyenkor „nyitva"-t mond, nem találgat. Ha csak az **alsó** van
+nyitva, az nem olyan alak, amit a vasalat elő tud állítani (elcsúszott mágnes
+vagy halott felső kontaktus), ezért az is „nyitva".
+
+A figyelmeztetés ugyanúgy szól bukóra, mint teljesen nyitott ablakra – a
+bukóra hagyott ablak a klasszikus módja annak, hogy az utcát fűtsük –, csak
+kimondja, melyikről van szó.
+
+
 > A „mióta nyitva" a `last_changed`-ből jön, amit a Home Assistant újraindítás
 > után nulláz, és egyes kontaktok egy-két másodperces hamis záródása is
 > visszaállít. Mindkettő **rövidebbnek** mutatja a nyitást a valóságnál, tehát
@@ -96,7 +146,7 @@ alapuló címke megkülönböztethetetlen sorokat adna. Az azonosítóból „wi
 | `rooms` | – | szobánkénti név felülírás |
 | `sources.outside` | – | kültéri hőmérséklet entitás |
 | `sources.outside_connectivity` | – | a kültéri modul csatlakozás-jelzője |
-| `openings` | lásd fent | nyitásérzékelők |
+| `openings` | lásd fent | nyitásérzékelők (`pairs`, `windows` is) |
 | `open_delay` | `30` | ennyi másodperc után szól a nyitott ablakról |
 | `language` | `auto` | `hu` / `en` |
 | `compact` | `false` | sűrűbb elrendezés |

@@ -31,3 +31,18 @@
   rooms:
     climate.kis_szoba_netatmo_valve:
       name: Vendégszoba
+
+# Bukó-nyíló ablak: két kontaktus egy szárnyon, nem két ablak. Ha csak a
+# felső van nyitva, az ablak bukóra van. A `_top`/`_bottom`, `_felso`/`_also`
+# és `_upper`/`_lower` végződéseket magától párosítja; ez a blokk csak akkor
+# kell, ha a te azonosítóid nem követnek konvenciót.
+- type: custom:netatmo-heating-card
+  openings:
+    windows:
+      # AZ ELSŐ A FELSŐ KONTAKTUS
+      Hálószoba ablak:
+        - binary_sensor.zigbee_0x001
+        - binary_sensor.zigbee_0x002
+    # vagy, ha csak a végződésed más:
+    pairs:
+      - [buko, nyilo]
