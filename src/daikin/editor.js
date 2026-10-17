@@ -13,6 +13,7 @@ export const DaikinAcCardEditor = createEditorClass({
     'show_fan',
     'show_presets',
     'show_all_swing',
+    'show_openings',
     'compact',
     'animate',
   ],

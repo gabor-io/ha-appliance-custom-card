@@ -43,3 +43,25 @@
 - type: custom:daikin-ac-card
   entity: climate.nappali
   show_all_swing: true
+
+# 6) Nyitásérzékelők. Alapból nem kell beállítani semmit: a kártya a klíma
+#    területéről szedi össze az ablakkontaktusokat. Ez a blokk csak akkor
+#    kell, ha el akarsz térni az alaptól.
+- type: custom:daikin-ac-card
+  entity: climate.nappali
+  openings:
+    # az ajtók alapból nem számítanak - a mosogatógép ajtaja nem huzat
+    classes: [window, door]
+    # kontaktus, aminek nincs eszköze, tehát területe sem
+    entities:
+      - binary_sensor.terasz_ajto
+    # ez a szellőző szándékosan nyitva van, ne szóljon miatta
+    ignore:
+      - binary_sensor.nappali_szellozo
+  # 30 másodperc helyett 2 perc, ha sokat nyitogatjátok
+  open_delay: 120
+
+# 7) Ha nem akarod látni egyáltalán
+- type: custom:daikin-ac-card
+  entity: climate.dolgozo
+  show_openings: false

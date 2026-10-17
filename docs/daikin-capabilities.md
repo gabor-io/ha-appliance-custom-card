@@ -69,6 +69,73 @@ leggyakoribb nem-`off` módot jelenti. Ezért a kártya „Átlag" feliratot ír
 ha a gépek eltérően állnak, **egyetlen mód-gombot sem jelöl kiemeltnek** –
 nem állítja, hogy egységesek.
 
+## Nyitásérzékelők
+
+A kártya megmondja, ha a gép nyitott ablakba fűt vagy hűt. Nem kell felsorolni
+semmit: a párosítás **terület** alapján megy, és a területet a Home Assistant
+már tudja.
+
+Három dolog miatt pont így működik, és mindhárom éles rendszeren derült ki:
+
+- **A terület az eszközön van, nem az entitáson.** Az entity registry
+  `area_id`-je jellemzően `null`, és az entitás a készülékétől örökli. A
+  kártya ezért a készüléken keresztül néz utána.
+- **Az autó is jelez ajtót és ablakot.** A `binary_sensor.skoda_..._ablakok`
+  ugyanolyan `window` osztályú kontaktus, mint a nappali ablaka. Ezért a
+  keresés a szobából indul, soha nem az érzékelőből: ami nem a klíma
+  területén van, az nem a klíma ablaka.
+- **A mosogatógép ajtaja nem huzat.** Alapból csak a `window` osztály számít,
+  az ajtók külön kérésre (`openings.classes`).
+
+A figyelmeztetés **30 másodperc** nyitás után szólal meg. Nem szimmetrikus
+késleltetés: éles előzményen a legrövidebb valódi szellőztetés 47 másodperc
+volt, a hamis záródások viszont 1–2 másodpercesek, ezért a hosszú késleltetés
+elrejtené a rövid szellőztetéseket.
+
+Mit mutat:
+
+| Helyzet | Mit látsz |
+| --- | --- |
+| a gép fűt/hűt/párátlanít és nyitva az ablak | narancs figyelmeztetés a névvel és azzal, mióta |
+| a gép áll vagy csak keringet, de nyitva az ablak | halvány „nyitva" jelvény, figyelmeztetés nélkül |
+| csoportnézet | jelvény az érintett gép sorában, és egy figyelmeztetés szobánként |
+| nincs kontaktus a szobában | semmi – a kártya nem állítja, hogy zárva van |
+
+Csak keringetés (`fan_only`) közben nincs riasztás: az a levegőt mozgatja, amit
+amúgy is a szobában van, tehát a nyitott ablak nem kerül pénzbe.
+
+Finomhangolás:
+
+```yaml
+type: custom:daikin-ac-card
+entity: climate.nappali
+openings:
+  classes: [window, door]        # az ajtók is számítsanak
+  ignore:
+    - binary_sensor.nappali_szellozo   # ez szándékosan nyitva van
+  entities:
+    - binary_sensor.terasz_ajto  # kontaktus, aminek nincs területe
+open_delay: 120                  # 2 perc, ha sokat nyitogatjátok
+```
+
+| Kulcs | Mit csinál |
+| --- | --- |
+| `openings.auto` | `false` esetén csak a felsorolt entitásokat nézi |
+| `openings.area` | másik terület, ha a gép rossz szobához van rendelve |
+| `openings.classes` | mely `device_class`-ok számítanak (alap: `[window]`) |
+| `openings.entities` | kontaktusok név szerint, terület nélkül is |
+| `openings.ignore` | kihagyandó kontaktusok |
+| `open_delay` | hány másodperc nyitás után szóljon (alap: 30) |
+
+Csoportnál a tagonkénti blokk felülírja a kártyaszintűt:
+
+```yaml
+units:
+  climate.gyerekszoba:
+    openings:
+      ignore: [binary_sensor.gyerek_ablak_bukoban]
+```
+
 ## Amit szándékosan nem mutat
 
 **Vízszintes és 3D lamella.** A `pydaikin` a lamella-listát fix fordítótáblából
@@ -110,3 +177,6 @@ megtalálható.
 | `show_fan` | `true` | ventilátor fokozat |
 | `show_presets` | `true` | Turbó / Eco / Távollét |
 | `show_all_swing` | `false` | mind a négy lamella-opció |
+| `show_openings` | `true` | nyitásérzékelők |
+| `openings` | – | a nyitásérzékelők finomhangolása (lásd fent) |
+| `open_delay` | `30` | hány másodperc nyitás után figyelmeztessen |

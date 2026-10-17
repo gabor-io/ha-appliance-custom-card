@@ -6,6 +6,7 @@ import { applyDevice, renderDefs, renderThermostat, renderValve } from './graphi
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
 import { escapeHtml, formatDecimal } from '../shared/format.js';
+import { openDuration } from '../shared/openings.js';
 
 export const DEFAULTS = {
   language: 'auto',
@@ -286,10 +287,7 @@ export class NetatmoHeatingCard extends HTMLElement {
 
   /** `930` seconds -> "15 perce" */
   _ago(seconds, t) {
-    if (seconds === null || seconds === undefined) return '';
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return `${Math.max(1, minutes)} ${t('ui.minute_short')}`;
-    return `${Math.round(minutes / 60)} ${t('ui.hour_short')}`;
+    return openDuration(seconds, t('ui.minute_short'), t('ui.hour_short'));
   }
 
   _segHtml(model, t) {

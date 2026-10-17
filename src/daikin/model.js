@@ -7,6 +7,7 @@
  */
 
 import {
+  CONDITIONING_MODES,
   FAN_ORDER,
   IDLE_POWER_W,
   MODE_KEYS,
@@ -14,7 +15,8 @@ import {
   SAFE_SWING_MODES,
   TEMP_TOLERANCE,
 } from './const.js';
-import { groupMembers, isUnavailable, pickClimate, resolveUnit } from './entities.js';
+import { groupMembers, isUnavailable, openingsFor, pickClimate, resolveUnit } from './entities.js';
+import { OPEN_DELAY_S, summariseOpenings } from '../shared/openings.js';
 
 function num(hass, entityId) {
   if (!entityId) return null;
@@ -73,6 +75,18 @@ export function buildUnit(hass, climateEntityId, sources = {}, config = {}) {
 
   const power = num(hass, entities.power);
 
+  /* the per-unit openings block wins over the card-wide one, so a group can
+     name the contacts of one member without repeating the rest */
+  const openings =
+    config.show_openings === false
+      ? summariseOpenings([])
+      : summariseOpenings(
+          openingsFor(hass, climateEntityId, {
+            openings: { ...(config.openings || {}), ...(sources.openings || {}) },
+          }),
+          config.open_delay ?? OPEN_DELAY_S,
+        );
+
   return {
     entityId: climateEntityId,
     entities,
@@ -116,6 +130,10 @@ export function buildUnit(hass, climateEntityId, sources = {}, config = {}) {
       on && power !== null
         ? power < IDLE_POWER_W
         : on && attrs.hvac_action === 'idle',
+
+    openings,
+    /** conditioning the room while a window has been open a while */
+    draughty: on && CONDITIONING_MODES.includes(mode) && openings.warn,
   };
 }
 
@@ -215,6 +233,7 @@ export function buildGroup(hass, entityId, members, config) {
     maxTemp: attrs.max_temp ?? 32,
     unit: hass?.config?.unit_system?.temperature || '°C',
     measured: mean(units.map((unit) => unit.measured)),
+    draughty: units.filter((unit) => unit.draughty),
     outside: units.map((unit) => unit.outside).find((value) => value !== null) ?? null,
     power: powers.length ? powers.reduce((sum, value) => sum + value, 0) : null,
     powerUnit: 'W',

@@ -12,9 +12,10 @@
  */
 
 import { isUnavailable } from '../shared/entities.js';
+import { DEFAULT_OPENING_CLASSES, entityArea, roomOpenings } from '../shared/openings.js';
 import { PLATFORM } from './const.js';
 
-export { isUnavailable };
+export { isUnavailable, entityArea };
 
 /** The sensors the integration creates, by registry translation key. */
 const SENSOR_KEYS = {
@@ -110,4 +111,25 @@ export function resolveUnit(hass, climateEntityId, sources = {}) {
     power: sources.power || null,
     energy: sources.energy || null,
   };
+}
+
+/**
+ * Window and door contacts in the room the unit is mounted in.
+ *
+ * The pairing is by area, read off the climate entity's device: the Daikin
+ * entities carry no area of their own. A unit that was never assigned to an
+ * area gets nothing, which is the honest answer - guessing from the unit's
+ * name would pair the living-room unit with the car's door contacts.
+ */
+export function openingsFor(hass, climateEntityId, config = {}) {
+  const options = config.openings || {};
+  const explicit = options.entities || [];
+  if (options.auto === false && !explicit.length) return [];
+  const area = options.area || entityArea(hass, climateEntityId);
+  return roomOpenings(hass, {
+    areas: options.auto === false ? [] : [area].filter(Boolean),
+    classes: options.classes || DEFAULT_OPENING_CLASSES,
+    include: explicit,
+    exclude: options.ignore || [],
+  });
 }

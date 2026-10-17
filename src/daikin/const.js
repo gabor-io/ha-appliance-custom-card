@@ -73,5 +73,14 @@ export const TEMP_TOLERANCE = 0.5;
  */
 export const IDLE_POWER_W = 100;
 
+/**
+ * Modes in which an open window actually costs money.
+ *
+ * `fan_only` only moves air that is already in the room, so a window open
+ * there is not waste and the card stays quiet about it. Drying does run the
+ * compressor, so it counts.
+ */
+export const CONDITIONING_MODES = ['heat', 'cool', 'heat_cool', 'dry'];
+
 /** Airflow animation period, fastest fan to slowest. */
 export const FLOW_SECONDS = { min: 1.5, max: 4.6 };

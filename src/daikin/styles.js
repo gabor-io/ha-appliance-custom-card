@@ -216,6 +216,19 @@ ${BASE_STYLES}
 .mini .stream path { animation-name: daikin-mini-flow; }
 @keyframes daikin-mini-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -30; } }
 
+/* ---------- the open-window badge on a group row ---------- */
+.open-badge {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; padding: 1px 7px;
+  border-radius: 999px; font-size: .64rem; font-weight: 700; vertical-align: 1px;
+  background: color-mix(in srgb, var(--warning-color, #ffa726) 20%, transparent);
+  color: var(--warning-color, #ffa726);
+}
+.open-badge .icon { width: 11px; height: 11px; }
+/* open, but the unit is not conditioning the room - worth noting, not warning */
+.open-badge.calm {
+  background: color-mix(in srgb, var(--ap-text) 8%, transparent); color: var(--ap-muted); font-weight: 600;
+}
+
 .wash { opacity: 0; transition: opacity .6s; color: var(--ap-accent); }
 .ac.on .wash { opacity: .15; }
 .led { fill: #c9d2d8; }

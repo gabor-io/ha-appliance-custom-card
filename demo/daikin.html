@@ -51,6 +51,10 @@
 
   let current = new Set(['futes', 'vegyes']);
   let view = 'csoport';
+  /* doors are opt-in: with this off the living room's front door is ignored */
+  let doors = false;
+
+  const openings = () => (doors ? { classes: ['window', 'door'] } : {});
 
   function draw() {
     grid.replaceChildren();
@@ -64,12 +68,14 @@
               entity: 'climate.daikin_acs',
               language: 'hu',
               units: SOURCES,
+              openings: openings(),
             }
           : {
               type: 'custom:daikin-ac-card',
               entity: view,
               language: 'hu',
               sources: SOURCES[view] || {},
+              openings: openings(),
             },
       );
       const hass = makeHass(key);
@@ -102,6 +108,11 @@
     button.onclick = () => { view = target; draw(); };
     toolbar.append(button);
   }
+
+  const doorButton = document.createElement('button');
+  doorButton.textContent = 'ajtók is';
+  doorButton.onclick = () => { doors = !doors; doorButton.textContent = doors ? 'csak ablak' : 'ajtók is'; draw(); };
+  toolbar.append(doorButton);
 
   const dark = document.createElement('button');
   dark.textContent = 'dark';
