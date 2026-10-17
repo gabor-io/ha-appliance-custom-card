@@ -36,10 +36,22 @@ const CLASSES = {
   noise: ['sound_pressure'],
   battery: ['battery'],
   signal: ['signal_strength'],
+  /* read only to recognise a public weather area; never shown */
+  rain: ['precipitation', 'precipitation_intensity'],
+  wind: ['wind_speed'],
 };
 
 function registryEntries(hass) {
   return Object.values(hass?.entities || {});
+}
+
+/** Whether a sensor is a trend, and of what: by translation key, else by id. */
+function trendOf(entry) {
+  if (entry.translation_key === 'temp_trend') return 'temperature';
+  if (entry.translation_key === 'pressure_trend') return 'pressure';
+  if (/_(temp|temperature)_trend$/.test(entry.entity_id)) return 'temperature';
+  if (/_pressure_trend$/.test(entry.entity_id)) return 'pressure';
+  return null;
 }
 
 function deviceClassOf(hass, entry) {
@@ -70,14 +82,15 @@ function sensorsByDevice(hass) {
     }
     if (!entry.entity_id.startsWith('sensor.')) continue;
 
-    /* the trend sensors carry no device class - they are enums of
-       up / down / stable - so they are matched by translation key */
-    if (entry.translation_key === 'temp_trend') {
-      slot(entry.device_id).trend.temperature = entry.entity_id;
-      continue;
-    }
-    if (entry.translation_key === 'pressure_trend') {
-      slot(entry.device_id).trend.pressure = entry.entity_id;
+    /* The trend sensors carry no device class - they are enums of
+       up / down / stable - so the translation key identifies them. On a
+       live system the object id is `..._temperature_trend`, which does not
+       match the integration's `temp_trend` key, so the id is a fallback:
+       if the key ever changes, or an entity predates it, the arrow still
+       appears instead of silently going missing. */
+    const trendKind = trendOf(entry);
+    if (trendKind) {
+      slot(entry.device_id).trend[trendKind] = entry.entity_id;
       continue;
     }
 
@@ -89,7 +102,29 @@ function sensorsByDevice(hass) {
 }
 
 /**
+ * A Netatmo **public** weather station - someone else's, shared to the map.
+ *
+ * The integration creates these for the "weather areas" an account follows,
+ * on the same platform and with the same device classes as the user's own
+ * hardware: temperature, humidity, air pressure. Left in, the card picks
+ * one as the base station and reports a stranger's garden as the house.
+ *
+ * The model says so outright. The measurements say so too, as a second
+ * opinion: a public area carries rain and wind alongside its temperature,
+ * while the owner's rain gauge and wind gauge are devices of their own and
+ * have no temperature, so they never reach this test.
+ */
+function isPublicStation(device, sensors) {
+  if (/public/i.test(device?.model || '')) return true;
+  return Boolean(sensors.rain || sensors.wind);
+}
+
+/**
  * Every weather-station module, already sorted into its kind.
+ *
+ * The model name is a hint and the measurements decide: the base station is
+ * the one with an air pressure sensor, and an outdoor module is the one
+ * without CO₂. A renamed or re-modelled device still lands correctly.
  *
  * @returns {{main: object|null, outdoor: object|null, indoor: object[]}}
  */
@@ -102,9 +137,11 @@ export function discoverStation(hass, config = {}) {
     /* a module measures a temperature; a valve or a thermostat does not */
     if (!found.sensors.temperature) continue;
     const device = hass?.devices?.[deviceId];
+    if (isPublicStation(device, found.sensors)) continue;
     modules.push({
       deviceId,
       name: device?.name_by_user || device?.name || deviceId,
+      model: device?.model || '',
       area: device?.area_id || entityArea(hass, found.sensors.temperature),
       ...found,
     });
@@ -116,13 +153,28 @@ export function discoverStation(hass, config = {}) {
   if (!main) main = modules.find((module) => module.sensors.pressure) || null;
 
   let outdoor = sources.outdoor ? pick(sources.outdoor) : null;
+  if (!outdoor) outdoor = modules.find((module) => module !== main && /outdoor/i.test(module.model)) || null;
   if (!outdoor) {
     /* an outdoor module measures temperature and humidity but no CO₂ */
     outdoor = modules.find((module) => module !== main && !module.sensors.co2) || null;
   }
 
+  /* Home Assistant names a linked module after the base station it hangs
+     off - "Dining Room Upstairs" for a module in the room upstairs - so
+     the house's name is repeated on every row. The module's own part of
+     it is the useful half. */
+  for (const module of modules) {
+    module.label = stripStationPrefix(module.name, main?.name);
+  }
+
   const indoor = modules.filter((module) => module !== outdoor);
   return { main, outdoor, indoor, all: modules };
+}
+
+function stripStationPrefix(name, stationName) {
+  if (!stationName || name === stationName) return name;
+  const prefix = `${stationName} `;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
 }
 
 /** Whether this Home Assistant has a Netatmo weather station at all. */
@@ -146,5 +198,5 @@ export function listStationDevices(hass) {
 export function moduleName(hass, module) {
   const area = module.area ? hass?.areas?.[module.area] : null;
   if (area?.name) return area.name;
-  return module.name;
+  return module.label || module.name;
 }

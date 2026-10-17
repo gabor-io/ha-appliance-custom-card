@@ -270,6 +270,9 @@ példák: [`examples/netatmo-heating.yaml`](examples/netatmo-heating.yaml).
   légnyomásmérő, a beltéri modulon CO₂, a kültérin egyik sem. A fűtési
   szelepek ugyanezen a platformon vannak, de csak elemszenzort hoznak létre,
   ezért maguktól kiesnek.
+- **A követett publikus állomások ki vannak zárva**: ugyanazzal a
+  device_class-szal jönnek, mint a saját hardvered, légnyomással együtt –
+  bent hagyva a kártya egy idegen kertet mutatna a házadként.
 
 Részletek: [`docs/netatmo-weather-capabilities.md`](docs/netatmo-weather-capabilities.md),
 példák: [`examples/netatmo-weather.yaml`](examples/netatmo-weather.yaml).
