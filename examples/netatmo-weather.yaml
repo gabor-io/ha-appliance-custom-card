@@ -1,0 +1,29 @@
+# Netatmo időjárás-állomás kártya – példák
+# Részletek: docs/netatmo-weather-capabilities.md
+
+# 1) A teljes kártya. Nem kell entitást megadni: a kártya az entity
+#    registryből, device_class alapján találja meg az állomás moduljait.
+- type: custom:netatmo-weather-card
+
+# 2) Saját felirattal, magyarul
+- type: custom:netatmo-weather-card
+  name: Időjárás
+  language: hu
+
+# 3) Kompakt, mobil dashboardra: csak a kinti hőmérséklet és a szobák,
+#    rajz és figyelmeztetések nélkül
+- type: custom:netatmo-weather-card
+  compact: true
+  show_art: false
+  show_alerts: false
+
+# 4) Csak a kinti adat - a szobák másik kártyán vannak
+- type: custom:netatmo-weather-card
+  show_rooms: false
+
+# 5) Ha több kültéri modulod van, és nem azt választja, amelyiket szeretnéd.
+#    A device_id-t a HA eszközoldalán, az URL végén találod.
+- type: custom:netatmo-weather-card
+  sources:
+    main: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
+    outdoor: 9f8e7d6c5b4a39281706f5e4d3c2b1a0

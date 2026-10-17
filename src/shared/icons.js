@@ -59,10 +59,14 @@ import {
   mdiStop,
   mdiThermometer,
   mdiThermometerProbe,
+  mdiTrendingDown,
+  mdiTrendingNeutral,
+  mdiTrendingUp,
   mdiTimerSand,
   mdiToasterOven,
   mdiTrayArrowDown,
   mdiTuneVariant,
+  mdiVolumeHigh,
   mdiVolumeOff,
   mdiWater,
   mdiWaterPercent,
@@ -251,6 +255,13 @@ export const ICONS = {
   calendar: mdiCalendarMonthOutline,
   frost_guard: mdiSnowflakeAlert,
   radiator: mdiRadiator,
+
+  // netatmo weather station
+  noise: mdiVolumeHigh,
+  offline: mdiWifiOff,
+  trend_up: mdiTrendingUp,
+  trend_down: mdiTrendingDown,
+  trend_stable: mdiTrendingNeutral,
 };
 
 
