@@ -29,6 +29,7 @@ const HU = {
     battery_critical: '{room} ({head}) · az elem kritikus ({value} %) – cseréld ki',
     battery_silent: '{count} fej nem jelent elemszintet – nézd meg őket',
     window_open: '{room} · nyitva az ablak, miközben fűt ({duration})',
+    window_tilted: '{room} · bukóra van az ablak, miközben fűt ({duration})',
   },
   ui: {
     rooms: 'Szobák',
@@ -42,6 +43,7 @@ const HU = {
     heads_count: '{count} fej',
     no_sensor: 'nincs érzékelő',
     window_open: 'nyitva',
+    window_tilted: 'bukóra',
     windows_open: '{count} nyitva',
     silent: 'nem jelent',
     dead_hint: 'A szelep nem jelentkezik be – valószínűleg lemerült az eleme.',
@@ -87,6 +89,7 @@ const EN = {
     battery_critical: '{room} ({head}) · battery critical ({value} %) – replace it',
     battery_silent: '{count} heads report no battery level – check them',
     window_open: '{room} · window open while heating ({duration})',
+    window_tilted: '{room} · window on the latch while heating ({duration})',
   },
   ui: {
     rooms: 'Rooms',
@@ -100,6 +103,7 @@ const EN = {
     heads_count: '{count} heads',
     no_sensor: 'no sensor',
     window_open: 'open',
+    window_tilted: 'on the latch',
     windows_open: '{count} open',
     silent: 'silent',
     dead_hint: 'The valve is not checking in – most likely a flat battery.',

@@ -206,7 +206,8 @@ példák: [`examples/erv.yaml`](examples/erv.yaml).
 - **Nyitott ablak**: ha a gép nyitott ablakba fűt vagy hűt, a kártya szól, és
   megmondja, mióta. Nem kell felsorolni semmit – a párosítás a klíma
   **területe** alapján megy. Álló gépnél csak halvány jelvény, csak
-  keringetésnél semmi: az nem kerül pénzbe.
+  keringetésnél semmi: az nem kerül pénzbe. A bukó-nyíló ablak két kontaktusa
+  egy ablak, és a kártya kimondja, ha csak **bukóra** van.
 
 Részletek: [`docs/daikin-capabilities.md`](docs/daikin-capabilities.md),
 példák: [`examples/daikin.yaml`](examples/daikin.yaml).
@@ -232,6 +233,9 @@ példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 - **Nyitásérzékelők**: terület alapján magától párosítja őket a szobákhoz, és
   **csak akkor figyelmeztet, ha a szoba épp fűt**. Ahol nincs érzékelő, azt is
   kiírja, nem tesz úgy, mintha zárva lenne.
+- **Bukó-nyíló ablakot egynek számol**: ha egy szárnyon két kontaktus van,
+  felül és alul, az egy ablak. Csak a felső nyitva = **bukóra** van, mindkettő
+  = teljesen nyitva – a sarkig kitárt ablak nem „2 nyitva".
 - **Elemszintek fejenként**, saját címkével – a Netatmo friendly_name-jei
   ütköznek, az azonosítóból viszont megkülönböztethetők („ablak",
   „slim radiator").

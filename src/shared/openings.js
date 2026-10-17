@@ -115,22 +115,195 @@ export function roomOpenings(hass, { areas = [], classes = DEFAULT_OPENING_CLASS
   return [...found.values()];
 }
 
-/** Summarises a room's contacts for the card. */
-export function summariseOpenings(openings, openDelay = OPEN_DELAY_S) {
-  const known = openings.filter((item) => item.available);
-  const open = known.filter((item) => item.open);
-  /* only a contact that has been open a while is worth saying out loud */
-  const settled = open.filter((item) => (item.openFor ?? 0) >= openDelay);
+/**
+ * Suffix pairs that mean "two contacts, one tilt-and-turn window".
+ *
+ * A bukó-nyíló window often carries a contact at the top of the sash and
+ * another at the bottom. They are not two windows, and the difference
+ * between them is the whole point:
+ *
+ * - the sash pivots on its bottom edge when tilted, so the **top** contact
+ *   opens and the bottom one stays shut - the window is on the latch;
+ * - swung fully open, the sash leaves the frame everywhere, so **both**
+ *   contacts open.
+ *
+ * The first suffix of each pair is the top contact. Object ids are
+ * slugified, so the Hungarian pair loses its accents here.
+ */
+export const DEFAULT_OPENING_PAIRS = [
+  ['top', 'bottom'],
+  ['felso', 'also'],
+  ['upper', 'lower'],
+];
+
+/** Trailing words a contact's object id may carry after the position. */
+const TAIL = /_(contact|sensor|nyitas|allapot|state)$/;
+
+function objectId(entityId) {
+  return entityId.includes('.') ? entityId.slice(entityId.indexOf('.') + 1) : entityId;
+}
+
+/**
+ * Splits a contact's object id into the window it belongs to and its role.
+ *
+ * `binary_sensor.halo_ablak_top_contact` -> base `halo_ablak`, role `top`.
+ * Returns null when the id carries no position word, which is the ordinary
+ * case of one contact per window.
+ */
+function splitPosition(entityId, pairs) {
+  let id = objectId(entityId).replace(TAIL, '');
+  for (const [top, bottom] of pairs) {
+    for (const [word, role] of [[top, 'top'], [bottom, 'bottom']]) {
+      const suffix = `_${word}`;
+      if (id.length > suffix.length && id.endsWith(suffix)) {
+        return { base: id.slice(0, -suffix.length), role, word };
+      }
+    }
+  }
+  return null;
+}
+
+/** Drops diacritics, so `felső` in a name matches `felso` in an object id. */
+function fold(text) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
+ * Strips the position word off a friendly name, so the pair reads as one.
+ *
+ * The word comes from the object id, which Home Assistant has already
+ * slugified - `felső` arrives here as `felso`. Matching has to ignore the
+ * accents or the Hungarian pair keeps "felső" in its name.
+ */
+function windowName(parts) {
+  const first = parts[0];
+  const word = first.position?.word;
+  if (!word) return first.name;
+
+  const folded = fold(first.name);
+  const match = new RegExp(`[\\s_-]*${fold(word)}[\\s_-]*$`).exec(folded);
+  if (match) {
+    const stripped = first.name.slice(0, match.index).trim();
+    if (stripped) return stripped;
+  }
+  return first.name;
+}
+
+/**
+ * Groups contacts into windows and works out what each window is doing.
+ *
+ * @param {object} options
+ *   `pairs`   - suffix pairs to detect, top first; see DEFAULT_OPENING_PAIRS
+ *   `windows` - explicit grouping, `{ name: [topEntity, bottomEntity] }`, for
+ *               contacts whose ids follow no convention at all
+ */
+export function groupOpenings(openings, { pairs = DEFAULT_OPENING_PAIRS, windows = {} } = {}) {
+  const byId = new Map(openings.map((item) => [item.entityId, item]));
+  const groups = [];
+  const used = new Set();
+
+  // hand-written pairs first: they win over anything the ids suggest
+  for (const [name, ids] of Object.entries(windows)) {
+    const parts = (Array.isArray(ids) ? ids : [ids])
+      .map((id, index) => {
+        const item = byId.get(id);
+        return item ? { ...item, position: { role: index === 0 ? 'top' : 'bottom' } } : null;
+      })
+      .filter(Boolean);
+    if (!parts.length) continue;
+    for (const part of parts) used.add(part.entityId);
+    groups.push({ key: name, name, parts });
+  }
+
+  const byBase = new Map();
+  for (const item of openings) {
+    if (used.has(item.entityId)) continue;
+    const position = splitPosition(item.entityId, pairs);
+    if (!position) {
+      groups.push({ key: item.entityId, name: item.name, parts: [{ ...item, position: null }] });
+      continue;
+    }
+    if (!byBase.has(position.base)) byBase.set(position.base, []);
+    byBase.get(position.base).push({ ...item, position });
+  }
+
+  for (const [base, parts] of byBase) {
+    /* top first, so the name is stripped from the right part and a lone
+       bottom contact still reads sensibly */
+    const rank = (part) => (part.position.role === 'top' ? 0 : 1);
+    parts.sort((a, b) => rank(a) - rank(b));
+    groups.push({ key: base, name: windowName(parts), parts });
+  }
+
+  /* a stable order, so a room's windows do not swap places between
+     updates just because one of them was regrouped */
+  return groups.map(describeWindow).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * One window's state, from its contacts.
+ *
+ * Tilt can only be *told apart* when both contacts exist: a lone top contact
+ * that is open could be either, so the card says "open" rather than guess.
+ * A bottom contact open on its own is not a shape the hardware makes - a
+ * magnet has slipped, or the sash is fully open with a dead top contact - so
+ * it counts as open too.
+ */
+function describeWindow(group) {
+  const parts = group.parts;
+  const known = parts.filter((part) => part.available);
+  const top = parts.find((part) => part.position?.role === 'top');
+  const bottom = parts.find((part) => part.position?.role === 'bottom');
+  const paired = Boolean(top && bottom && top.available && bottom.available);
+
+  const openParts = known.filter((part) => part.open);
+  const openFor = openParts.reduce(
+    (longest, part) => ((part.openFor ?? 0) > longest ? part.openFor : longest),
+    0,
+  );
+
+  let state = 'closed';
+  if (!known.length) state = 'unavailable';
+  else if (paired && top.open && !bottom.open) state = 'tilted';
+  else if (openParts.length) state = 'open';
+
+  return {
+    ...group,
+    /** `closed` | `tilted` | `open` | `unavailable` */
+    state,
+    available: known.length > 0,
+    open: state === 'tilted' || state === 'open',
+    tilted: state === 'tilted',
+    /** true when both contacts are there, so tilt can be told from open */
+    paired,
+    openFor: openParts.length ? openFor : null,
+    entityId: (top || parts[0]).entityId,
+  };
+}
+
+/**
+ * Summarises a room's windows for the card.
+ *
+ * Counting is by window, not by contact: a tilt-and-turn window swung fully
+ * open trips two contacts and is still one open window.
+ */
+export function summariseOpenings(openings, openDelay = OPEN_DELAY_S, options = {}) {
+  const windows = groupOpenings(openings, options);
+  const open = windows.filter((window) => window.open);
+  /* only a window that has been open a while is worth saying out loud */
+  const settled = open.filter((window) => (window.openFor ?? 0) >= openDelay);
   const longest = settled.reduce(
-    (best, item) => ((item.openFor ?? 0) > (best?.openFor ?? -1) ? item : best),
+    (best, window) => ((window.openFor ?? 0) > (best?.openFor ?? -1) ? window : best),
     null,
   );
   return {
-    total: openings.length,
+    windows,
+    total: windows.length,
     /** no contact in this room at all - the card must not imply "closed" */
-    none: openings.length === 0,
-    unavailable: openings.filter((item) => !item.available).length,
+    none: windows.length === 0,
+    unavailable: windows.filter((window) => !window.available).length,
     open: open.length,
+    tilted: open.filter((window) => window.tilted).length,
     /** open long enough to warn about */
     warn: settled.length > 0,
     longest,

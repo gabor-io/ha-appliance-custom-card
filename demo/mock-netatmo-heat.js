@@ -21,7 +21,13 @@ const HEADS = {
   kis: [['valve', null]],
 };
 
-/** window contacts, by area - the dining room deliberately has none */
+/**
+ * Window contacts, by area - the dining room deliberately has none.
+ *
+ * The bedroom window is a bukó-nyíló with two contacts on the **same**
+ * sash: `_top` and `_bottom`. Top alone means the window is on the latch;
+ * both mean it is swung open. Either way it is one window, not two.
+ */
 const WINDOWS = {
   halo: ['halo_window_top', 'halo_window_bottom'],
   furdo: ['furdo_window_1', 'furdo_window_2'],
@@ -78,6 +84,31 @@ export const SCENARIOS = {
     },
     windows: { furdo_window_1: 'on' },
     windowAgeMinutes: 23,
+  },
+  /* the bedroom window is on the latch while the room is heating: only the
+     top contact is open */
+  bukora: {
+    schedule: 'Winter',
+    climate: {
+      'climate.halo': { state: 'auto', temperature: 21, hvac_action: 'heating', preset_mode: 'schedule' },
+      'climate.etkezo': { state: 'auto', temperature: 21, heating_power_request: 40, hvac_action: 'heating', preset_mode: 'schedule' },
+      'climate.furdo': { state: 'auto', temperature: 23, heating_power_request: 0, preset_mode: 'schedule' },
+      'climate.gyerek': { state: 'auto', temperature: 21, heating_power_request: 0, preset_mode: 'schedule' },
+    },
+    windows: { halo_window_top: 'on' },
+    windowAgeMinutes: 35,
+  },
+  /* the same window swung fully open: both contacts, still one window */
+  teljesen_nyitva: {
+    schedule: 'Winter',
+    climate: {
+      'climate.halo': { state: 'auto', temperature: 21, hvac_action: 'heating', preset_mode: 'schedule' },
+      'climate.etkezo': { state: 'auto', temperature: 21, heating_power_request: 40, hvac_action: 'heating', preset_mode: 'schedule' },
+      'climate.furdo': { state: 'auto', temperature: 23, heating_power_request: 0, preset_mode: 'schedule' },
+      'climate.gyerek': { state: 'auto', temperature: 21, heating_power_request: 0, preset_mode: 'schedule' },
+    },
+    windows: { halo_window_top: 'on', halo_window_bottom: 'on' },
+    windowAgeMinutes: 8,
   },
   tavollet: {
     climate: Object.fromEntries(

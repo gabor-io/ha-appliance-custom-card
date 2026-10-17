@@ -85,6 +85,10 @@ export function buildUnit(hass, climateEntityId, sources = {}, config = {}) {
             openings: { ...(config.openings || {}), ...(sources.openings || {}) },
           }),
           config.open_delay ?? OPEN_DELAY_S,
+          {
+            pairs: config.openings?.pairs ?? sources.openings?.pairs,
+            windows: config.openings?.windows ?? sources.openings?.windows,
+          },
         );
 
   return {

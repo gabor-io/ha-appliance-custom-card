@@ -74,7 +74,10 @@ export function buildRoom(hass, entityId, config) {
     heating,
     canTurnOff: (attrs.hvac_modes || []).includes('off'),
     heads,
-    openings: summariseOpenings(openings, config?.open_delay ?? OPEN_DELAY_S),
+    openings: summariseOpenings(openings, config?.open_delay ?? OPEN_DELAY_S, {
+      pairs: config?.openings?.pairs,
+      windows: config?.openings?.windows,
+    }),
   };
 }
 

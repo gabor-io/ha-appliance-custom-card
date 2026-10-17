@@ -247,10 +247,14 @@ export class NetatmoHeatingCard extends HTMLElement {
 
     /* an open window only matters while the room is paying to be warm */
     for (const room of model.draughty) {
+      /* a window on the latch is the classic way to heat the street, so it
+         is the same warning - but say which, or the reader looks for a
+         window standing open and finds none */
+      const tilted = room.openings.longest?.tilted;
       items.push([
         'warn',
         'window_open',
-        fill(t('alert.window_open'), {
+        fill(t(tilted ? 'alert.window_tilted' : 'alert.window_open'), {
           room: room.name,
           duration: this._ago(room.openings.openFor, t),
         }),
@@ -444,11 +448,19 @@ export class NetatmoHeatingCard extends HTMLElement {
       return `<span class="open-badge none">${icon('window_open')}${escapeHtml(t('ui.no_sensor'))}</span>`;
     }
     if (!openings.open) return '';
-    const label =
-      openings.open > 1
-        ? fill(t('ui.windows_open'), { count: openings.open })
-        : t('ui.window_open');
+    const label = this._openLabel(openings, t);
     return `<span class="open-badge">${icon('window_open')}${escapeHtml(label)}</span>`;
+  }
+
+  /**
+   * "nyitva", "bukóra" or "2 nyitva".
+   *
+   * The count is of windows, not contacts: a tilt-and-turn window swung
+   * fully open trips both of its contacts and is still one open window.
+   */
+  _openLabel(openings, t) {
+    if (openings.open > 1) return fill(t('ui.windows_open'), { count: openings.open });
+    return t(openings.tilted ? 'ui.window_tilted' : 'ui.window_open');
   }
 
   _roomBodyHtml(room, t) {
@@ -485,8 +497,10 @@ export class NetatmoHeatingCard extends HTMLElement {
     if (!this._config.show_openings || room.openings.none) return '';
     const open = room.openings;
     if (!open.open) return '';
+    const where = open.longest?.name || t('ui.window_open');
+    const how = open.longest?.tilted ? ` · ${t('ui.window_tilted')}` : '';
     return `<div class="tags"><span class="tag low">${icon('window_open')}
-      ${escapeHtml(open.longest?.name || t('ui.window_open'))}
+      ${escapeHtml(where + how)}
       <b>${escapeHtml(this._ago(open.openFor, t))}</b></span></div>`;
   }
 

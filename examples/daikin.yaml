@@ -65,3 +65,15 @@
 - type: custom:daikin-ac-card
   entity: climate.dolgozo
   show_openings: false
+
+# 8) Bukó-nyíló ablak: két kontaktus egy szárnyon. A `_top`/`_bottom`,
+#    `_felso`/`_also` és `_upper`/`_lower` végződéseket magától párosítja,
+#    ez a blokk csak akkor kell, ha a te azonosítóid mások.
+- type: custom:daikin-ac-card
+  entity: climate.halo_szoba
+  openings:
+    windows:
+      # AZ ELSŐ A FELSŐ KONTAKTUS - abból derül ki a bukó állapot
+      Hálószoba ablak:
+        - binary_sensor.zigbee_0x001
+        - binary_sensor.zigbee_0x002

@@ -12,7 +12,9 @@ const ROOMS = [
  * to stay quiet about it rather than imply the window is shut.
  */
 const WINDOWS = {
-  halo: ['halo_ablak'],
+  /* a bukó-nyíló window: two contacts on the same sash. Top alone means it
+     is on the latch, both mean it is swung open - one window either way. */
+  halo: ['halo_ablak_top', 'halo_ablak_bottom'],
   nappali: ['nappali_terasz_ajto', 'nappali_ablak'],
   gyerek: ['gyerek_ablak'],
 };
@@ -137,12 +139,23 @@ export const SCENARIOS = {
   kikapcsolva: {
     'climate.halo_szoba': { state: 'off', hvac_action: 'off' },
   },
+  /* the bedroom window is on the latch while the unit cools */
+  bukora: {
+    'climate.halo_szoba': { state: 'cool', temperature: 23, fan_mode: '3', hvac_action: 'cooling' },
+    'climate.nappali': { state: 'off', hvac_action: 'off' },
+    'climate.gyerekszoba': { state: 'off', hvac_action: 'off' },
+    'climate.dolgozo': { state: 'off', hvac_action: 'off' },
+    'binary_sensor.halo_ablak_top': { state: 'on', openFor: 35 },
+  },
   /* cooling into an open terrace door, with the car reporting open too */
   nyitott_ablak: {
     'climate.nappali': { state: 'cool', temperature: 23, fan_mode: '4', hvac_action: 'cooling' },
     'climate.halo_szoba': { state: 'cool', temperature: 24, hvac_action: 'cooling' },
     'climate.gyerekszoba': { state: 'off', hvac_action: 'off' },
     'binary_sensor.nappali_terasz_ajto': { state: 'on', openFor: 23 },
+    /* both contacts of the bedroom window: one window swung open, not two */
+    'binary_sensor.halo_ablak_top': { state: 'on', openFor: 50 },
+    'binary_sensor.halo_ablak_bottom': { state: 'on', openFor: 50 },
     'binary_sensor.gyerek_ablak': { state: 'on', openFor: 90 },
     'binary_sensor.skoda_ablakok': { state: 'on', openFor: 300 },
     'binary_sensor.nappali_bejarati_ajto': { state: 'on', openFor: 12 },

@@ -75,7 +75,9 @@ const HU = {
     /* the name goes in front as a label: a Hungarian article or suffix would
        have to agree with whatever the contact is called, and cannot */
     window_open: '{name} · nyitva, miközben a gép dolgozik ({duration})',
+    window_tilted: '{name} · bukóra van, miközben a gép dolgozik ({duration})',
     window_open_unit: '{unit} · nyitva az ablak, miközben a gép dolgozik ({duration})',
+    window_tilted_unit: '{unit} · bukóra van az ablak, miközben a gép dolgozik ({duration})',
   },
   ui: {
     inside: 'Bent',
@@ -91,6 +93,7 @@ const HU = {
     standby_short: 'Áll',
     window: 'ablak',
     window_open: 'nyitva',
+    window_tilted: 'bukóra',
     windows_open: '{count} nyitva',
     minute_short: 'perce',
     hour_short: 'órája',
@@ -188,7 +191,9 @@ const EN = {
   alert: {
     away: 'Away mode – frost protection only',
     window_open: '{name} has been open for {duration} while the unit runs',
+    window_tilted: '{name} has been on the latch for {duration} while the unit runs',
     window_open_unit: '{unit} · window open for {duration} while the unit runs',
+    window_tilted_unit: '{unit} · window on the latch for {duration} while the unit runs',
   },
   ui: {
     inside: 'Inside',
@@ -204,6 +209,7 @@ const EN = {
     standby_short: 'Off',
     window: 'a window',
     window_open: 'open',
+    window_tilted: 'on the latch',
     windows_open: '{count} open',
     minute_short: 'min',
     hour_short: 'h',

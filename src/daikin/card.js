@@ -287,12 +287,18 @@ export class DaikinAcCard extends HTMLElement {
       const draughty = model.isGroup ? model.draughty : model.draughty ? [model] : [];
       for (const unit of draughty) {
         const duration = this._ago(unit.openings.openFor, t);
+        /* a window on the latch wastes just as much, but saying "open"
+           sends the reader looking for one standing wide */
+        const tilted = unit.openings.longest?.tilted;
         items.push([
           '',
           'window_open',
           model.isGroup
-            ? fill(t('alert.window_open_unit'), { unit: unit.name, duration })
-            : fill(t('alert.window_open'), {
+            ? fill(t(tilted ? 'alert.window_tilted_unit' : 'alert.window_open_unit'), {
+                unit: unit.name,
+                duration,
+              })
+            : fill(t(tilted ? 'alert.window_tilted' : 'alert.window_open'), {
                 name: unit.openings.longest?.name || t('ui.window'),
                 duration,
               }),
@@ -324,10 +330,12 @@ export class DaikinAcCard extends HTMLElement {
     if (!this._config.show_openings) return '';
     const openings = unit.openings;
     if (openings.none || !openings.open) return '';
+    /* the count is of windows, not contacts: a tilt-and-turn window swung
+       fully open trips both of its contacts and is still one window */
     const label =
       openings.open > 1
         ? fill(t('ui.windows_open'), { count: openings.open })
-        : t('ui.window_open');
+        : t(openings.tilted ? 'ui.window_tilted' : 'ui.window_open');
     return `<span class="open-badge${unit.draughty ? '' : ' calm'}">${icon(
       'window_open',
     )}${escapeHtml(label)}</span>`;
