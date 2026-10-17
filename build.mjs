@@ -13,6 +13,7 @@ const TARGETS = [
   { in: 'src/erv/index.js', out: 'dist/fisher-erv-card.js' },
   { in: 'src/daikin/index.js', out: 'dist/daikin-ac-card.js' },
   { in: 'src/netatmo-heat/index.js', out: 'dist/netatmo-heating-card.js' },
+  { in: 'src/netatmo-weather/index.js', out: 'dist/netatmo-weather-card.js' },
 ];
 
 const dev = process.argv.includes('--dev');

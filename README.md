@@ -11,6 +11,7 @@ Hét Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:fisher-erv-card` | Hővisszanyerős szellőztető (fejlesztve: **Fisher F-ERVQ-B150CO2-I**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 | `custom:daikin-ac-card` | Daikin klíma, egy gép vagy egy egész csoport (fejlesztve: **FTXC35**) | beépített [`daikin`](https://www.home-assistant.io/integrations/daikin) integráció |
 | `custom:netatmo-heating-card` | Netatmo fűtés: termosztát, radiátorszelepek, ütemtervek | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
+| `custom:netatmo-weather-card` | Netatmo időjárás-állomás: kinti hőmérséklet, légnyomás, szobánkénti CO₂ | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
 nyelven, világos és sötét témában. A hat háztartási kártya vezérel is; **az
@@ -242,6 +243,37 @@ példák: [`examples/netatmo-heating.yaml`](examples/netatmo-heating.yaml).
 | --- | --- | --- |
 | ![Nyitott ablak](docs/images/netatmo-heat-window.png) | ![Fagyvédelem](docs/images/netatmo-heat-frost.png) | ![Sötét](docs/images/netatmo-heat-dark.png) |
 
+## Időjárás-állomás kártya
+
+![Időjárás-állomás kártya](docs/images/netatmo-weather-light.png)
+
+- **Három állapot modulonként, nem kettő.** Ha egy Netatmo modul lejön a
+  rádióról, nem megy „unavailable" állapotba: órákon át közli az utolsó
+  mérését, mintha friss lenne. A kártya ezért külön kezeli az **élő**, a
+  **nem frissül** (befagyott értékek, „nem frissül" jelvénnyel, mérősáv
+  nélkül) és a **nem válaszol** (lemerült elem) esetet. Egy tegnapi 1800 ppm
+  nem festheti pirosra a kártyát.
+- **Kint, nagyban**: a kültéri hőmérséklet trendnyíllal, mellette a
+  páratartalom és az alapegység légnyomása a saját trendjével.
+- **A rés világít**: az alapegység hengerén a hosszú rés a legrosszabb élő
+  szoba levegőjét mutatja – pont azt csinálja, amit a valódi gép, ha ráteszed
+  a kezed a tetejére.
+- **Szobánkénti CO₂** öt sávos mérőszalaggal és felirattal. A rajzon viszont
+  csak három szín van: a valódi gép is ennyit mutat, és öt, egymáshoz közeli
+  árnyalatot egy ilyen kis hengeren színtévesztő látással nem lehetne
+  megkülönböztetni.
+- **Nem a nevéből tudja, melyik modul melyik**: az alapegységen van
+  légnyomásmérő, a beltéri modulon CO₂, a kültérin egyik sem. A fűtési
+  szelepek ugyanezen a platformon vannak, de csak elemszenzort hoznak létre,
+  ezért maguktól kiesnek.
+
+Részletek: [`docs/netatmo-weather-capabilities.md`](docs/netatmo-weather-capabilities.md),
+példák: [`examples/netatmo-weather.yaml`](examples/netatmo-weather.yaml).
+
+| Leszakadt kültéri modul | Rossz levegő | Néma modul | Sötét téma |
+| --- | --- | --- | --- |
+| ![Leszakadt](docs/images/netatmo-weather-stale.png) | ![Rossz levegő](docs/images/netatmo-weather-co2.png) | ![Néma modul](docs/images/netatmo-weather-dead.png) | ![Sötét](docs/images/netatmo-weather-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -250,11 +282,12 @@ példák: [`examples/netatmo-heating.yaml`](examples/netatmo-heating.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a hét
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a nyolc
    kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
    `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
-   `dist/daikin-ac-card.js`, illetve `dist/netatmo-heating-card.js`.)
+   `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`, illetve
+   `dist/netatmo-weather-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
