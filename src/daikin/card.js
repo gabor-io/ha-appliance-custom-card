@@ -6,6 +6,7 @@ import { applyUnit, renderDefs, renderMini, renderUnit } from './graphics.js';
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
 import { escapeHtml, formatNumber } from '../shared/format.js';
+import { openDuration } from '../shared/openings.js';
 
 export const DEFAULTS = {
   language: 'auto',
@@ -17,6 +18,7 @@ export const DEFAULTS = {
   show_fan: true,
   show_presets: true,
   show_all_swing: false,
+  show_openings: true,
 };
 
 let uidCounter = 0;
@@ -168,9 +170,11 @@ export class DaikinAcCard extends HTMLElement {
   }
 
   _topHtml(model, t) {
+    /* on a single unit the badge is the only place an open window shows while
+       the unit is off: there is no alert then, and silence would read as shut */
     const sub = model.isGroup
       ? `${escapeHtml(fill(t('group.unit_count'), model))} · ${escapeHtml(model.entityId)}`
-      : 'Daikin';
+      : `Daikin${model.draughty ? '' : this._openBadge(model, t)}`;
     return `
       <div class="top">
         <div>
@@ -264,12 +268,69 @@ export class DaikinAcCard extends HTMLElement {
       : `${big}<div class="updown">${up}${down}</div>`;
   }
 
-  _alertsHtml(unit, t) {
-    if (unit.isGroup || !unit.away) return '';
-    return `
-      <div class="alerts">
-        <div class="alert">${icon('away')}<span>${escapeHtml(t('alert.away'))}</span></div>
-      </div>`;
+  /**
+   * The alert strip: away mode, and an open window the unit is fighting.
+   *
+   * The draught alert names the contact on a single unit and the room on a
+   * group, because that is the thing the reader has to go and close.
+   */
+  _alertsHtml(model, t) {
+    const items = [];
+
+    if (!model.isGroup && model.away) {
+      /* away is information, the draught below is the one to act on, so the
+         two never share a colour when they appear together */
+      items.push(['info', 'away', t('alert.away')]);
+    }
+
+    if (this._config.show_openings) {
+      const draughty = model.isGroup ? model.draughty : model.draughty ? [model] : [];
+      for (const unit of draughty) {
+        const duration = this._ago(unit.openings.openFor, t);
+        items.push([
+          '',
+          'window_open',
+          model.isGroup
+            ? fill(t('alert.window_open_unit'), { unit: unit.name, duration })
+            : fill(t('alert.window_open'), {
+                name: unit.openings.longest?.name || t('ui.window'),
+                duration,
+              }),
+        ]);
+      }
+    }
+
+    if (!items.length) return '';
+    const rows = items
+      .map(
+        ([kind, iconName, text]) =>
+          `<div class="alert${kind ? ` ${kind}` : ''}">${icon(iconName)}<span>${escapeHtml(text)}</span></div>`,
+      )
+      .join('');
+    return `<div class="alerts">${rows}</div>`;
+  }
+
+  _ago(seconds, t) {
+    return openDuration(seconds, t('ui.minute_short'), t('ui.hour_short'));
+  }
+
+  /**
+   * The little "nyitva" pill.
+   *
+   * Muted when the unit is not conditioning the room: the window is still
+   * open, but nothing is being paid for it, so it is a note and not a warning.
+   */
+  _openBadge(unit, t) {
+    if (!this._config.show_openings) return '';
+    const openings = unit.openings;
+    if (openings.none || !openings.open) return '';
+    const label =
+      openings.open > 1
+        ? fill(t('ui.windows_open'), { count: openings.open })
+        : t('ui.window_open');
+    return `<span class="open-badge${unit.draughty ? '' : ' calm'}">${icon(
+      'window_open',
+    )}${escapeHtml(label)}</span>`;
   }
 
   /** The segmented mode bar, for a unit or for the whole group. */
@@ -383,7 +444,7 @@ export class DaikinAcCard extends HTMLElement {
   _renderGroup(group, t) {
     this._section('top', this._topHtml(group, t));
     this._groupHero(group, t);
-    this._section('alerts', '');
+    this._section('alerts', this._alertsHtml(group, t));
     this._section('modes', this._config.show_modes ? this._segHtml(group, t) : '');
     this._section('fan', '');
     this._section('buttons', '');
@@ -490,7 +551,7 @@ export class DaikinAcCard extends HTMLElement {
 
       const stateHtml = `${escapeHtml(t(`mode_long.${unit.on ? unit.mode : 'off'}`, unit.mode))}${
         unit.on && unit.fanMode ? ` · ${escapeHtml(this._fanLabel(unit.fanMode, t))}` : ''
-      }${unit.power !== null ? `<em> · ${formatNumber(unit.power, 0)} ${escapeHtml(unit.powerUnit)}</em>` : ''}`;
+      }${unit.power !== null ? `<em> · ${formatNumber(unit.power, 0)} ${escapeHtml(unit.powerUnit)}</em>` : ''}${this._openBadge(unit, t)}`;
       if (row.sig.state !== stateHtml) {
         row.sig.state = stateHtml;
         row.state.innerHTML = stateHtml;

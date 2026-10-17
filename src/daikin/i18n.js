@@ -72,6 +72,10 @@ const HU = {
   },
   alert: {
     away: 'Távollét mód – a gép csak fagyvédelemre fűt',
+    /* the name goes in front as a label: a Hungarian article or suffix would
+       have to agree with whatever the contact is called, and cannot */
+    window_open: '{name} · nyitva, miközben a gép dolgozik ({duration})',
+    window_open_unit: '{unit} · nyitva az ablak, miközben a gép dolgozik ({duration})',
   },
   ui: {
     inside: 'Bent',
@@ -85,6 +89,11 @@ const HU = {
     warmer: 'Melegebb',
     cooler: 'Hidegebb',
     standby_short: 'Áll',
+    window: 'ablak',
+    window_open: 'nyitva',
+    windows_open: '{count} nyitva',
+    minute_short: 'perce',
+    hour_short: 'órája',
     no_entity: 'Nem találtam Daikin klímát. Add meg az `entity` beállítást.',
     missing_entity: 'A megadott entitás nem létezik.',
     empty_group: 'A csoportnak nincs egyetlen klíma tagja sem.',
@@ -100,6 +109,7 @@ const HU = {
     show_fan: 'Ventilátor',
     show_presets: 'Turbó / Eco / Távollét',
     show_all_swing: 'Minden lamella-opció',
+    show_openings: 'Nyitásérzékelők',
     compact: 'Kompakt',
     animate: 'Animációk',
   },
@@ -177,6 +187,8 @@ const EN = {
   },
   alert: {
     away: 'Away mode – frost protection only',
+    window_open: '{name} has been open for {duration} while the unit runs',
+    window_open_unit: '{unit} · window open for {duration} while the unit runs',
   },
   ui: {
     inside: 'Inside',
@@ -190,6 +202,11 @@ const EN = {
     warmer: 'Warmer',
     cooler: 'Cooler',
     standby_short: 'Off',
+    window: 'a window',
+    window_open: 'open',
+    windows_open: '{count} open',
+    minute_short: 'min',
+    hour_short: 'h',
     no_entity: 'No Daikin climate entity found. Set the `entity` option.',
     missing_entity: 'That entity does not exist.',
     empty_group: 'The group has no climate members.',
@@ -205,6 +222,7 @@ const EN = {
     show_fan: 'Fan',
     show_presets: 'Powerful / Econo / Away',
     show_all_swing: 'All swing options',
+    show_openings: 'Opening sensors',
     compact: 'Compact',
     animate: 'Animations',
   },

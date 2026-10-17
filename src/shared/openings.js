@@ -137,3 +137,18 @@ export function summariseOpenings(openings, openDelay = OPEN_DELAY_S) {
     openFor: longest?.openFor ?? null,
   };
 }
+
+/**
+ * How long a contact has been open, in words.
+ *
+ * Both cards that use this draw the same little "23 perce" label, so the
+ * arithmetic lives here and only the two words come from the card's own
+ * translations. Under a minute reads as one minute rather than "0", because
+ * the warning delay already guarantees it has been open a while.
+ */
+export function openDuration(seconds, minuteLabel, hourLabel) {
+  if (seconds === null || seconds === undefined) return '';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${Math.max(1, minutes)} ${minuteLabel}`;
+  return `${Math.round(minutes / 60)} ${hourLabel}`;
+}

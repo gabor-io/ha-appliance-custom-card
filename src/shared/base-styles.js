@@ -16,6 +16,11 @@ export const BASE_STYLES = `
 
 ha-card { overflow: hidden; container-type: inline-size; }
 
+/* Every icon is an inline mdi path with no fill of its own, so without this
+   it renders in the SVG default black and ignores the colour the rules below
+   set on it - invisible on a dark theme. */
+.icon { fill: currentColor; }
+
 .wrap { padding: 16px; display: grid; gap: 16px; }
 .wrap.compact { gap: 12px; padding: 12px; --ap-hero: 104px; }
 

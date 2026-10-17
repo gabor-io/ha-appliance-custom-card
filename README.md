@@ -202,13 +202,17 @@ példák: [`examples/erv.yaml`](examples/erv.yaml).
 - **Csoport egy kártyán**: egy `climate_group` entitást megadva minden gép egy
   sor, saját animált rajzzal; a sorra koppintva helyben nyílnak a vezérlői.
   Vegyes üzemnél a kártya nem tesz úgy, mintha a gépek egyformán állnának.
+- **Nyitott ablak**: ha a gép nyitott ablakba fűt vagy hűt, a kártya szól, és
+  megmondja, mióta. Nem kell felsorolni semmit – a párosítás a klíma
+  **területe** alapján megy. Álló gépnél csak halvány jelvény, csak
+  keringetésnél semmi: az nem kerül pénzbe.
 
 Részletek: [`docs/daikin-capabilities.md`](docs/daikin-capabilities.md),
 példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 
-| Négy gép egy kártyán | Kinyitott gép | Sötét téma |
-| --- | --- | --- |
-| ![Csoport](docs/images/daikin-group.png) | ![Kinyitva](docs/images/daikin-group-open.png) | ![Sötét](docs/images/daikin-dark.png) |
+| Négy gép egy kártyán | Kinyitott gép | Nyitott ablak | Sötét téma |
+| --- | --- | --- | --- |
+| ![Csoport](docs/images/daikin-group.png) | ![Kinyitva](docs/images/daikin-group-open.png) | ![Nyitott ablak](docs/images/daikin-open.png) | ![Sötét](docs/images/daikin-dark.png) |
 
 ## Fűtés kártya
 
