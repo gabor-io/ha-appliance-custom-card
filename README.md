@@ -1,6 +1,6 @@
 # Home Appliance Cards
 
-Hat Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Hét Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -10,9 +10,10 @@ Hat Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:liebherr-fridge-card` | Liebherr hűtő / fagyasztó (fejlesztve: **Rd 5000-150 2**) | beépített [`liebherr`](https://www.home-assistant.io/integrations/liebherr) integráció |
 | `custom:fisher-erv-card` | Hővisszanyerős szellőztető (fejlesztve: **Fisher F-ERVQ-B150CO2-I**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 | `custom:daikin-ac-card` | Daikin klíma, egy gép vagy egy egész csoport (fejlesztve: **FTXC35**) | beépített [`daikin`](https://www.home-assistant.io/integrations/daikin) integráció |
+| `custom:netatmo-heating-card` | Netatmo fűtés: termosztát, radiátorszelepek, ütemtervek | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. Az öt háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. A hat háztartási kártya vezérel is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
@@ -209,6 +210,34 @@ példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 | --- | --- | --- |
 | ![Csoport](docs/images/daikin-group.png) | ![Kinyitva](docs/images/daikin-group-open.png) | ![Sötét](docs/images/daikin-dark.png) |
 
+## Fűtés kártya
+
+![Fűtés kártya](docs/images/netatmo-heat-light.png)
+
+- **A készülékek világítanak, amikor fűtenek** – a termosztát a peremén, a
+  szelepek a fedél mögötti gyűrűn, ahogy a valódi eszközök. A fény erőssége a
+  szoba fűtési igényét követi (`heating_power_request`, 0–100 %), és a sor
+  alatt vékony sáv is mutatja.
+- **A termosztát külön eset**: a Smart Thermostat nem jelent fűtési igényt, a
+  kulcs egyszerűen hiányzik. A kártya ezt nem nullának veszi, hanem a
+  `hvac_action`-re vált – százalék nélkül, de világítva.
+- **Házmód egy sávban**: Ütemterv / Távollét / Fagyvédelem, alatta a mentett
+  ütemtervek. Fagyvédelemben az egész kártya kékre vált és kimondja, hogy a
+  fűtés áll – ez a leggyakoribb „miért hideg a ház" ok.
+- **Nyitásérzékelők**: terület alapján magától párosítja őket a szobákhoz, és
+  **csak akkor figyelmeztet, ha a szoba épp fűt**. Ahol nincs érzékelő, azt is
+  kiírja, nem tesz úgy, mintha zárva lenne.
+- **Elemszintek fejenként**, saját címkével – a Netatmo friendly_name-jei
+  ütköznek, az azonosítóból viszont megkülönböztethetők („ablak",
+  „slim radiator").
+
+Részletek: [`docs/netatmo-heating-capabilities.md`](docs/netatmo-heating-capabilities.md),
+példák: [`examples/netatmo-heating.yaml`](examples/netatmo-heating.yaml).
+
+| Nyitott ablak fűtés közben | Fagyvédelem | Sötét téma |
+| --- | --- | --- |
+| ![Nyitott ablak](docs/images/netatmo-heat-window.png) | ![Fagyvédelem](docs/images/netatmo-heat-frost.png) | ![Sötét](docs/images/netatmo-heat-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -217,11 +246,11 @@ példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a hat
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a hét
    kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
-   `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`, illetve
-   `dist/daikin-ac-card.js`.)
+   `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
+   `dist/daikin-ac-card.js`, illetve `dist/netatmo-heating-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -330,6 +359,10 @@ type: custom:fisher-erv-card
 
 ```yaml
 type: custom:daikin-ac-card
+```
+
+```yaml
+type: custom:netatmo-heating-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő
