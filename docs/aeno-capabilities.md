@@ -125,6 +125,10 @@ légárammal, mint egy konvektor. A rajzon ezért meleg glória veszi körbe, é
 abból indulnak kifelé a hullámok. Falra szerelve nincs lába, a vezérlődoboz a
 jobb szélen ül a zöld visszajelzővel.
 
+Keskeny kártyán – telefonon álló nézetben ez tipikusan 390 képpont – a rajz
+nem tűnik el, hanem a felső sorba kerül, teljes szélességben, alatta az
+állapottal és a hőfokállítóval. A `show_art: false` viszont tényleg elhagyja.
+
 A valódi panelen **nincs kijelző**. A beállított hőfok mégis rajta van a
 kártya rajzán – de vésett felirattá halványítva, nem világító számként, mert a
 kártya kiegészítése, nem a hardver része.

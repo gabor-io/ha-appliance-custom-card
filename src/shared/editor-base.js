@@ -43,13 +43,41 @@ export function createEditorClass(spec) {
       this._render();
     }
 
+    /**
+     * `set hass` fires on every state change in the whole installation -
+     * several times a second in a real house. Rebuilding the form that often
+     * throws away whatever the user is in the middle of doing: on a phone the
+     * device picker is a modal sheet that stays open for seconds, and the
+     * `<select>` behind it is replaced before the choice can be committed, so
+     * the card silently keeps whichever device it already had.
+     *
+     * Nothing in the form depends on live state except the list of devices,
+     * so the editor is rebuilt only when that list changes - and never while
+     * a control in it has focus.
+     */
     set hass(hass) {
+      const first = !this._hass;
       this._hass = hass;
+      if (first) {
+        this._render();
+        return;
+      }
+      if (this.shadowRoot.activeElement) return;
+      if (this._deviceSignature() === this._devices) return;
       this._render();
+    }
+
+    _deviceSignature() {
+      if (!this._hass) return '';
+      return spec
+        .listDevices(this._hass)
+        .map((device) => `${device.id}:${device.name}`)
+        .join('|');
     }
 
     _render() {
       if (!this._config || !this._hass) return;
+      this._devices = this._deviceSignature();
       const t = spec.translator(spec.getLanguage(this._config, this._hass));
       const devices = spec.listDevices(this._hass);
       const current = this._config.device || '';
