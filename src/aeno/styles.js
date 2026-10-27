@@ -55,9 +55,27 @@ ${BASE_STYLES}
 .hero { display: grid; grid-template-columns: 172px minmax(0,1fr) auto; gap: 14px; align-items: center; }
 .hero.no-art { grid-template-columns: minmax(0,1fr) auto; }
 .compact .hero { grid-template-columns: 128px minmax(0,1fr) auto; gap: 10px; }
+/* On a narrow card the readings cannot share a line with the name without
+   breaking the model number in half, so they drop to a line of their own. */
 @container (max-width: 420px) {
-  .hero { grid-template-columns: minmax(0,1fr) auto; }
-  .hero .art { display: none; }
+  .top { flex-wrap: wrap; }
+  .top .spacer { display: none; }
+  .ind { width: 100%; justify-content: flex-start; }
+}
+
+/* A phone card in portrait is about 390px wide: too narrow for the drawing,
+   the status text and the setpoint side by side, but no reason to drop the
+   drawing - it stacks above the other two instead. */
+@container (max-width: 420px) {
+  .hero {
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-areas: 'art art' 'status dial';
+    gap: 10px 12px;
+  }
+  .hero .art { grid-area: art; width: 100%; max-width: 280px; justify-self: center; }
+  .hero .status { grid-area: status; }
+  .hero .dial { grid-area: dial; }
+  .hero.no-art { grid-template-areas: 'status dial'; }
 }
 
 .mode-name { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ap-accent); }
@@ -144,6 +162,7 @@ ${BASE_STYLES}
 
 /* ---------- the panel drawing ---------- */
 .art { display: block; }
+.art[hidden] { display: none; }
 .panel { width: 100%; height: auto; display: block; }
 .panel .wall { fill: #000; opacity: .16; }
 .panel .glass { stroke: rgba(0,0,0,.10); stroke-width: .8; }
