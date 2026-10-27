@@ -16,6 +16,9 @@ export const DEFAULTS = {
   show_schedule: true,
   show_openings: true,
   show_batteries: true,
+  /* null = follow the view: the house card shows the mode bar, a room card
+     does not. `true` or `false` overrides it either way. */
+  show_modes: null,
 };
 
 let uidCounter = 0;
@@ -119,9 +122,36 @@ export class NetatmoHeatingCard extends HTMLElement {
     this._section('top', this._topHtml(model, t));
     this._heroSection(model, t);
     this._section('alerts', this._alertsHtml(model, t));
-    this._section('modes', this._segHtml(model, t));
-    this._section('schedule', this._scheduleHtml(model, t));
-    this._roomsSection(model, t);
+
+    /* On a room card the house-wide controls are off by default. The house
+       mode still *shows* in the header and in the state line, because it is
+       what explains a 7 °C setpoint - but switching the whole house from a
+       single room's tile is a footgun, so it takes `show_modes: true`. */
+    const wantModes = this._config.show_modes ?? !model.single;
+    this._section('modes', wantModes ? this._segHtml(model, t) : '');
+    this._section('schedule', wantModes ? this._scheduleHtml(model, t) : '');
+
+    if (model.single) this._singleRoomSection(model, t);
+    else this._roomsSection(model, t);
+  }
+
+  /**
+   * The body of a one-room card: the controls that belong to the room.
+   *
+   * Everything here already exists for an expanded row in the house view -
+   * the same temperature stepper, boost, heads and window tags - so the
+   * room card is that body, not a second implementation of it.
+   */
+  _singleRoomSection(model, t) {
+    this._rows.clear();
+    const section = this._sections.rooms;
+    const html = `<div class="divider"></div>
+      <div class="rbody single">${this._roomBodyHtml(model.room, t)}</div>`;
+    if (this._signatures.single !== html) {
+      this._signatures.single = html;
+      section.innerHTML = html;
+    }
+    section.hidden = false;
   }
 
   _renderEmpty(model, t) {
@@ -164,69 +194,99 @@ export class NetatmoHeatingCard extends HTMLElement {
 
   _topHtml(model, t) {
     const mode = MODES.find((entry) => entry.key === model.mode) || MODES[0];
+    const name = this._config.name || (model.single ? model.room.name : t('card_name'));
+    const sub = model.single
+      ? `Netatmo · ${escapeHtml(fill(t('ui.heads_count'), { count: model.room.heads.length }))}`
+      : `Netatmo · ${escapeHtml(fill(t('ui.rooms_count'), { count: model.rooms.length }))}${
+          model.heads.length ? `, ${escapeHtml(fill(t('ui.heads_count'), { count: model.heads.length }))}` : ''}`;
     return `
       <div class="top">
         <div>
-          <div class="name">${escapeHtml(this._config.name || t('card_name'))}</div>
-          <div class="sub">Netatmo · ${escapeHtml(fill(t('ui.rooms_count'), { count: model.rooms.length }))}${
-            model.heads.length ? `, ${escapeHtml(fill(t('ui.heads_count'), { count: model.heads.length }))}` : ''}</div>
+          <div class="name">${escapeHtml(name)}</div>
+          <div class="sub">${sub}</div>
         </div>
         <div class="spacer"></div>
         <span class="pill">${icon(mode.icon)}${escapeHtml(t(`mode.${mode.key}`))}</span>
       </div>`;
   }
 
+  /** Whether a room is driven by the wall thermostat or by a valve. */
+  _hasThermostat(room) {
+    return Boolean(room?.heads.some((head) => /thermostat/i.test(head.label)));
+  }
+
   _heroSection(model, t) {
-    if (!this._sections.hero.querySelector('.hero')) {
+    /* a room with only valves gets a valve drawn, not the wall thermostat */
+    const wantValve = model.single && !this._hasThermostat(model.room);
+    if (this._heroShape !== (wantValve ? 'valve' : 'thermostat')) {
+      this._heroShape = wantValve ? 'valve' : 'thermostat';
       this._sections.hero.innerHTML = `
         <div class="hero">
-          <div class="art">${renderThermostat(this._uid)}</div>
+          <div class="art">${wantValve ? renderValve(this._uid) : renderThermostat(this._uid)}</div>
           <div class="status"></div>
           <div class="outside"></div>
         </div>`;
       this._statusNode = this._sections.hero.querySelector('.status');
       this._outsideNode = this._sections.hero.querySelector('.outside');
+      this._signatures.status = null;
+      this._signatures.outside = null;
     }
 
     const art = this._sections.hero.querySelector('.art');
     art.hidden = !this._config.show_art;
     if (this._config.show_art) {
-      /* the hero device stands for the house: it glows while anything heats */
-      /* the drawing is the wall thermostat, so it shows the thermostat's own
-         room; the glow still stands for the whole house */
-      const reference =
-        model.rooms.find((room) => room.heads.some((head) => /thermostat/i.test(head.label))) ||
-        model.rooms.find((room) => room.heating) ||
-        model.rooms[0];
+      /* on a room card the drawing IS that room, request and all; on the
+         house card it is the wall thermostat and the glow stands for the
+         whole house */
+      const reference = model.single
+        ? model.room
+        : model.rooms.find((room) => this._hasThermostat(room)) ||
+          model.rooms.find((room) => room.heating) ||
+          model.rooms[0];
       applyDevice(art.querySelector('.dev'), {
         ...reference,
-        heating: model.heating > 0,
-        request: null,
+        heating: model.single ? reference.heating : model.heating > 0,
+        request: model.single ? reference.request : null,
       });
     }
 
-    const headline = model.heating
-      ? fill(t('state.heating_rooms'), { count: model.heating })
-      : model.mode === 'frost_guard'
-        ? t('state.all_off')
-        : t('state.nothing');
+    const headline = model.single
+      ? this._roomHeadline(model.room, model.mode, t)
+      : model.heating
+        ? fill(t('state.heating_rooms'), { count: model.heating })
+        : model.mode === 'frost_guard'
+          ? t('state.all_off')
+          : t('state.nothing');
 
+    /* the house mode is not a control here, but it is the reason a room
+       sits at 7 °C, so the room card still says it out loud */
     const sub =
       model.mode === 'schedule'
         ? fill(t('sub.schedule'), { name: model.schedule.current || '–' })
         : fill(t(`sub.${model.mode}`), { temp: formatDecimal(model.setpoint, this._hass, 1) });
 
+    /* the heating request is the most Netatmo-specific signal there is, and
+       the house view shows it per row - a room card must not lose it */
+    const room = model.single ? model.room : null;
+    const showRequest = Boolean(room?.heating && room.request !== null);
+    const requestHtml = showRequest
+      ? `<div class="req single"><div class="track"><i style="width:${Math.min(100, room.request)}%"></i></div>
+           <span class="req-val">${room.request} %</span></div>`
+      : '';
+
     const statusHtml = `
       <div class="mode-name">${escapeHtml(t(`mode.${model.mode}`))}</div>
       <div class="state">${escapeHtml(headline)}</div>
-      <div class="state-sub">${escapeHtml(sub)}</div>`;
+      <div class="state-sub">${escapeHtml(sub)}</div>
+      ${requestHtml}`;
     if (this._signatures.status !== statusHtml) {
       this._signatures.status = statusHtml;
       this._statusNode.innerHTML = statusHtml;
     }
 
-    const outsideHtml =
-      model.outside === null
+    const outsideHtml = model.single
+      ? this._roomReadingHtml(model.room, t)
+      : model.outside === null
         ? ''
         : `<div class="cap">${escapeHtml(t('ui.outside'))}${
             model.outsideStale ? `<span class="open-badge none">${escapeHtml(t('ui.stale'))}</span>` : ''
@@ -236,6 +296,26 @@ export class NetatmoHeatingCard extends HTMLElement {
       this._signatures.outside = outsideHtml;
       this._outsideNode.innerHTML = outsideHtml;
     }
+  }
+
+  /** The headline of a room card: what this room is doing, and toward what. */
+  _roomHeadline(room, mode, t) {
+    if (!room.available) return t('state.room_dead');
+    if (room.heating && room.target !== null) {
+      return fill(t('state.room_heating'), { temp: formatDecimal(room.target, this._hass, 1) });
+    }
+    if (room.target !== null) {
+      return fill(t('state.room_reached'), { temp: formatDecimal(room.target, this._hass, 1) });
+    }
+    return this._roomState(room, mode, t);
+  }
+
+  /** The big number on a room card: the room's own temperature. */
+  _roomReadingHtml(room, t) {
+    const value =
+      room.current === null ? '–' : `${formatDecimal(room.current, this._hass, 1)}<small> °C</small>`;
+    return `<div class="cap">${escapeHtml(t('ui.current'))}</div>
+      <div class="big ${room.available ? '' : 'muted'}">${value}</div>`;
   }
 
   _alertsHtml(model, t) {
@@ -251,18 +331,23 @@ export class NetatmoHeatingCard extends HTMLElement {
          is the same warning - but say which, or the reader looks for a
          window standing open and finds none */
       const tilted = room.openings.longest?.tilted;
+      const key = `alert.window_${tilted ? 'tilted' : 'open'}${model.single ? '_here' : ''}`;
       items.push([
         'warn',
         'window_open',
-        fill(t(tilted ? 'alert.window_tilted' : 'alert.window_open'), {
+        fill(t(key), {
           room: room.name,
           duration: this._ago(room.openings.openFor, t),
         }),
       ]);
     }
 
-    for (const room of model.dead) {
-      items.push(['quiet', 'battery', fill(t('alert.room_dead'), { room: room.name })]);
+    /* on a room card the headline already says the valve is silent, and the
+       body repeats why - a third copy in an alert is noise */
+    if (!model.single) {
+      for (const room of model.dead) {
+        items.push(['quiet', 'battery', fill(t('alert.room_dead'), { room: room.name })]);
+      }
     }
     for (const head of model.batteryLow) {
       const critical = head.battery <= BATTERY_CRITICAL;

@@ -38,6 +38,26 @@ export function findScheduleSelect(hass) {
   return entry?.entity_id || null;
 }
 
+/**
+ * The climate entities of one device.
+ *
+ * A Netatmo room has a single climate entity - the room's setpoint - owned
+ * by whichever head the integration registered it against. The other heads
+ * in the room have only a battery sensor, so picking "the thermostat" and
+ * picking "the room" are the same choice.
+ */
+export function roomsForDevice(hass, deviceId) {
+  if (!deviceId) return [];
+  return registryEntries(hass)
+    .filter(
+      (entry) =>
+        entry.device_id === deviceId &&
+        entry.platform === PLATFORM &&
+        entry.entity_id.startsWith('climate.'),
+    )
+    .map((entry) => entry.entity_id);
+}
+
 /** Devices owning a Netatmo climate entity, for the visual editor. */
 export function listHeatingDevices(hass) {
   const devices = new Map();

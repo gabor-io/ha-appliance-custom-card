@@ -46,3 +46,27 @@
     # vagy, ha csak a végződésed más:
     pairs:
       - [buko, nyilo]
+
+# EGY SZOBA KÁRTYÁJA
+# Add meg a szoba climate entitását, és a kártya szobakártyává alakul:
+# a szoba saját hőmérséklete nagyban, a saját eszköze rajzolva, a fűtési
+# igénye sávval, és rögtön ott a hőfokállítás.
+- type: custom:netatmo-heating-card
+  entity: climate.halo_szoba
+
+# Ugyanez a vizuális szerkesztőből: az eszközválasztó ezt írja be.
+# A szoba MINDEN feje megjelenik, nem csak a kiválasztott.
+- type: custom:netatmo-heating-card
+  device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
+
+# Szobakártya, de a házmód-sávval együtt. Vigyázz: az üzemmód az EGÉSZ
+# házra vonatkozik, nem csak erre a szobára.
+- type: custom:netatmo-heating-card
+  entity: climate.halo_szoba
+  show_modes: true
+
+# Kompakt szobakártya mobil dashboardra, rajz nélkül
+- type: custom:netatmo-heating-card
+  entity: climate.furdoszoba
+  compact: true
+  show_art: false

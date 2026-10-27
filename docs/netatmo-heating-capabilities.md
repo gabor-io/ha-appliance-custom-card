@@ -143,6 +143,58 @@ kimondja, melyikről van szó.
 > visszaállít. Mindkettő **rövidebbnek** mutatja a nyitást a valóságnál, tehát
 > a figyelmeztetés legfeljebb késik, hamisan sosem szólal meg.
 
+## Egy szoba kártyája
+
+A kártyának két nézete van. Alapból az egész házat mutatja. Ha **egy szobát**
+adsz meg, szobakártyává alakul:
+
+```yaml
+# a szoba climate entitásával
+type: custom:netatmo-heating-card
+entity: climate.halo_szoba
+
+# vagy a vizuális szerkesztőben: válaszd ki az eszközt a listából
+type: custom:netatmo-heating-card
+device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
+```
+
+A Netatmo-nál egy szobához **egy** climate entitás tartozik – a szoba
+kívánt hőfoka –, amit az integráció valamelyik fejhez regisztrál. A szoba
+többi feje csak elemszenzort hoz létre. Ezért „a termosztát kiválasztása" és
+„a szoba kiválasztása" ugyanaz a döntés: a kártya a szoba összes fejét
+mutatja, nem csak azt az egyet, amelyiket kiválasztottad.
+
+Mi változik a házkártyához képest:
+
+| | Egész ház | Egy szoba |
+| --- | --- | --- |
+| fejléc | „Fűtés", 5 szoba, 8 fej | a szoba neve, hány fej van benne |
+| rajz | a fali termosztát, a ház fűtésére világít | **ennek a szobának** az eszköze, a saját igényére |
+| főcím | „2 szobában megy a fűtés" | „Fűt 21 °C-ra" / „21 °C-ot tart" |
+| nagy szám | kinti hőmérséklet | **a szoba** hőmérséklete |
+| fűtési igény | soronként | a főcím alatt, sávval |
+| üzemmód-sáv | ott van | **nincs** (lásd lent) |
+| programválasztó | ott van | **nincs** |
+| szobalista | minden szoba | nincs – a kártya maga a szoba |
+| vezérlők | a sort kinyitva | rögtön láthatóak |
+
+**A házmód nem vezérlő a szobakártyán.** A Netatmo az üzemmódot (ütemterv /
+távollét / fagyvédelem) az egész házra állítja, és egy szoba csempéjéről az
+egész házat átbillenteni könnyű baleset. Viszont *látszik*: a fejlécben
+jelvényként, és a főcím alatt szövegként – mert ez magyarázza meg, miért áll
+7 °C-on a szoba. Ha mégis kell rá, kapcsold be:
+
+```yaml
+show_modes: true
+```
+
+A `view` kulccsal mindkét irányban felülbírálható a választás:
+
+```yaml
+view: room     # szobakártya akkor is, ha a ház egyetlen szobából áll
+view: house    # házkártya akkor is, ha egy szobát adtál meg
+```
+
 ## Elemszintek
 
 A Netatmo lépcsős skálát ad (90 / 75 / 50 …), nem valódi százalékot, ezért a
@@ -161,7 +213,10 @@ alapuló címke megkülönböztethetetlen sorokat adna. Az azonosítóból „wi
 
 | Kulcs | Alapérték | Mit csinál |
 | --- | --- | --- |
+| `entity` | – | **egy** szoba climate entitása → szobakártya |
+| `device` | – | ugyanaz, eszközzel (ezt írja a vizuális szerkesztő) |
 | `entities` | automatikus | a szobák climate entitásai |
+| `view` | automatikus | `room` vagy `house`, felülírja a választást |
 | `schedule_entity` | automatikus | az ütemterv-választó |
 | `name` | „Fűtés" | fejléc felirat |
 | `rooms` | – | szobánkénti név felülírás |
@@ -174,5 +229,6 @@ alapuló címke megkülönböztethetetlen sorokat adna. Az azonosítóból „wi
 | `animate` | `true` | animációk ki/be |
 | `show_art` | `true` | készülékrajz |
 | `show_schedule` | `true` | ütemterv-választó |
+| `show_modes` | a nézet szerint | házmód-sáv: házkártyán igen, szobakártyán nem |
 | `show_openings` | `true` | nyitásérzékelők |
 | `show_batteries` | `true` | elemszintek |

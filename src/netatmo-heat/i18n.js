@@ -8,6 +8,12 @@ const HU = {
     nothing: 'Egyik szoba sem kér hőt',
     all_off: 'A fűtés áll',
     unavailable: 'A fűtés nem elérhető',
+    /* a single room's headline - the target is the useful half */
+    room_heating: 'Fűt {temp} °C-ra',
+    /* no article: in Hungarian it would have to agree with how the number
+       is spoken (a huszonegy, az öt), which a template cannot know */
+    room_reached: '{temp} °C-ot tart',
+    room_dead: 'A szelep nem válaszol',
   },
   sub: {
     schedule: 'Ütemterv: {name}',
@@ -30,6 +36,9 @@ const HU = {
     battery_silent: '{count} fej nem jelent elemszintet – nézd meg őket',
     window_open: '{room} · nyitva az ablak, miközben fűt ({duration})',
     window_tilted: '{room} · bukóra van az ablak, miközben fűt ({duration})',
+    /* on a one-room card the header already says which room it is */
+    window_open_here: 'Nyitva az ablak, miközben fűt ({duration})',
+    window_tilted_here: 'Bukóra van az ablak, miközben fűt ({duration})',
   },
   ui: {
     rooms: 'Szobák',
@@ -48,6 +57,7 @@ const HU = {
     silent: 'nem jelent',
     dead_hint: 'A szelep nem jelentkezik be – valószínűleg lemerült az eleme.',
     stale: 'nem frissül',
+    current: 'Most',
     no_entity: 'Nem találtam Netatmo fűtést ebben a Home Assistantban.',
     minute_short: 'perce',
     hour_short: 'órája',
@@ -68,6 +78,9 @@ const EN = {
     nothing: 'No room is calling for heat',
     all_off: 'Heating is off',
     unavailable: 'Heating is unavailable',
+    room_heating: 'Heating to {temp} °C',
+    room_reached: 'Holding {temp} °C',
+    room_dead: 'The valve is not responding',
   },
   sub: {
     schedule: 'Schedule: {name}',
@@ -90,6 +103,8 @@ const EN = {
     battery_silent: '{count} heads report no battery level – check them',
     window_open: '{room} · window open while heating ({duration})',
     window_tilted: '{room} · window on the latch while heating ({duration})',
+    window_open_here: 'Window open while heating ({duration})',
+    window_tilted_here: 'Window on the latch while heating ({duration})',
   },
   ui: {
     rooms: 'Rooms',
@@ -108,6 +123,7 @@ const EN = {
     silent: 'silent',
     dead_hint: 'The valve is not checking in – most likely a flat battery.',
     stale: 'stale',
+    current: 'Now',
     no_entity: 'No Netatmo heating found in this Home Assistant.',
     minute_short: 'min',
     hour_short: 'h',

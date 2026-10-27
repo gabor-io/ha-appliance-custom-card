@@ -127,6 +127,15 @@ ${BASE_STYLES}
 
 .rbody { display: none; padding: 2px 10px 11px; gap: 9px; }
 .room.open .rbody { display: grid; }
+/* a one-room card is nothing but the body, so it is never folded away */
+.rbody.single { display: grid; padding: 10px 2px 2px; gap: 11px; }
+/* the same request bar as a room row, but inline under the hero's state */
+.req.single { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.req.single .track { flex: 1; }
+.req.single .req-val {
+  font-size: .72rem; font-weight: 650; color: var(--nh-heat);
+  font-variant-numeric: tabular-nums;
+}
 .rrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .updown { display: inline-grid; grid-auto-flow: column; gap: 5px; }
 .updown button {
