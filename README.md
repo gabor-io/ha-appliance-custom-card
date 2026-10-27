@@ -236,6 +236,11 @@ példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 - **Bukó-nyíló ablakot egynek számol**: ha egy szárnyon két kontaktus van,
   felül és alul, az egy ablak. Csak a felső nyitva = **bukóra** van, mindkettő
   = teljesen nyitva – a sarkig kitárt ablak nem „2 nyitva".
+- **Egy szoba külön kártyán**: add meg a szoba entitását (vagy válaszd ki az
+  eszközt a szerkesztőben), és a kártya szobakártyává alakul – a szoba saját
+  hőmérséklete nagyban, a saját eszköze rajzolva, a fűtési igénye sávval,
+  rögtön elérhető hőfokállítással. A házmód látszik rajta, de nem vezérlő:
+  egy szoba csempéjéről az egész házat átbillenteni könnyű baleset.
 - **Elemszintek fejenként**, saját címkével – a Netatmo friendly_name-jei
   ütköznek, az azonosítóból viszont megkülönböztethetők („ablak",
   „slim radiator").
@@ -243,9 +248,9 @@ példák: [`examples/daikin.yaml`](examples/daikin.yaml).
 Részletek: [`docs/netatmo-heating-capabilities.md`](docs/netatmo-heating-capabilities.md),
 példák: [`examples/netatmo-heating.yaml`](examples/netatmo-heating.yaml).
 
-| Nyitott ablak fűtés közben | Fagyvédelem | Sötét téma |
-| --- | --- | --- |
-| ![Nyitott ablak](docs/images/netatmo-heat-window.png) | ![Fagyvédelem](docs/images/netatmo-heat-frost.png) | ![Sötét](docs/images/netatmo-heat-dark.png) |
+| Egy szoba kártyája | Nyitott ablak fűtés közben | Fagyvédelem | Sötét téma |
+| --- | --- | --- | --- |
+| ![Egy szoba](docs/images/netatmo-heat-room.png) | ![Nyitott ablak](docs/images/netatmo-heat-window.png) | ![Fagyvédelem](docs/images/netatmo-heat-frost.png) | ![Sötét](docs/images/netatmo-heat-dark.png) |
 
 ## Időjárás-állomás kártya
 

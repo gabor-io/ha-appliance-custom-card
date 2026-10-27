@@ -21,6 +21,7 @@ import {
   openingsFor,
   roomBatteries,
   roomName,
+  roomsForDevice,
 } from './entities.js';
 import { summariseOpenings, OPEN_DELAY_S } from '../shared/openings.js';
 
@@ -92,8 +93,26 @@ function housePreset(rooms) {
   )[0];
 }
 
+/**
+ * The rooms the card is about, and whether the user picked just one.
+ *
+ * `entity` and `device` both narrow to a single room; `entities` takes a
+ * list. Nothing at all means the whole house. The visual editor writes
+ * `device`, which used to be ignored here - the picker was in the editor
+ * and did nothing.
+ */
+function targetRooms(hass, config) {
+  if (config?.entity) return { ids: [config.entity], picked: true };
+  if (config?.device) {
+    const ids = roomsForDevice(hass, config.device);
+    if (ids.length) return { ids, picked: true };
+  }
+  if (config?.entities?.length) return { ids: config.entities, picked: true };
+  return { ids: listRoomEntities(hass), picked: false };
+}
+
 export function buildModel(hass, config) {
-  const ids = config?.entities?.length ? config.entities : listRoomEntities(hass);
+  const { ids, picked } = targetRooms(hass, config);
   if (!ids.length) return { ok: false, reason: 'no_entity' };
 
   const rooms = ids.map((id) => buildRoom(hass, id, config)).filter(Boolean);
@@ -112,8 +131,16 @@ export function buildModel(hass, config) {
     room.heads.map((head) => ({ ...head, room: room.name })),
   );
 
+  /* one room, asked for by name: the card drops the house-wide furniture
+     and becomes a room card. `view` forces it either way. */
+  const single =
+    config?.view === 'room' ||
+    (config?.view !== 'house' && picked && rooms.length === 1);
+
   return {
     ok: true,
+    single,
+    room: rooms[0],
     rooms,
     heating: heating.length,
     mode: housePreset(rooms),

@@ -50,25 +50,31 @@
   const toolbar = document.getElementById('toolbar');
 
   let current = new Set(['most', 'futes']);
+  /* 'haz' = the whole house, or one room's climate entity */
+  let view = 'haz';
 
   function draw() {
     grid.replaceChildren();
     for (const key of current) {
       const wrapper = document.createElement('div');
       const card = document.createElement('netatmo-heating-card');
-      card.setConfig({
-        type: 'custom:netatmo-heating-card',
-        language: 'hu',
-        sources: {
-          outside: 'sensor.kulteri_homerseklet',
-          outside_connectivity: 'binary_sensor.kulteri_modul_csatlakozas',
-        },
-      });
+      card.setConfig(
+        view === 'haz'
+          ? {
+              type: 'custom:netatmo-heating-card',
+              language: 'hu',
+              sources: {
+                outside: 'sensor.kulteri_homerseklet',
+                outside_connectivity: 'binary_sensor.kulteri_modul_csatlakozas',
+              },
+            }
+          : { type: 'custom:netatmo-heating-card', language: 'hu', entity: view },
+      );
       const hass = makeHass(key);
       hass.themes = { darkMode: document.body.classList.contains('dark') };
       card.hass = hass;
       const title = document.createElement('h3');
-      title.textContent = key;
+      title.textContent = `${key} · ${view === 'haz' ? 'egész ház' : view}`;
       wrapper.append(title, card);
       grid.append(wrapper);
     }
@@ -83,6 +89,18 @@
     };
     toolbar.append(button);
   }
+  for (const [label, target] of [
+    ['egész ház', 'haz'],
+    ['Hálószoba', 'climate.halo'],
+    ['Étkező', 'climate.etkezo'],
+    ['Kisszoba', 'climate.kis'],
+  ]) {
+    const button = document.createElement('button');
+    button.textContent = label;
+    button.onclick = () => { view = target; draw(); };
+    toolbar.append(button);
+  }
+
   const dark = document.createElement('button');
   dark.textContent = 'dark';
   dark.onclick = () => { document.body.classList.toggle('dark'); draw(); };
