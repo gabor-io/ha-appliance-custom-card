@@ -1,6 +1,6 @@
 # Home Appliance Cards
 
-Hét Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Kilenc Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -12,9 +12,10 @@ Hét Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:daikin-ac-card` | Daikin klíma, egy gép vagy egy egész csoport (fejlesztve: **FTXC35**) | beépített [`daikin`](https://www.home-assistant.io/integrations/daikin) integráció |
 | `custom:netatmo-heating-card` | Netatmo fűtés: termosztát, radiátorszelepek, ütemtervek | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 | `custom:netatmo-weather-card` | Netatmo időjárás-állomás: kinti hőmérséklet, légnyomás, szobánkénti CO₂ | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
+| `custom:aeno-heater-card` | AENO infra fűtőpanel (fejlesztve: **AGH0001S**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A hat háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. A nyolc háztartási kártya vezérel is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
@@ -286,6 +287,43 @@ példák: [`examples/netatmo-weather.yaml`](examples/netatmo-weather.yaml).
 | --- | --- | --- | --- |
 | ![Leszakadt](docs/images/netatmo-weather-stale.png) | ![Rossz levegő](docs/images/netatmo-weather-co2.png) | ![Néma modul](docs/images/netatmo-weather-dead.png) | ![Sötét](docs/images/netatmo-weather-dark.png) |
 
+## Infrapanel kártya
+
+![Infrapanel kártya](docs/images/aeno-light.png)
+
+- **A panel úgy rajzolva, ahogy a falon van**: láb nélkül, a vezérlődobozzal a
+  jobb szélen. Infrapanel, tehát a hőt a lap **síkjából kifelé** sugározza, nem
+  felszálló légárammal – a rajzon ezért meleg glória veszi körbe, és abból
+  indulnak kifelé a hullámok, nem fölfelé.
+- **A beállított hőfok a panelre írva.** A valódi gépen nincs kijelző, ezért
+  nem világító számként kerül rá, hanem az üvegbe maratva – a kártya
+  kiegészítése, nem hardver.
+- **Az izzás a lap mért hőmérsékletét követi, nem a fűtési jelzést.** Egy perce
+  bekapcsolt panel már „fűt", de még 29 °C-os: ilyenkor a rajz is alig meleg,
+  és a kártya kiírja, hogy még melegszik. Fűtés közben negyed óra alatt 70 °C-ig
+  megy a lap.
+- **A Folyamatos mód csapdáját kimondja.** A panel Smart módban követi a
+  beállított hőfokot, Folyamatosban viszont **nem veszi figyelembe** – ott
+  felejtve egész nap fűt. Ez nem egy megnyomott gomb a kártyán, hanem külön
+  figyelmeztetés.
+- **Nyitott ablak**: a párosítás a panel **területe** alapján megy, felsorolni
+  nem kell semmit. A bukó-nyíló ablak két kontaktusa egy ablak, és a kártya
+  kimondja, ha csak **bukóra** van. Álló panelnél csak halvány jelvény: az nem
+  kerül pénzbe.
+- **A nevéből nem indul ki semmi.** Mindkét panel ugyanazt a friendly_name-et
+  adja („AENO Smart Heater"), ezért a kártya címe a terület neve, és két panel
+  esetén inkább megkérdezi, melyikről szóljon, mint hogy találomra válasszon.
+- **Gyerekzár, a lap max. hőfoka, időzítő** – ezek csak a panel saját
+  eszközprofiljával léteznek. A gyári `princess_panel_heater` profillal a
+  kártya csendben elhagyja őket, nem mutat halott vezérlőket.
+
+Részletek: [`docs/aeno-capabilities.md`](docs/aeno-capabilities.md),
+példák: [`examples/aeno.yaml`](examples/aeno.yaml).
+
+| Folyamatos mód | Nyitott ablak | Időzítő | Gyári profil | Sötét téma |
+| --- | --- | --- | --- | --- |
+| ![Folyamatos](docs/images/aeno-constant.png) | ![Nyitott ablak](docs/images/aeno-window.png) | ![Időzítő](docs/images/aeno-timer.png) | ![Gyári profil](docs/images/aeno-stock.png) | ![Sötét](docs/images/aeno-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -294,12 +332,12 @@ példák: [`examples/netatmo-weather.yaml`](examples/netatmo-weather.yaml).
 
 ### Kézzel (privát repónál ez ajánlott)
 
-1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a nyolc
-   kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
+1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a
+   kilenc kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
    `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
-   `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`, illetve
-   `dist/netatmo-weather-card.js`.)
+   `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`,
+   `dist/netatmo-weather-card.js`, illetve `dist/aeno-heater-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -412,6 +450,14 @@ type: custom:daikin-ac-card
 
 ```yaml
 type: custom:netatmo-heating-card
+```
+
+```yaml
+type: custom:netatmo-weather-card
+```
+
+```yaml
+type: custom:aeno-heater-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő
