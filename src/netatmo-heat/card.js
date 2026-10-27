@@ -595,8 +595,9 @@ export class NetatmoHeatingCard extends HTMLElement {
       .map((head) => {
         const cls = head.battery === null ? 'silent' : head.battery <= BATTERY_WARN ? 'low' : '';
         const value = head.battery === null ? t('ui.silent') : `${head.battery} %`;
+        const label = t(`head.${head.label}`, head.label);
         return `<span class="tag ${cls}" data-action="more-info" data-entity="${escapeHtml(head.entityId)}">
-          ${icon('battery')}${escapeHtml(head.label)} <b>${escapeHtml(value)}</b></span>`;
+          ${icon('battery')}${escapeHtml(label)} <b>${escapeHtml(value)}</b></span>`;
       })
       .join('');
     return `<div class="tags">${tags}</div>`;

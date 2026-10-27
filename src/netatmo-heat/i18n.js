@@ -20,6 +20,13 @@ const HU = {
     away: 'Távolléti hőfok: {temp} °C',
     frost_guard: 'Fagyvédelmi hőfok: {temp} °C',
   },
+  /* the head labels are cut out of the entity id, so they arrive in
+     English; only the two device kinds are worth translating - the rest
+     ("window", "garden") are names the user gave the heads themselves */
+  head: {
+    thermostat: 'termosztát',
+    valve: 'szelep',
+  },
   room: {
     heating: 'Fűt',
     reached: 'Elérte a hőfokot',
@@ -86,6 +93,10 @@ const EN = {
     schedule: 'Schedule: {name}',
     away: 'Away temperature: {temp} °C',
     frost_guard: 'Frost guard: {temp} °C',
+  },
+  head: {
+    thermostat: 'thermostat',
+    valve: 'valve',
   },
   room: {
     heating: 'Heating',
