@@ -1,0 +1,73 @@
+# AENO infrapanel kártya – példák
+# Részletek: docs/aeno-capabilities.md
+
+# 1) Egyetlen panelnél még az entitás sem kell
+- type: custom:aeno-heater-card
+
+# 2) Két panel, két kártya. A cím magától a terület neve lesz, úgyhogy
+#    a `name` csak akkor kell, ha mást akarsz kiírni - a két panel
+#    friendly_name-je egyforma, abból nem lehetne megkülönböztetni őket.
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater_2
+  name: Dolgozó panel
+
+# 3) Szobában mérő hőmérővel. A panel saját érzékelője a falon, a fűtött
+#    lap mellett ül - egy külön hőmérő a szoba közepén pontosabb.
+#    A gép értéke halványan mellette marad.
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  sources:
+    temperature: sensor.halo_homerseklet
+    humidity: sensor.halo_paratartalom
+
+# 4) Konnektormérővel, ha a panel nem a saját profiljával fut és így
+#    nincsenek fogyasztás-szenzorai
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  sources:
+    power: sensor.halo_panel_teljesitmeny
+    energy: sensor.halo_panel_energia
+
+# 5) Kompakt, mobil dashboardra
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  compact: true
+  show_extras: false
+
+# 6) Csak a lényeg: rajz nélkül, egy sorban az állapottal
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  show_art: false
+  show_presets: false
+  show_extras: false
+
+# 7) Nyitásérzékelők. Alapból nem kell beállítani semmit: a kártya a panel
+#    területéről szedi össze az ablakkontaktusokat. Ez a blokk csak akkor
+#    kell, ha el akarsz térni az alaptól.
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  openings:
+    classes: [window, door]
+    entities:
+      - binary_sensor.terasz_ajto
+    ignore:
+      - binary_sensor.dolgozo_szellozo
+  # 30 másodperc helyett 2 perc, ha sokat nyitogatjátok
+  open_delay: 120
+
+# 8) Ha nem akarod látni egyáltalán
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  show_openings: false
+
+# 9) Bukó-nyíló ablak, aminek az azonosítói nem követnek konvenciót
+- type: custom:aeno-heater-card
+  entity: climate.aeno_smart_heater
+  openings:
+    windows:
+      # AZ ELSŐ A FELSŐ KONTAKTUS - abból derül ki a bukó állapot
+      Dolgozó ablak:
+        - binary_sensor.zigbee_0x101
+        - binary_sensor.zigbee_0x102
