@@ -17,10 +17,11 @@ import {
   CONTINUOUS_PRESET,
   IDLE_POWER_W,
   MODE_KEYS,
-  PANEL_TEMP,
+  PANEL_TEMP_MAX,
   PRESETS,
   TEMP_RANGE,
   TEMP_TOLERANCE,
+  WARMING_UP,
 } from './const.js';
 import {
   areaName,
@@ -69,12 +70,10 @@ function titleOf(hass, config, climateEntityId) {
   return device?.name_by_user || device?.name || friendlyName(hass, climateEntityId) || climateEntityId;
 }
 
-/** How far along the cold-to-hot range the panel surface is, 0 to 1. */
+/** How far up the 0-120 °C range the panel surface is, 0 to 1. */
 function glowOf(panelTemp) {
   if (panelTemp === null) return null;
-  const span = PANEL_TEMP.hot - PANEL_TEMP.cold;
-  const ratio = (panelTemp - PANEL_TEMP.cold) / span;
-  return Math.max(0, Math.min(1, ratio));
+  return Math.max(0, Math.min(1, panelTemp / PANEL_TEMP_MAX));
 }
 
 /** Builds one panel. */
@@ -234,7 +233,7 @@ export function subKey(panel) {
      means, and printing it twice wastes the one line that could say how far
      the room actually is from the setpoint */
 
-  if (panel.panelTemp !== null && panel.heating && panel.glow !== null && panel.glow < 0.5) {
+  if (panel.panelTemp !== null && panel.heating && panel.glow !== null && panel.glow < WARMING_UP) {
     return { key: 'sub.panel_warming', temp: Math.round(panel.panelTemp) };
   }
   if (!panel.heating && panel.heatingKnown) return { key: 'sub.reached' };

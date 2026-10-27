@@ -66,15 +66,29 @@ export function areaName(hass, areaId) {
   return hass?.areas?.[areaId]?.name || null;
 }
 
-/** Picks the climate entity the card is about. */
+/**
+ * Picks the climate entity the card is about.
+ *
+ * `entity` wins, as the more specific of the two - except when `device` names
+ * a different panel, which is a config contradicting itself. That happens to
+ * configs written before the editor learned to clear the other key: the
+ * picker wrote `device`, the stale `entity` kept winning, and changing the
+ * room in the editor did nothing at all. The device is the one the user just
+ * chose, so it wins that argument.
+ */
 export function pickHeater(hass, config) {
-  if (config?.entity) return config.entity;
-  if (config?.device) {
-    const entry = registryEntries(hass).find(
-      (item) => item.device_id === config.device && item.entity_id.startsWith('climate.'),
-    );
-    if (entry) return entry.entity_id;
+  const ofDevice = config?.device
+    ? registryEntries(hass).find(
+        (item) => item.device_id === config.device && item.entity_id.startsWith('climate.'),
+      )?.entity_id
+    : null;
+
+  if (config?.entity) {
+    const sameDevice = !ofDevice || hass?.entities?.[config.entity]?.device_id === config.device;
+    if (sameDevice) return config.entity;
   }
+  if (ofDevice) return ofDevice;
+
   const all = listHeaters(hass);
   return all.length === 1 ? all[0] : null;
 }

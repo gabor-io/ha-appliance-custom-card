@@ -86,14 +86,18 @@ export const TEMP_TOLERANCE = 0.5;
 export const IDLE_POWER_W = 50;
 
 /**
- * The surface temperature range the glow is scaled over.
+ * The surface temperature the drawing is scaled over, from a cold plate to
+ * the hottest the element is allowed to get.
  *
- * Measured on a running panel: 25 °C from cold, 70 °C after a quarter of an
- * hour. Below `cold` the drawing stays grey however loudly the device claims
- * to be heating, which is the honest reading of a panel that has only just
- * been switched on.
+ * Both the frame colour and the strength of the radiated heat follow it, so
+ * the plate reads as warm or cold before a single number is read. Measured on
+ * a running panel: 25 °C from cold, 70 °C after a quarter of an hour, and the
+ * element limit tops out at 120.
  */
-export const PANEL_TEMP = { cold: 28, hot: 68 };
+export const PANEL_TEMP_MAX = 120;
+
+/** Below this much of the range a heating panel is still only warming up. */
+export const WARMING_UP = 0.4;
 
 /**
  * The setpoint range, for the rare case where the entity does not carry it.

@@ -56,9 +56,14 @@ figyelmeztetést ír ki rá, nem csak egy megnyomott gombot mutat.
 
 **A lap hőmérséklete nem a szobáé.** Az eszköz két hőmérsékletet küld: a
 szobáét (20–24 °C a méréseken) és a sajátját, ami fűtés közben negyed óra
-alatt 25-ről 70 °C-ra ment. A rajz izzása ez utóbbit követi, nem a fűtési
-jelzést: egy perce bekapcsolt panel már „fűt", de még nem sugároz semmit, és a
-kép nem állíthatja az ellenkezőjét.
+alatt 25-ről 70 °C-ra ment. A rajz **kerete** ez utóbbit mutatja, 0 °C-tól
+120-ig skálázva: hideg lapnál az alumínium szürkéje, 45 körül borostyán, 70-nél
+narancs, 120-nál – a legmagasabb engedett elemhőfok – vörös.
+
+**A szín és a mozgás külön beszél.** A keret színe azt mondja, mennyire meleg a
+lap; a mozgás (pulzáló keret, kifelé induló hullámok) azt, hogy megy-e épp az
+elem. A kettő tud külön járni, és ez nem hiba: egy tíz perce lekapcsolt panel
+forró, de áll, egy perce bekapcsolt pedig még hideg, de dolgozik.
 
 **A fogyasztásmérő önmagával igazolható.** `dps 12 = 802 W`, és ugyanabban a
 pillanatban `dps 107/10 × dps 108/1000 = 235,1 V × 3,424 A = 805 W` – 0,4 %
@@ -129,6 +134,7 @@ Keskeny kártyán – telefonon álló nézetben ez tipikusan 390 képpont – a
 nem tűnik el, hanem a felső sorba kerül, teljes szélességben, alatta az
 állapottal és a hőfokállítóval. A `show_art: false` viszont tényleg elhagyja.
 
-A valódi panelen **nincs kijelző**. A beállított hőfok mégis rajta van a
-kártya rajzán – de vésett felirattá halványítva, nem világító számként, mert a
-kártya kiegészítése, nem a hardver része.
+A valódi panelen **nincs kijelző**. A rajzon mégis két szám van rajta – a
+beállított hőfok nagyban, a lap saját hőmérséklete kicsiben a sarkában –, de
+vésett feliratként, nem világító számként, mert a kártya kiegészítése, nem a
+hardver része.

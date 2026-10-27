@@ -135,6 +135,13 @@ export function createEditorClass(spec) {
       else if (input.value === '') delete config[key];
       else config[key] = input.value;
 
+      /* Every card resolves `entity` before `device`, so a stale `entity`
+         left in the config makes this picker decorative: the card keeps
+         whatever that entity names however many times the user changes the
+         device. The picker is the editor's way of naming the target, so it
+         owns the choice and clears the other key. */
+      if (key === 'device') delete config.entity;
+
       this._config = config;
       this.dispatchEvent(
         new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }),

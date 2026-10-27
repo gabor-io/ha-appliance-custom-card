@@ -1,6 +1,6 @@
 {
   "name": "ha-appliance-cards",
-  "version": "1.19.1",
+  "version": "1.20.0",
   "description": "Lovelace cards for AEG / Electrolux dishwashers, Philips airfryers, Škoda vehicles, Liebherr fridges, Tuya ventilators, Daikin air conditioners, Netatmo heating and weather stations, and AENO panel heaters in Home Assistant",
   "type": "module",
   "homepage": "https://github.com/gabor-io/ha-appliance-custom-card",

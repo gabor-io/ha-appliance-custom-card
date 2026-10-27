@@ -295,13 +295,17 @@ példák: [`examples/netatmo-weather.yaml`](examples/netatmo-weather.yaml).
   jobb szélen. Infrapanel, tehát a hőt a lap **síkjából kifelé** sugározza, nem
   felszálló légárammal – a rajzon ezért meleg glória veszi körbe, és abból
   indulnak kifelé a hullámok, nem fölfelé.
-- **A beállított hőfok a panelre írva.** A valódi gépen nincs kijelző, ezért
-  nem világító számként kerül rá, hanem az üvegbe maratva – a kártya
-  kiegészítése, nem hardver.
-- **Az izzás a lap mért hőmérsékletét követi, nem a fűtési jelzést.** Egy perce
-  bekapcsolt panel már „fűt", de még 29 °C-os: ilyenkor a rajz is alig meleg,
-  és a kártya kiírja, hogy még melegszik. Fűtés közben negyed óra alatt 70 °C-ig
-  megy a lap.
+- **Két szám a panelen**: a beállított hőfok nagyban, a lap saját
+  hőmérséklete kicsiben. A valódi gépen nincs kijelző, ezért egyik sem világító
+  számként kerül rá, hanem az üvegbe maratva – a kártya kiegészítése, nem
+  hardver.
+- **A keret színe a lap hőmérséklete**, 0-tól 120 °C-ig skálázva: hideg lapnál
+  az alumínium szürkéje, 70-nél narancs, 120-nál vörös. Ránézésre látszik,
+  mennyire forró a panel, szám elolvasása nélkül.
+- **A szín és a mozgás külön beszél.** A keret színe azt mondja, mennyire meleg
+  a lap, a pulzálás és a kifelé induló hullámok azt, hogy megy-e az elem. Egy
+  tíz perce lekapcsolt panel forró, de áll; egy perce bekapcsolt még hideg, de
+  dolgozik – és a kép mindkettőt pontosan mondja.
 - **A Folyamatos mód csapdáját kimondja.** A panel Smart módban követi a
   beállított hőfokot, Folyamatosban viszont **nem veszi figyelembe** – ott
   felejtve egész nap fűt. Ez nem egy megnyomott gomb a kártyán, hanem külön

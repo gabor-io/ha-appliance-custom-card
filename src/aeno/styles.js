@@ -52,9 +52,9 @@ ${BASE_STYLES}
 .open-badge.calm { color: var(--ap-muted); font-weight: 500; }
 
 /* ---------- hero ---------- */
-.hero { display: grid; grid-template-columns: 172px minmax(0,1fr) auto; gap: 14px; align-items: center; }
+.hero { display: grid; grid-template-columns: 132px minmax(0,1fr) auto; gap: 14px; align-items: center; }
 .hero.no-art { grid-template-columns: minmax(0,1fr) auto; }
-.compact .hero { grid-template-columns: 128px minmax(0,1fr) auto; gap: 10px; }
+.compact .hero { grid-template-columns: 104px minmax(0,1fr) auto; gap: 10px; }
 /* On a narrow card the readings cannot share a line with the name without
    breaking the model number in half, so they drop to a line of their own. */
 @container (max-width: 420px) {
@@ -72,7 +72,7 @@ ${BASE_STYLES}
     grid-template-areas: 'art art' 'status dial';
     gap: 10px 12px;
   }
-  .hero .art { grid-area: art; width: 100%; max-width: 280px; justify-self: center; }
+  .hero .art { grid-area: art; width: 100%; max-width: 230px; justify-self: center; }
   .hero .status { grid-area: status; }
   .hero .dial { grid-area: dial; }
   .hero.no-art { grid-template-areas: 'status dial'; }
@@ -163,49 +163,61 @@ ${BASE_STYLES}
 /* ---------- the panel drawing ---------- */
 .art { display: block; }
 .art[hidden] { display: none; }
-.panel { width: 100%; height: auto; display: block; }
+.panel { width: 100%; height: auto; display: block; overflow: visible; }
 .panel .wall { fill: #000; opacity: .16; }
-.panel .glass { stroke: rgba(0,0,0,.10); stroke-width: .8; }
-.panel .edge { stroke: rgba(255,255,255,.95); stroke-width: .8; }
+.panel .glass { stroke: rgba(0,0,0,.06); stroke-width: .6; }
 .panel .box { fill: #f1f4f5; stroke: rgba(0,0,0,.14); stroke-width: .7; }
 .panel .led { fill: #9aa3a8; transition: fill .5s ease; }
 .panel .led-halo { fill: #5bd07a; opacity: 0; transition: opacity .5s ease; }
 .panel.hot .led { fill: #5bd07a; }
 .panel.hot .led-halo { opacity: .3; }
-.panel .brand { font: 600 7.5px/1 Roboto, Arial, sans-serif; letter-spacing: 2.1px; fill: #9aa2a8; }
+.panel .brand { font: 600 7px/1 Roboto, Arial, sans-serif; letter-spacing: 1.9px; fill: #a7aeb3; }
 
-/* the etched setpoint: grey when cold, warming with the plate */
+/* the frame carries the plate's measured temperature, 0 °C grey to 120 red */
+.panel .frame {
+  stroke: var(--ae-frame, #9aa3a8); stroke-width: 2.6;
+  transition: stroke 1.2s ease, stroke-width .6s ease;
+}
+/* while the element runs the frame breathes, so motion says "working" and
+   colour says "hot" - a panel can be either without being the other */
+.panel.hot .frame { stroke-width: 3.4; animation: ae-frame 2.4s ease-in-out infinite; }
+@keyframes ae-frame { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+
+/* the two numbers etched into the glass */
 .panel .setpoint {
-  font: 200 40px/1 "DIN Alternate", "Helvetica Neue", Arial, sans-serif;
-  letter-spacing: -1.5px; transition: fill .8s ease;
-  fill: color-mix(in srgb, #e09a5f calc(var(--ae-glow) * 100%), #b4bcc3);
+  font: 300 46px/1 "DIN Alternate", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -1.5px; transition: fill 1.2s ease;
+  fill: color-mix(in srgb, var(--ae-frame, #9aa3a8) 70%, #6d767c);
 }
 .panel .setpoint .unit {
-  font: 600 12px/1 Roboto, Arial, sans-serif; letter-spacing: 0; transition: fill .8s ease;
-  fill: color-mix(in srgb, #e8b184 calc(var(--ae-glow) * 100%), #c2c9cf);
+  font: 600 14px/1 Roboto, Arial, sans-serif; letter-spacing: 0;
+}
+.panel .surface {
+  font: 600 17px/1 Roboto, Arial, sans-serif; transition: fill 1.2s ease;
+  fill: var(--ae-frame, #9aa3a8);
 }
 
-/* the radiated heat: strength follows the measured surface temperature */
-.panel .halo { fill: #ff9336; opacity: 0; transition: opacity 1.2s ease; }
+/* the radiated heat: colour and strength both follow the surface temperature */
+.panel .halo { fill: var(--ae-frame, #ff9336); opacity: 0; transition: opacity 1.2s ease, fill 1.2s ease; }
 .panel.hot .halo {
-  opacity: calc(.08 + var(--ae-glow) * .26);
-  animation: ae-breathe 4.2s ease-in-out infinite;
+  opacity: calc(.12 + var(--ae-glow) * .34);
+  animation: ae-breathe 2.4s ease-in-out infinite;
 }
 .panel .wave {
-  stroke: #ff9336; stroke-width: 4; opacity: 0;
+  stroke: var(--ae-frame, #ff9336); stroke-width: 5; opacity: 0;
   transform-box: view-box; transform-origin: 50% 50%;
 }
-.panel.hot .wave { animation: ae-radiate 3.6s ease-out infinite; }
-.panel.hot .wave.w1 { animation-delay: -1.2s; }
-.panel.hot .wave.w2 { animation-delay: -2.4s; }
+.panel.hot .wave { animation: ae-radiate 2.8s ease-out infinite; }
+.panel.hot .wave.w1 { animation-delay: -.93s; }
+.panel.hot .wave.w2 { animation-delay: -1.86s; }
 @keyframes ae-radiate {
   0% { opacity: 0; transform: scale(1); }
-  25% { opacity: calc(.18 + var(--ae-glow) * .36); }
-  100% { opacity: 0; transform: scale(1.14); }
+  22% { opacity: calc(.3 + var(--ae-glow) * .4); }
+  100% { opacity: 0; transform: scale(1.2); }
 }
 @keyframes ae-breathe {
-  0%, 100% { opacity: calc(.08 + var(--ae-glow) * .26); }
-  50% { opacity: calc(.05 + var(--ae-glow) * .14); }
+  0%, 100% { opacity: calc(.12 + var(--ae-glow) * .34); }
+  50% { opacity: calc(.06 + var(--ae-glow) * .18); }
 }
 .panel.dead { opacity: .45; filter: saturate(.25); }
 
