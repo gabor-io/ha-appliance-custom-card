@@ -35,6 +35,8 @@ const HU = {
   },
   ui: {
     co2: 'Szén-dioxid',
+    /* the appliance only samples the air while it is moving it */
+    not_sampling: 'Álló gépnél nem mér',
     pm25: 'Szálló por (PM2,5)',
     temperature: 'Hőmérséklet',
     humidity: 'Páratartalom',
@@ -111,6 +113,7 @@ const EN = {
   },
   ui: {
     co2: 'Carbon dioxide',
+    not_sampling: 'Not sampling while stopped',
     pm25: 'Particulates (PM2.5)',
     temperature: 'Temperature',
     humidity: 'Humidity',

@@ -36,6 +36,9 @@ const CARD_STYLES = `
 .air .meter { height: 7px; border-radius: 999px; background: var(--ap-line); overflow: hidden; }
 .air .meter > i { display: block; height: 100%; border-radius: 999px; transition: width .6s ease; }
 .air .band { font-size: .74rem; font-weight: 600; }
+/* a sensor that is saying nothing is stated, not graded */
+.air .reading.idle .val { color: var(--ap-muted); font-size: 1.05rem; font-weight: 600; }
+.air .reading.idle .band { color: var(--ap-muted); font-weight: 500; }
 
 .level-excellent { color: var(--air-excellent); }
 .level-good { color: var(--air-good); }

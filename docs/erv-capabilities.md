@@ -47,6 +47,22 @@ A CO₂ sávok a szokásos beltéri ajánlásokat követik (1000 ppm fölött m�
 szellőztetni), a PM2,5 sávok a WHO 2021-es napi irányértékéhez igazodnak.
 „Mérsékelt" és „Rossz" CO₂-nél a kártya figyelmeztető sort is kiír.
 
+## Álló gépnél nincs levegőminőség
+
+A gép csak akkor méri a levegőt, amikor mozgatja is: **kikapcsolva 0 ppm-et és
+0 µg/m³-t küld**, miközben a hőmérsékletet és a páratartalmat továbbra is
+valósan jelenti. Egy szoba CO₂-je viszont soha nem nulla – a szabad levegő is
+~420 ppm –, tehát a nulla nem alacsony érték, hanem azt jelenti, hogy nincs
+mérés.
+
+A kártya ezért álló gépnél nem minősíti a levegőt: a sor ottmarad (hogy látszódjon,
+van ilyen érzékelő), de szám, mérősáv és minősítés helyett azt írja ki, hogy
+„Álló gépnél nem mér". Enélkül a legmegnyugtatóbb üzenetet – „Kiváló" – pont
+akkor adná, amikor semmit nem tud a levegőről.
+
+A port ez csak álló gépnél érinti: járó gépen a 0 µg/m³ lehet valódi mérés is,
+friss szűrővel.
+
 ## Ha a PM2,5 mindig 0
 
 Az eszközdefiníció a 3-as adatpontot (DP) képezi le PM2,5-ként, de a

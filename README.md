@@ -172,6 +172,11 @@ példák: [`examples/fridge.yaml`](examples/fridge.yaml).
 - **Levegőminőség**: CO₂ és PM2,5 színsávval és szöveges minősítéssel
   (Kiváló → Rossz), mellette hőmérséklet és páratartalom. Magas CO₂-nél
   figyelmeztet.
+- **Álló gépnél nem minősít.** A gép csak akkor méri a levegőt, amikor
+  mozgatja is: kikapcsolva 0 ppm-et küld, miközben a hőmérséklet és a
+  páratartalom valódi marad. Egy szoba CO₂-je viszont soha nem nulla, így ez
+  nem alacsony érték, hanem hiányzó mérés – a kártya ezért ilyenkor kiírja,
+  hogy nem mér, ahelyett hogy „Kiváló"-t mondana.
 - **Üzemmódok**: a gép által kínált presetek (Kézi, Automata, Alvó, Pure L/M/H)
   és a be-/kikapcsolás; **fordulatszám** befúvásra és elszívásra külön (1–8).
 - **Szűrő**: hátralévő élettartam, nullázó gomb, élettartam-választó; lejáró

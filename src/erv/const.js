@@ -50,5 +50,15 @@ export const PM25_BANDS = [
   { max: Infinity, level: 'bad' },
 ];
 
+/**
+ * The lowest CO2 reading that can be a measurement.
+ *
+ * Outdoor air sits around 420 ppm and a room never goes below it, so zero is
+ * not a low reading - it is the sensor not sampling. The appliance only runs
+ * its air sensors while air is moving: switched off it reports 0 ppm and
+ * 0 µg/m³ while still giving a real temperature and humidity.
+ */
+export const CO2_MIN_PPM = 1;
+
 /** Below this many days left the card warns about the filter. */
 export const FILTER_WARN_DAYS = 14;

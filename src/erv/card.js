@@ -221,7 +221,7 @@ export class FisherErvCard extends HTMLElement {
     }
 
     updateErvDisplay(this._sections.hero, {
-      co2: model.co2 ? String(Math.round(model.co2.value)) : '---',
+      co2: model.co2?.measuring ? String(Math.round(model.co2.value)) : '---',
       temp: model.temperature !== null ? `${Math.round(model.temperature)}°C` : '--°C',
       humidity: model.humidity !== null ? `${Math.round(model.humidity)}%` : '--%',
       speed: model.on && model.speedDigit !== null ? String(model.speedDigit) : '-',
@@ -234,6 +234,17 @@ export class FisherErvCard extends HTMLElement {
 
     const meter = (key, value, iconName, entityId) => {
       if (!value) return '';
+      /* a sensor that is not sampling keeps its row, but gets no number to
+         grade: a meter and a verdict here would be invented out of a zero */
+      if (!value.measuring) {
+        return `
+        <div class="reading idle" data-action="more-info" data-entity="${escapeHtml(entityId || '')}">
+          <div class="top">${icon(iconName)}<span>${escapeHtml(t(`ui.${key}`))}</span>
+            <span class="val">–</span>
+          </div>
+          <div class="band">${escapeHtml(t('ui.not_sampling'))}</div>
+        </div>`;
+      }
       return `
         <div class="reading" data-action="more-info" data-entity="${escapeHtml(entityId || '')}">
           <div class="top">${icon(iconName)}<span>${escapeHtml(t(`ui.${key}`))}</span>

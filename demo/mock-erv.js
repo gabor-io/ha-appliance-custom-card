@@ -42,8 +42,15 @@ export const SCENARIOS = {
     [`number.${PREFIX}_supply_fan_speed`]: '8',
     [`number.${PREFIX}_exhaust_fan_speed`]: '7',
   },
+  /* Switched off the appliance keeps reporting a real temperature and
+     humidity, but its air sensors stop sampling and send a flat zero - and a
+     room's CO2 can never be zero, it does not go below the ~420 ppm of
+     outdoor air. Taken at face value that reads as the cleanest air the card
+     can show, at the moment it knows nothing. */
   kikapcsolva: {
     [`fan.${PREFIX}`]: { state: 'off' },
+    [`sensor.${PREFIX}_szen_dioxid`]: '0',
+    [`sensor.${PREFIX}_szallo_por_25_mm`]: '0',
   },
   szuro_hiba: {
     [`sensor.${PREFIX}_szuro_elettartam`]: '6',
