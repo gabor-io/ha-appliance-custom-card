@@ -47,14 +47,14 @@ export function geometry(layout) {
   const padX = R * 0.8;
   const padY = R * 0.4;
   /* the power lead hangs below the first panel and has to fit in the box */
-  const leadDrop = R * 1.85;
+  const leadDrop = R * 1.87;
   const xs = panels.map((p) => p.x);
   const ys = panels.map((p) => p.y);
+  /* the lead hangs off the left of the first panel */
   const minX = Math.min(...xs) - R - padX;
   const maxX = Math.max(...xs) + R + padX;
   const minY = Math.min(...ys) - R * 0.87 - padY;
-  const maxY =
-    Math.max(...ys.map((y) => y + R * 0.87), panels[0].y + leadDrop + R * 0.3) + padY;
+  const maxY = Math.max(...ys.map((y) => y + R * 0.87), panels[0].y + leadDrop) + padY;
 
   /* the wash travels across the wall, so the delay follows the panel's
      distance along the diagonal rather than the order it was listed in */
@@ -79,10 +79,15 @@ export function renderDefs(uid) {
       <filter id="${uid}-bloom" x="-60%" y="-60%" width="220%" height="220%">
         <feGaussianBlur stdDeviation="6"/>
       </filter>
-      <linearGradient id="${uid}-face" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
-        <stop offset="1" stop-color="#000" stop-opacity=".18"/>
-      </linearGradient>
+      <!-- The diffuser is a shallow dome, not a flat pane: on the wall each
+           panel is brightest in the middle and falls off into its frame. A
+           top-to-bottom wash makes them look like printed tiles instead. -->
+      <radialGradient id="${uid}-face" cx=".5" cy=".42" r=".62">
+        <stop offset="0" stop-color="#fff" stop-opacity=".30"/>
+        <stop offset=".45" stop-color="#fff" stop-opacity=".10"/>
+        <stop offset=".78" stop-color="#000" stop-opacity=".06"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".26"/>
+      </radialGradient>
     </defs>
   </svg>`;
 }
@@ -109,12 +114,15 @@ export function renderPanels(uid, layout) {
     )
     .join('');
 
+  /* the lead leaves the first panel at its lower left corner and runs down
+     the wall, which is where it hangs on the real thing */
   const first = panels[0];
+  const leadX = first ? first.x - R * 0.5 : 0;
   const lead = first
     ? `<g class="lead">
-        <path d="M${first.x.toFixed(2)} ${(first.y + R * 0.87).toFixed(2)}
-                 v${(R * 0.5).toFixed(2)}"/>
-        <circle cx="${first.x.toFixed(2)}" cy="${(first.y + R * 1.5).toFixed(2)}" r="${(R * 0.28).toFixed(2)}"/>
+        <path d="M${leadX.toFixed(2)} ${(first.y + R * 0.87).toFixed(2)}
+                 c0 ${(R * 0.5).toFixed(2)} ${(-R * 0.35).toFixed(2)} ${(R * 0.5).toFixed(2)}
+                 ${(-R * 0.35).toFixed(2)} ${(R * 1.0).toFixed(2)}"/>
       </g>`
     : '';
 

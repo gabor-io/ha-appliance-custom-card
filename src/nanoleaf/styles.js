@@ -59,9 +59,9 @@ ${BASE_STYLES}
 .art[hidden] { display: none; }
 .panels { width: 100%; height: auto; display: block; overflow: visible; }
 
-.panels .frame { fill: none; stroke: var(--nl-frame); stroke-width: 1.6; }
+.panels .frame { fill: none; stroke: var(--nl-frame); stroke-width: 2.2; }
 .panels .lit { fill: var(--nl-dark); transition: fill 1s ease, opacity .6s ease; }
-.panels .sheen { opacity: .55; pointer-events: none; }
+.panels .sheen { opacity: .9; pointer-events: none; }
 .panels .glow { fill: var(--nl-c0); opacity: 0; transition: opacity 1s ease, fill 1s ease; }
 
 .panels.on .lit { fill: var(--nl-c0); opacity: var(--nl-level); }
@@ -81,8 +81,7 @@ ${BASE_STYLES}
   60% { fill: var(--nl-c3); }
   80% { fill: var(--nl-c4); }
 }
-.panels .lead path { stroke: var(--nl-frame); stroke-width: 1.4; fill: none; stroke-linecap: round; }
-.panels .lead circle { fill: none; stroke: var(--nl-frame); stroke-width: 1.2; }
+.panels .lead path { stroke: var(--nl-frame); stroke-width: 1.3; fill: none; stroke-linecap: round; }
 .panels.dead { opacity: .4; filter: saturate(.2); }
 
 /* ---------- brightness ---------- */
