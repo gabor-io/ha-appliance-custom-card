@@ -59,7 +59,10 @@ ${BASE_STYLES}
 .art[hidden] { display: none; }
 .panels { width: 100%; height: auto; display: block; overflow: visible; }
 
-.panels .frame { fill: none; stroke: var(--nl-frame); stroke-width: 2.2; }
+/* The seam is the frames of two neighbouring panels meeting, and on the wall
+   it is a thin dark line, not a bar: about a fifteenth of a panel's width.
+   The stroke straddles the shared edge, so this is the whole visible band. */
+.panels .frame { fill: none; stroke: var(--nl-frame); stroke-width: 1.3; }
 .panels .lit { fill: var(--nl-dark); transition: fill 1s ease, opacity .6s ease; }
 .panels .sheen { opacity: .9; pointer-events: none; }
 .panels .glow { fill: var(--nl-c0); opacity: 0; transition: opacity 1s ease, fill 1s ease; }
