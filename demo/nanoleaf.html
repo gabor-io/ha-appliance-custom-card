@@ -50,13 +50,13 @@
   const toolbar = document.getElementById('toolbar');
 
   let current = new Set(['prizma', 'fix szín']);
-  /* the seven-panel flower the starter kit makes, and a bigger wall */
+  /* the real wall this card was built for is the nine-panel zigzag */
   const LAYOUTS = {
-    'hét panel': null,
-    'kilenc panel': [[0,0],[1,0],[2,0],[0,1],[1,1],[-1,1],[0,-1],[1,-1],[2,-1]],
-    'egy sor': [[0,0],[1,0],[2,0],[3,0],[4,0]],
+    'cikcakk (9)': 'zigzag9',
+    'virág (7)': 'flower7',
+    'egy sor (5)': 'row5',
   };
-  let layout = 'hét panel';
+  let layout = 'cikcakk (9)';
 
   function draw() {
     grid.replaceChildren();
@@ -64,7 +64,7 @@
       const wrapper = document.createElement('div');
       const card = document.createElement('nanoleaf-shapes-card');
       const config = { type: 'custom:nanoleaf-shapes-card', language: 'hu' };
-      if (LAYOUTS[layout]) config.layout = LAYOUTS[layout];
+      config.layout = LAYOUTS[layout];
       card.setConfig(config);
       const hass = makeHass(key);
       hass.themes = { darkMode: document.body.classList.contains('dark') };

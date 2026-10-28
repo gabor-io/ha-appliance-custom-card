@@ -4,26 +4,36 @@
 # 1) Egyetlen Nanoleafnál még az entitás sem kell
 - type: custom:nanoleaf-shapes-card
 
-# 2) A valódi elrendezés. Hatszög-koordináták, [q, r] párok:
-#    q jobbra lép, r jobbra-le. A középső panel a [0, 0].
+# 2) Kilenc panel futó cikcakkban: öt lent, négy fent, váltakozva.
+#    Ennek neve van, elég egy szó:
 - type: custom:nanoleaf-shapes-card
   entity: light.nanoleaf_shapes
   name: Nappali
-  layout:
-    - [0, 0]
-    - [1, 0]
-    - [2, 0]
-    - [0, 1]
-    - [1, 1]
-    - [-1, 1]
-    - [0, -1]
-    - [1, -1]
-    - [2, -1]
+  layout: zigzag9
 
-# 3) Egy sorban felrakott panelek
+#    Ugyanez kiírva, ha el akarsz térni tőle. Lapos tetejű hatszögek:
+#    [q+1, r-1] a jobbra-fel szomszéd, [q+1, r] a jobbra-le - ezek
+#    váltogatása a cikcakk.
 - type: custom:nanoleaf-shapes-card
   entity: light.nanoleaf_shapes
-  layout: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
+  layout:
+    - [0, 0]
+    - [1, -1]
+    - [2, -1]
+    - [3, -2]
+    - [4, -2]
+    - [5, -3]
+    - [6, -3]
+    - [7, -4]
+    - [8, -4]
+
+# 3) A másik két elnevezett elrendezés
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  layout: row5          # öt panel egy sorban
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  layout: flower7       # a kezdőkészlet virága (ez az alapértelmezés)
 
 # 4) Kompakt, mobil dashboardra: csak a rajz, a fényerő és a jelenetek
 - type: custom:nanoleaf-shapes-card

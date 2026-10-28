@@ -59,21 +59,38 @@ Az integráció **nem adja át a panelek számát és elhelyezkedését**, pedig
 Nanoleaf API tudja. A kártya ezért a configból veszi, és azt rajzolja, amit
 mondanak neki – nem tesz úgy, mintha ismerné a falat.
 
-Az elrendezés hatszög-koordinátákban megy, `[q, r]` párokként. Lapos tetejű
-hatszögek: `q` jobbra lép, `r` jobbra-le.
+Három elrendezésnek van neve, azokat elég egy szóval megadni:
+
+```yaml
+layout: zigzag9     # kilenc panel futó cikcakkban: öt lent, négy fent
+layout: flower7     # a kezdőkészlet hét paneles virága (alapértelmezés)
+layout: row5         # öt panel egy sorban
+```
+
+Bármi más hatszög-koordinátákban megy, `[q, r]` párokként. Lapos tetejű
+hatszögek: `q` jobbra lép, `r` **jobbra-le**. Ebből következik, hogy
+`[q+1, r-1]` a jobbra-fel szomszéd, `[q+1, r]` pedig a jobbra-le – a kettő
+váltogatása adja a cikcakkot.
 
 ```yaml
 layout:
   - [0, 0]      # középső
-  - [1, 0]      # tőle jobbra
-  - [0, 1]      # jobbra-le
+  - [1, 0]      # tőle jobbra-le
+  - [0, 1]      # alatta-balra
   - [-1, 1]     # balra-le
-  - [-1, 0]     # balra
-  - [0, -1]     # balra-fel
+  - [-1, 0]     # balra-fel
+  - [0, -1]     # fölötte
   - [1, -1]     # jobbra-fel
 ```
 
-Megadás nélkül a hét paneles „virág" rajzolódik, amit a kezdőkészlet kirak.
+A rajzon a **bal szélső panel alatt ott a tápcsatlakozó**, ahogy a valódi
+falon: egy Shapes sor egyetlen panelen keresztül kap áramot, és a falon ez
+mondja meg, melyik vég melyik.
+
+Nagyon széles elrendezésnél – a kilenc paneles cikcakk több mint ötször olyan
+széles, mint amilyen magas – a rajz **a kártya teljes szélességét** kapja, és
+a szöveg alá kerül. Egy 150 képpontos oszlopba préselve csak csík lenne
+belőle.
 
 ## Fényerő
 
@@ -89,7 +106,7 @@ A csúszka húzás közben nem küldözget: a kártya **220 ms-ig vár**, és cs
 | `device` | – | entitás helyett eszköz (a szerkesztő ezt állítja) |
 | `name` | az entitás neve | a kártya címe |
 | `subtitle` | a modell | a név alatti sor; üres sztring elrejti |
-| `layout` | hét paneles virág | `[q, r]` párok listája |
+| `layout` | `flower7` | név (`zigzag9`, `flower7`, `row5`) vagy `[q, r]` párok listája |
 | `language` | `auto` | `hu`, `en` vagy a HA nyelve |
 | `show_art` | `true` | panelrajz |
 | `show_brightness` | `true` | fényerő-csúszka |

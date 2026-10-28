@@ -42,13 +42,19 @@ export function geometry(layout) {
   });
   if (!panels.length) return { panels, viewBox: '0 0 1 1', width: 1, height: 1 };
 
-  const pad = R * 0.9;
+  /* a long run is already wide; the breathing room it needs is at the sides,
+     not above and below, where it only pushes the panels into a stripe */
+  const padX = R * 0.8;
+  const padY = R * 0.4;
+  /* the power lead hangs below the first panel and has to fit in the box */
+  const leadDrop = R * 1.85;
   const xs = panels.map((p) => p.x);
   const ys = panels.map((p) => p.y);
-  const minX = Math.min(...xs) - R - pad;
-  const maxX = Math.max(...xs) + R + pad;
-  const minY = Math.min(...ys) - R * 0.87 - pad;
-  const maxY = Math.max(...ys) + R * 0.87 + pad;
+  const minX = Math.min(...xs) - R - padX;
+  const maxX = Math.max(...xs) + R + padX;
+  const minY = Math.min(...ys) - R * 0.87 - padY;
+  const maxY =
+    Math.max(...ys.map((y) => y + R * 0.87), panels[0].y + leadDrop + R * 0.3) + padY;
 
   /* the wash travels across the wall, so the delay follows the panel's
      distance along the diagonal rather than the order it was listed in */
@@ -81,7 +87,13 @@ export function renderDefs(uid) {
   </svg>`;
 }
 
-/** The cluster. Emitted once per layout, then only reclassed and recoloured. */
+/**
+ * The cluster.
+ *
+ * Emitted once per layout, then only reclassed and recoloured. The lead under
+ * the first panel is the real one: a Shapes run is powered through one panel,
+ * and on a wall it is the thing that says which end is which.
+ */
 export function renderPanels(uid, layout) {
   const { panels, viewBox } = geometry(layout);
   const glow = panels
@@ -97,10 +109,20 @@ export function renderPanels(uid, layout) {
     )
     .join('');
 
+  const first = panels[0];
+  const lead = first
+    ? `<g class="lead">
+        <path d="M${first.x.toFixed(2)} ${(first.y + R * 0.87).toFixed(2)}
+                 v${(R * 0.5).toFixed(2)}"/>
+        <circle cx="${first.x.toFixed(2)}" cy="${(first.y + R * 1.5).toFixed(2)}" r="${(R * 0.28).toFixed(2)}"/>
+      </g>`
+    : '';
+
   return `
   <svg class="panels" viewBox="${viewBox}" role="img" aria-hidden="true">
     <g class="bloom" filter="url(#${uid}-bloom)">${glow}</g>
     ${faces}
+    ${lead}
   </svg>`;
 }
 

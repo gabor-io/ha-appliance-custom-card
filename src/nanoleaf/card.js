@@ -1,8 +1,16 @@
-import { CARD_NAME, CARD_VERSION, DEFAULT_LAYOUT, EDITOR_NAME, WHITE_PRESETS } from './const.js';
+import {
+  CARD_NAME,
+  CARD_VERSION,
+  DEFAULT_LAYOUT,
+  EDITOR_NAME,
+  LAYOUTS,
+  WHITE_PRESETS,
+  WIDE_RATIO,
+} from './const.js';
 import { fill, getLanguage, translator } from './i18n.js';
 import { buildModel, kelvinColour, knownEffect, paletteFor, stateKey, subKey } from './model.js';
 import { listNanoleafDevices } from './entities.js';
-import { applyPanels, renderDefs, renderPanels } from './graphics.js';
+import { applyPanels, geometry, renderDefs, renderPanels } from './graphics.js';
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
 import { escapeHtml } from '../shared/format.js';
@@ -71,6 +79,8 @@ export class NanoleafShapesCard extends HTMLElement {
 
   get _layout() {
     const given = this._config?.layout;
+    /* a wall can be named rather than spelled out */
+    if (typeof given === 'string') return LAYOUTS[given] || DEFAULT_LAYOUT;
     if (!Array.isArray(given) || !given.length) return DEFAULT_LAYOUT;
     return given
       .map((cell) => (Array.isArray(cell) ? [Number(cell[0]), Number(cell[1])] : null))
@@ -217,6 +227,8 @@ export class NanoleafShapesCard extends HTMLElement {
     }
 
     const wantArt = this._config.show_art;
+    const { width, height } = geometry(this._layout);
+    this._heroNode.classList.toggle('wide', wantArt && width / height >= WIDE_RATIO);
     this._heroNode.classList.toggle('no-art', !wantArt);
     const art = this._sections.hero.querySelector('.art');
     art.hidden = !wantArt;

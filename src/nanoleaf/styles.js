@@ -41,6 +41,9 @@ ${BASE_STYLES}
 /* ---------- hero ---------- */
 .hero { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 14px; align-items: center; }
 .hero.no-art { grid-template-columns: minmax(0,1fr); }
+/* a long run of panels takes the full width and the text goes underneath:
+   squeezed into the side column it would be a stripe */
+.hero.wide { grid-template-columns: minmax(0,1fr); gap: 10px; }
 .compact .hero { grid-template-columns: 112px minmax(0,1fr); gap: 10px; }
 @container (max-width: 420px) {
   .hero { grid-template-columns: minmax(0,1fr); }
@@ -78,6 +81,8 @@ ${BASE_STYLES}
   60% { fill: var(--nl-c3); }
   80% { fill: var(--nl-c4); }
 }
+.panels .lead path { stroke: var(--nl-frame); stroke-width: 1.4; fill: none; stroke-linecap: round; }
+.panels .lead circle { fill: none; stroke: var(--nl-frame); stroke-width: 1.2; }
 .panels.dead { opacity: .4; filter: saturate(.2); }
 
 /* ---------- brightness ---------- */

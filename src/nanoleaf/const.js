@@ -83,19 +83,54 @@ export const EFFECT_PALETTES = {
 export const UNKNOWN_PALETTE = ['#8a9199', '#c3c9cf', '#8a9199'];
 
 /**
- * The arrangement the card draws when the config names none.
+ * Arrangements by name, so a wall can be described in one word.
  *
- * Axial hex coordinates, flat-top: `q` steps right, `r` steps down-right. This
- * default is the seven-panel flower the Shapes starter kit makes, which is
- * a guess - a real wall is whatever its owner screwed to it, so `layout:`
- * overrides this and the drawing follows.
+ * Axial hex coordinates, flat-top: `q` steps right, `r` steps down-right, and
+ * so `[q+1, r-1]` is the panel up and to the right while `[q+1, r]` is the one
+ * down and to the right. Those two alternating are what makes a zigzag.
+ *
+ * `layout:` also takes a list of pairs, for a wall none of these matches - the
+ * card draws what it is told either way.
  */
-export const DEFAULT_LAYOUT = [
-  [0, 0],
-  [1, 0],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [0, -1],
-  [1, -1],
-];
+export const LAYOUTS = {
+  /* the seven-panel flower the starter kit makes */
+  flower7: [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [-1, 1],
+    [-1, 0],
+    [0, -1],
+    [1, -1],
+  ],
+  /* nine panels in a run, every second one raised: five low, four high */
+  zigzag9: [
+    [0, 0],
+    [1, -1],
+    [2, -1],
+    [3, -2],
+    [4, -2],
+    [5, -3],
+    [6, -3],
+    [7, -4],
+    [8, -4],
+  ],
+  /* a straight run, all at one height */
+  row5: [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, 0],
+  ],
+};
+
+export const DEFAULT_LAYOUT = LAYOUTS.flower7;
+
+/**
+ * Past this width-to-height ratio the drawing cannot share a row with the
+ * text beside it: a nine-panel zigzag is more than five times as wide as it
+ * is tall, and squeezed into a 150px column it becomes a stripe. Those
+ * layouts get the full width of the card and the text goes underneath.
+ */
+export const WIDE_RATIO = 2.4;
