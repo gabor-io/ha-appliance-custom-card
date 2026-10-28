@@ -15,6 +15,7 @@ const TARGETS = [
   { in: 'src/netatmo-heat/index.js', out: 'dist/netatmo-heating-card.js' },
   { in: 'src/netatmo-weather/index.js', out: 'dist/netatmo-weather-card.js' },
   { in: 'src/aeno/index.js', out: 'dist/aeno-heater-card.js' },
+  { in: 'src/nanoleaf/index.js', out: 'dist/nanoleaf-shapes-card.js' },
 ];
 
 const dev = process.argv.includes('--dev');

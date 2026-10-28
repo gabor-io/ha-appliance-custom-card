@@ -1,0 +1,51 @@
+# Nanoleaf Shapes kártya – példák
+# Részletek: docs/nanoleaf-capabilities.md
+
+# 1) Egyetlen Nanoleafnál még az entitás sem kell
+- type: custom:nanoleaf-shapes-card
+
+# 2) A valódi elrendezés. Hatszög-koordináták, [q, r] párok:
+#    q jobbra lép, r jobbra-le. A középső panel a [0, 0].
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  name: Nappali
+  layout:
+    - [0, 0]
+    - [1, 0]
+    - [2, 0]
+    - [0, 1]
+    - [1, 1]
+    - [-1, 1]
+    - [0, -1]
+    - [1, -1]
+    - [2, -1]
+
+# 3) Egy sorban felrakott panelek
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  layout: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
+
+# 4) Kompakt, mobil dashboardra: csak a rajz, a fényerő és a jelenetek
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  compact: true
+  show_white: false
+  show_identify: false
+  show_touch: false
+
+# 5) Csak a jelenetválasztó, rajz nélkül
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  show_art: false
+  show_white: false
+
+# 6) Saját felirat a név alatt (üres sztring elrejti a modellt)
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_shapes
+  name: Falikép
+  subtitle: "9 panel · nappali"
+
+# 7) Triangles vagy Mini Triangles: nincs érintés-entitás, a sor magától
+#    elmarad - ezt nem kell kikapcsolni.
+- type: custom:nanoleaf-shapes-card
+  entity: light.nanoleaf_haromszogek

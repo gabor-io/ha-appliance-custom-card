@@ -116,6 +116,7 @@ import {
   mdiHomeImportOutline,
   mdiHomeThermometerOutline,
   mdiMoleculeCo2,
+  mdiPalette,
   mdiPowerSleep,
   mdiRestart,
   mdiWeatherWindy,
@@ -255,6 +256,11 @@ export const ICONS = {
   calendar: mdiCalendarMonthOutline,
   frost_guard: mdiSnowflakeAlert,
   radiator: mdiRadiator,
+
+  // nanoleaf panels
+  palette: mdiPalette,
+  touch: mdiGestureTap,
+  sparkle: mdiShimmer,
 
   // netatmo weather station
   noise: mdiVolumeHigh,

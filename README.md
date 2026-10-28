@@ -1,6 +1,6 @@
 # Home Appliance Cards
 
-Kilenc Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Tíz Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -13,9 +13,10 @@ Kilenc Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:netatmo-heating-card` | Netatmo fűtés: termosztát, radiátorszelepek, ütemtervek | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 | `custom:netatmo-weather-card` | Netatmo időjárás-állomás: kinti hőmérséklet, légnyomás, szobánkénti CO₂ | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 | `custom:aeno-heater-card` | AENO infra fűtőpanel (fejlesztve: **AGH0001S**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
+| `custom:nanoleaf-shapes-card` | Nanoleaf Shapes világító panelek (fejlesztve: **Shapes Hexagons, NL42**) | beépített [`nanoleaf`](https://www.home-assistant.io/integrations/nanoleaf) integráció |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A nyolc háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. A kilenc háztartási kártya vezérel is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
 
 ## Mosogatógép kártya
@@ -333,6 +334,38 @@ példák: [`examples/aeno.yaml`](examples/aeno.yaml).
 | --- | --- | --- | --- | --- |
 | ![Folyamatos](docs/images/aeno-constant.png) | ![Nyitott ablak](docs/images/aeno-window.png) | ![Időzítő](docs/images/aeno-timer.png) | ![Gyári profil](docs/images/aeno-stock.png) | ![Sötét](docs/images/aeno-dark.png) |
 
+## Nanoleaf Shapes kártya
+
+![Nanoleaf Shapes kártya](docs/images/nanoleaf-light.png)
+
+- **A panelek a saját elrendezésükben.** Az integráció a panelek számát és
+  elhelyezkedését nem adja át, pedig a Nanoleaf API tudja – a kártya ezért a
+  configból veszi, hatszög-koordinátákban, és azt rajzolja, ami tényleg a
+  falon van. Fekete kerettel, mert a Shapes Black pont így néz ki.
+- **A futó jelenet végigfut a falon**: minden panel kicsit később kezdi
+  ugyanazt a színciklust, a helyzete szerint – ahogy a valódi panelek is.
+- **Effekt közben a szín nem jelent semmit, és a kártya tudja.** A Home
+  Assistantnak nincs „effekt" színmódja, ezért a lámpa `hs`-t jelent, és az a
+  legutóbbi fix szín: Prism közben `hue: 0, saturation: 0`, azaz fehér. Abból
+  festve a kártya üres falat mutatna szivárvány alatt – ezért **előbb az
+  effektet nézi**, és a színt csak akkor, ha nincs futó jelenet.
+- **A jelenetek színmintával.** A HA csak a nevüket kapja meg, se palettát, se
+  előnézetet – enélkül a választó tizenhat egyforma szövegsor lenne. A kártya
+  ezért saját színmintát tart a gyári jelenetekhez; ami nincs köztük (saját
+  készítésű jelenet), az semleges mintát kap, és kimondja, hogy nem ismeri.
+- **Érintés csak ott, ahol van.** Az integráció `event` entitást csak a
+  Canvas, a Shapes Hexagons és az Elements modellekre hoz létre – a kártya a
+  Triangles-nél elhagyja a sort, nem mutat sosem működő vezérlőt.
+- **A fényerő-csúszka nem küldözget**: húzás közben 220 ms-ot vár, és csak azt
+  az értéket adja át, ahol az ujj megállt.
+
+Részletek: [`docs/nanoleaf-capabilities.md`](docs/nanoleaf-capabilities.md),
+példák: [`examples/nanoleaf.yaml`](examples/nanoleaf.yaml).
+
+| Kilenc panel | Fix szín | Fehér | Kikapcsolva | Sötét téma |
+| --- | --- | --- | --- | --- |
+| ![Kilenc panel](docs/images/nanoleaf-scene.png) | ![Fix szín](docs/images/nanoleaf-solid.png) | ![Fehér](docs/images/nanoleaf-white.png) | ![Kikapcsolva](docs/images/nanoleaf-off.png) | ![Sötét](docs/images/nanoleaf-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -342,11 +375,12 @@ példák: [`examples/aeno.yaml`](examples/aeno.yaml).
 ### Kézzel (privát repónál ez ajánlott)
 
 1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a
-   kilenc kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
+   tíz kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
    `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
    `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`,
-   `dist/netatmo-weather-card.js`, illetve `dist/aeno-heater-card.js`.)
+   `dist/netatmo-weather-card.js`, `dist/aeno-heater-card.js`, illetve
+   `dist/nanoleaf-shapes-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):
@@ -467,6 +501,10 @@ type: custom:netatmo-weather-card
 
 ```yaml
 type: custom:aeno-heater-card
+```
+
+```yaml
+type: custom:nanoleaf-shapes-card
 ```
 
 Ha több hasonló készüléked van, add meg a készüléket (a vizuális szerkesztő
