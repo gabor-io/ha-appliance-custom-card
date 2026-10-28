@@ -341,8 +341,8 @@ példák: [`examples/aeno.yaml`](examples/aeno.yaml).
 - **A panelek a saját elrendezésükben.** Az integráció a panelek számát és
   elhelyezkedését nem adja át, pedig a Nanoleaf API tudja – a kártya ezért a
   configból veszi, és azt rajzolja, ami tényleg a falon van. Három
-  elrendezésnek neve van (`zigzag9`, `flower7`, `row5`), bármi más
-  hatszög-koordinátákban megy. Fekete kerettel, mert a Shapes Black pont így
+  elrendezésnek neve van (`zigzag9`, `flower7`, `row5`) – **a szerkesztőben
+  is kiválasztható** –, bármi más hatszög-koordinátákban megy. Fekete kerettel, mert a Shapes Black pont így
   néz ki, és a bal szélső panel alatt ott a tápcsatlakozó.
 - **A futó jelenet végigfut a falon**: minden panel kicsit később kezdi
   ugyanazt a színciklust, a helyzete szerint – ahogy a valódi panelek is.

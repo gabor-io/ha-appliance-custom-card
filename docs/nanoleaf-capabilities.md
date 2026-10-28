@@ -59,6 +59,11 @@ Az integráció **nem adja át a panelek számát és elhelyezkedését**, pedig
 Nanoleaf API tudja. A kártya ezért a configból veszi, és azt rajzolja, amit
 mondanak neki – nem tesz úgy, mintha ismerné a falat.
 
+Az elrendezés **a vizuális szerkesztőben is kiválasztható** (Elrendezés
+legördülő), nem kell hozzá YAML-t nyitni. Ha a configban kézzel írt
+koordinátalista van, a legördülő „Egyedi (YAML-ben)" állásban marad, és nem
+írja felül – választani belőle szándékos lépés.
+
 Három elrendezésnek van neve, azokat elég egy szóval megadni:
 
 ```yaml

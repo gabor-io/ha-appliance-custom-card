@@ -30,6 +30,11 @@ input[type="text"], select {
  * @param {Function} spec.getLanguage `(config, hass) => lang`
  * @param {Function} spec.translator `(lang) => t`
  * @param {string[]} spec.languages selectable language codes
+ * @param {Array<{key: string, options: Array<{value: string, label: string}>}>}
+ *   [spec.selects] extra dropdowns a card needs, rendered after the language
+ *   one. Without these a setting that is not a toggle - the Nanoleaf panel
+ *   layout, say - can only ever be reached by opening the YAML, which is not
+ *   a setting most people will find.
  */
 export function createEditorClass(spec) {
   return class ApplianceCardEditor extends HTMLElement {
@@ -98,6 +103,30 @@ export function createEditorClass(spec) {
         ),
       ].join('');
 
+      /* A config key already holding something this dropdown cannot express -
+         a hand-written layout, say - keeps its own entry, selected and
+         disabled, so picking from the list is a deliberate act rather than
+         something that quietly overwrites what is there. */
+      const extras = (spec.selects || [])
+        .map(({ key, options }) => {
+          const value = this._config[key];
+          const listed = options.some((option) => option.value === value);
+          const custom =
+            value !== undefined && !listed
+              ? `<option value="" selected disabled>${escapeHtml(t('editor.custom'))}</option>`
+              : '';
+          const items = options
+            .map(
+              (option) =>
+                `<option value="${escapeHtml(option.value)}" ${option.value === value ? 'selected' : ''}>${escapeHtml(option.label)}</option>`,
+            )
+            .join('');
+          return `<label>${escapeHtml(t(`editor.${key}`))}
+            <select data-key="${key}">${custom}${items}</select>
+          </label>`;
+        })
+        .join('');
+
       const toggles = spec.toggles
         .map((key) => {
           const value = this._config[key] ?? spec.defaults[key] ?? false;
@@ -118,6 +147,7 @@ export function createEditorClass(spec) {
           <label>${escapeHtml(t('editor.language'))}
             <select data-key="language">${languageOptions}</select>
           </label>
+          ${extras}
           <div class="title">${escapeHtml(t('editor.sections'))}</div>
           <div class="toggles">${toggles}</div>
         </div>`;
