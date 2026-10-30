@@ -119,12 +119,16 @@ ${BASE_STYLES}
 .ticks button[disabled] { opacity: .45; cursor: not-allowed; }
 
 /* ---------- ghost buttons ---------- */
-.btnrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 7px; }
+/* One row of equal buttons while they fit, and a second row when they do not.
+   As a grid of columns this could never be narrower than all of them side by
+   side - on a phone that pushed the whole card off the right of the screen. */
+.btnrow { display: flex; flex-wrap: wrap; gap: 7px; }
+.btnrow > * { flex: 1 1 92px; }
 .ghost {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   padding: 7px 10px; border-radius: 10px; cursor: pointer;
   border: 1px solid var(--ap-line); background: transparent; color: var(--ap-text);
-  font: inherit; font-size: .74rem; font-weight: 600;
+  font: inherit; font-size: .74rem; font-weight: 600; white-space: nowrap;
   transition: border-color .15s, color .15s, background .15s;
 }
 .ghost .icon { width: 15px; height: 15px; color: var(--ap-muted); }
@@ -163,10 +167,16 @@ ${BASE_STYLES}
 .row.open .caret { transform: rotate(180deg); }
 .row-body { display: none; padding: 2px 10px 11px; gap: 9px; }
 .row.open .row-body { display: grid; }
-.rowbottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rowbottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .rowbottom .big { font-size: 1.45rem; }
 .rowbottom .big small { font-size: .72rem; }
-.rowbottom .btnrow { grid-auto-columns: auto; }
+/* only as wide as its buttons, so the setpoint keeps its place beside them
+   on a wide card and drops below only when the line truly runs out */
+.rowbottom .btnrow { flex: 0 1 auto; }
+.rowbottom .btnrow > * { flex: 0 1 auto; }
+/* the setpoint keeps its place beside the buttons, and drops under them
+   rather than squeezing them when the row runs out of width */
+.rowbottom .dial { flex: 0 0 auto; margin-left: auto; }
 .rowbottom .updown { grid-auto-flow: column; }
 .rowbottom .updown button { width: 31px; height: 29px; }
 
