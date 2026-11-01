@@ -241,9 +241,36 @@ export class AegDishwasherCard extends HTMLElement {
           ${sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''}
         </div>
         <div class="spacer"></div>
-        <div class="badges">${badges.join('')}</div>
-        <div class="pill">${icon(this._stateIcon(model))}${escapeHtml(t(`state.${model.state}`))}</div>
+        <div class="meta">
+          <div class="badges">${badges.join('')}</div>
+          <div class="pill">${icon(this._stateIcon(model))}${escapeHtml(t(`state.${model.state}`))}</div>
+          ${this._powerHtml(model, t)}
+        </div>
       </div>`;
+  }
+
+  /**
+   * The power toggle: one button that switches the appliance off while it is
+   * on and on while it is off.
+   *
+   * It sits in the header rather than in the control row so that it is there
+   * in every state - the row is driven by `STATE_COMMANDS` and can be hidden
+   * entirely by `show_controls`, which is how a switched-off machine could end
+   * up with no way to wake it.
+   *
+   * It is also not gated on remote control: the `remote_control` sensor
+   * reports whether the appliance accepts a remote *program start*, and
+   * waiting for it would disable the very button needed to bring a dormant
+   * machine back up.
+   */
+  _powerHtml(model, t) {
+    const on = model.state !== STATE.OFF;
+    const command = on ? 'off' : 'on';
+    const entity = model.entities[`cmd_${command}`];
+    if (!entity) return '';
+    const label = escapeHtml(t(`command.${command}`));
+    return `<button class="power" type="button" data-action="command" data-value="${command}"
+        aria-pressed="${on}" aria-label="${label}" title="${label}">${icon('power')}</button>`;
   }
 
   _stateIcon(model) {
@@ -640,7 +667,7 @@ export class AegDishwasherCard extends HTMLElement {
       .filter((command) => model.entities[`cmd_${command}`])
       .map((command) => {
         const meta = COMMAND_META[command];
-        const disabled = !model.remoteEnabled && command !== 'off' ? 'disabled' : '';
+        const disabled = model.remoteEnabled ? '' : 'disabled';
         return `<button class="btn ${meta.style}" type="button" data-action="command" data-value="${command}" ${disabled}>
           ${icon(meta.icon)}<span>${escapeHtml(t(`command.${command}`))}</span></button>`;
       });

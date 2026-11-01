@@ -9,6 +9,33 @@ const CARD_STYLES = `
   --dw-tub-2: color-mix(in srgb, var(--card-background-color, #fff) 40%, #06131c 60%);
 }
 
+/* ---------- header power toggle ---------- */
+/* Round so it reads as a power switch rather than one more status pill, and
+   shrink-proof: the title beside it is what gives way on a narrow card. */
+.power {
+  flex: 0 0 auto; width: 36px; height: 36px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ap-line); border-radius: 50%;
+  background: transparent; color: var(--ap-muted); cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, color .2s ease, transform .1s ease;
+}
+.power .icon { width: 20px; height: 20px; }
+.power[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ap-accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--ap-accent) 45%, transparent);
+  color: var(--ap-accent);
+}
+.power:hover:not([disabled]) { border-color: var(--ap-accent); }
+.power:active:not([disabled]) { transform: scale(.94); }
+.power[disabled] { opacity: .4; cursor: not-allowed; }
+/* The state pill, the badges and the toggle travel together and drop to a
+   line of their own rather than forcing the card wider than its column: on a
+   phone they no longer fit beside the appliance name, and a card that cannot
+   shrink hangs off the edge of the screen. */
+.header { flex-wrap: wrap; }
+.header .meta { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.header > div:first-child { min-width: 0; }
+
 /* ---------- timeline ---------- */
 .timeline { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
 .step { display: grid; justify-items: center; gap: 5px; opacity: .45; }

@@ -19,6 +19,11 @@ Az adott állapotban engedélyezett parancsok (a `applianceState` triggerekből)
 | `DELAYED_START` | `STOPRESET` | nem |
 | `END_OF_CYCLE` | `STOPRESET` | nem |
 
+A be- és kikapcsolás (`ON`, `OFF`) nem állapotfüggő gomb a kártyán: a fejléc
+jobb szélén egy kapcsoló van, ami bekapcsolt gépet kikapcsol, kikapcsoltat
+bekapcsol. Ez a gomb akkor is aktív, ha a `remote_control` érzékelő tiltást
+jelez – az a távoli *programindításra* vonatkozik, nem a gép felébresztésére.
+
 ## Ciklusfázisok (`sensor.<prefix>_cycle_phase`)
 
 `PREWASH`, `MAINWASH`, `COLDRINSE`, `HOTRINSE`, `EXTRARINSE`, `DRYING`,

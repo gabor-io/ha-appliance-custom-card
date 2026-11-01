@@ -532,7 +532,7 @@ Közös opciók mindkét kártyán:
 | `compact` | bool | `false` | Kisebb géprajz, sűrűbb elrendezés |
 | `animate` | bool | `true` | Animációk ki/be |
 | `show_details` | bool | `true` | Részletek rács |
-| `show_controls` | bool | `true` | Vezérlőgombok |
+| `show_controls` | bool | `true` | Vezérlőgombok (a be-/kikapcsoló gomb a fejlécben marad) |
 
 Csak a mosogatógép kártyán: `show_programs`, `show_options`, `show_delay`,
 `show_scores`, `show_consumption`, `show_appliance_settings`.

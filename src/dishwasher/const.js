@@ -209,22 +209,25 @@ export const OPTIONS = [
 /**
  * Which command buttons make sense in a given appliance state. Mirrors the
  * `applianceState` triggers of the capability document.
+ *
+ * Switching the appliance on and off is deliberately not in this table: the
+ * power command lives in the header as a single toggle, so it is there in
+ * every state - including `UNKNOWN` and with the control row switched off -
+ * instead of appearing and disappearing with the state.
  */
 export const STATE_COMMANDS = {
-  [STATE.OFF]: ['on'],
-  [STATE.IDLE]: ['start', 'off'],
-  [STATE.READY_TO_START]: ['start', 'off'],
+  [STATE.OFF]: [],
+  [STATE.IDLE]: ['start'],
+  [STATE.READY_TO_START]: ['start'],
   [STATE.DELAYED_START]: ['stopreset'],
   [STATE.RUNNING]: ['pause'],
   [STATE.PAUSED]: ['resume', 'stopreset'],
-  [STATE.END_OF_CYCLE]: ['stopreset', 'off'],
-  [STATE.ALARM]: ['stopreset', 'off'],
+  [STATE.END_OF_CYCLE]: ['stopreset'],
+  [STATE.ALARM]: ['stopreset'],
   [STATE.UNKNOWN]: [],
 };
 
 export const COMMAND_META = {
-  on: { icon: 'power', style: 'ghost' },
-  off: { icon: 'power', style: 'ghost' },
   start: { icon: 'play', style: 'primary' },
   pause: { icon: 'pause', style: 'primary' },
   resume: { icon: 'play', style: 'primary' },
