@@ -158,6 +158,32 @@ const FAMILY_STYLES = `
 }
 .step-btn[disabled] { opacity: .35; cursor: not-allowed; }
 
+/* ---------- compact room row (house card list) ---------- */
+.room.compact { padding: 8px 10px; gap: 6px; }
+/* the whole line opens the room; the setpoint buttons inside it still act as
+   buttons, because the nearest [data-action] wins */
+.room.compact .line { cursor: pointer; gap: 8px; }
+.room.compact .line > .icon { width: 18px; height: 18px; color: var(--ap-muted); flex: 0 0 auto; }
+.room.compact .nums { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.room.compact .nums .temp { font-size: 1.05rem; }
+.room.compact .nums .goal { font-size: .78rem; }
+.room.compact .marks { display: flex; gap: 4px; flex: 0 0 auto; }
+.room.compact .quick { display: inline-flex; gap: 6px; flex: 0 0 auto; }
+.room.compact .step-btn { width: 30px; height: 30px; font-size: 1rem; }
+.mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px;
+  background: color-mix(in srgb, var(--ap-accent) 14%, transparent); color: var(--ap-accent); }
+.mark .icon { width: 15px; height: 15px; }
+.mark.warn { background: color-mix(in srgb, var(--ht-warn) 18%, transparent); color: var(--ht-warn); }
+/* a room can be heated differently from the house, so its own row carries
+   its own accent rather than borrowing the card's */
+.accent-gas { --ap-accent: var(--ht-gas); }
+.accent-ac { --ap-accent: var(--ht-ac); }
+.accent-cool { --ap-accent: var(--ht-cool); }
+.accent-hybrid { --ap-accent: var(--ht-hybrid); }
+.accent-frost { --ap-accent: var(--ht-frost); }
+.accent-idle { --ap-accent: var(--ht-idle); }
+.suggest { display: flex; align-items: center; gap: 8px; }
+
 /* ---------- schedule ---------- */
 .days { display: flex; gap: 6px; flex-wrap: wrap; }
 .days button {

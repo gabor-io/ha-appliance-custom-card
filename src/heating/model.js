@@ -11,6 +11,7 @@ import {
   COOLING_FROM,
   COOLING_TO,
   ROOM_ACTIVE,
+  ROOM_SUGGESTION,
   SOURCES,
   WEEKDAYS,
   WINDOW_STATES,
@@ -71,6 +72,9 @@ export function buildHouseModel(hass, config) {
   }
 
   const pace = num(hass, ids.pace);
+  /* the daily pace needs two readings inside its window; until then the
+     sensor is unavailable, which is a different thing from "zero" */
+  const paceUnknown = pace === null && isUnavailable(stateOf(hass, ids.pace));
   const heatingDaily = num(hass, ids.heating_daily);
   const hotWater = num(hass, ids.hot_water_daily);
   const spendable = left === null ? null : left - (reserve || 0);
@@ -104,7 +108,7 @@ export function buildHouseModel(hass, config) {
         Number(config?.budget_mj) ||
         (budget === null ? null : Math.round(budget * heatingValue)),
     },
-    pace: { actual: pace, heatingDaily, hotWater, lastsDays },
+    pace: { actual: pace, unknown: paceUnknown, heatingDaily, hotWater, lastsDays },
     forecast: { gasOnly: num(hass, ids.forecast), balance },
     source: {
       key: isUnavailable(sourceKey) ? null : sourceKey,
@@ -117,6 +121,10 @@ export function buildHouseModel(hass, config) {
       choice: stateOf(hass, ids.season_select) || null,
       active: stateOf(hass, ids.season_active) || null,
       options: optionsOf(hass, ids.season_select),
+      /* the three-day outdoor average is what decides cooling in `auto`, so
+         it belongs next to the season switch rather than in a tooltip */
+      outdoor3: num(hass, ids.outdoor_3day),
+      outside: num(hass, ids.outside),
     },
     mode: {
       key: stateOf(hass, ids.mode) || null,
@@ -161,6 +169,8 @@ export function buildRoomsModel(hass, config) {
       : null;
     const activeKey = stateOf(hass, ids.active);
     const active = ROOM_ACTIVE[activeKey] || null;
+    const suggestionKey = stateOf(hass, ids.suggestion);
+    const suggestion = ROOM_SUGGESTION[suggestionKey] || null;
 
     const parts = room.parts.map((part) => ({
       key: part.key,
@@ -176,6 +186,13 @@ export function buildRoomsModel(hass, config) {
       temperature: num(hass, ids.temperature),
       target: room.readonly ? null : num(hass, ids.target),
       active: active ? { key: activeKey, ...active } : null,
+      suggestion: suggestion
+        ? {
+            key: suggestionKey,
+            ...suggestion,
+            reason: stateOf(hass, ids.suggestion_reason),
+          }
+        : null,
       window: windowMeta
         ? {
             state: windowState,

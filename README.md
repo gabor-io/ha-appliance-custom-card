@@ -15,7 +15,7 @@ Tíz Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:aeno-heater-card` | AENO infra fűtőpanel (fejlesztve: **AGH0001S**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 | `custom:nanoleaf-shapes-card` | Nanoleaf Shapes világító panelek (fejlesztve: **Shapes Hexagons, NL42**) | beépített [`nanoleaf`](https://www.home-assistant.io/integrations/nanoleaf) integráció |
 | `custom:house-heating-card` | Gázkeret, napi ütem és az aktív fűtési forrás | saját helper entitások ([szerződés](docs/heating-capabilities.md)) |
-| `custom:heating-rooms-card` | Szobánkénti hőmérséklet, felülírás, forrás, ablakállapot | saját helper entitások |
+| `custom:heating-rooms-card` | Szobánkénti hőmérséklet, felülírás, forrás, ablakállapot (egy szobára is szűkíthető) | saját helper entitások |
 | `custom:heating-schedule-card` | Heti zóna-ütemterv idővonallal, fűtésre és hűtésre | [nielsfaber/scheduler-component](https://github.com/nielsfaber/scheduler-component) |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol

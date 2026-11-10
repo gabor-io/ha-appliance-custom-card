@@ -51,6 +51,9 @@ export const HOUSE_ENTITIES = {
   boiler: 'input_boolean.kazan_uzemkesz',
   erv_lock: 'input_boolean.szellozteto_gaz_retesz',
   zone_select: 'input_select.futes_zona',
+  /* no sensible default: every house names its weather station differently */
+  outside: null,
+  outdoor_3day: null,
 };
 
 /**
@@ -69,6 +72,8 @@ export const ROOM_SUFFIXES = {
   paused: ['binary_sensor', 'szunetel'],
   preheat: ['sensor', null], // sensor.<prefix>_elofutes_<room>, built separately
   frost: ['binary_sensor', 'fagyveszely'],
+  suggestion: ['sensor', 'forras_javaslat'],
+  suggestion_reason: ['sensor', 'forras_indoklas'],
   leading: ['sensor', 'mertado'],
   aggregation: ['input_select', 'aggregalas'],
   overshoot: ['binary_sensor', 'tulloves_korlat'],
@@ -110,6 +115,24 @@ export const ROOM_ACTIVE = {
   klima_hutes: { icon: 'snowflake', accent: 'cool' },
   aeno: { icon: 'reheat', accent: 'gas' },
   nincs: { icon: 'power', accent: 'idle' },
+};
+
+/**
+ * What the logic would use in a given room, per
+ * `sensor.<prefix>_<room>_forras_javaslat`.
+ *
+ * This is the room's own answer and can differ from the house-wide source:
+ * a bathroom with no heat pump is on gas while the rest of the house runs on
+ * the heat pump, and a room with an open window is paused whatever the house
+ * is doing.
+ */
+export const ROOM_SUGGESTION = {
+  gaz: { icon: 'heat', accent: 'gas' },
+  klima: { icon: 'ac', accent: 'ac' },
+  hutes: { icon: 'snowflake', accent: 'cool' },
+  aeno: { icon: 'reheat', accent: 'gas' },
+  szunetel: { icon: 'window_open', accent: 'idle' },
+  ki: { icon: 'power', accent: 'idle' },
 };
 
 /** Window states a room can report. */

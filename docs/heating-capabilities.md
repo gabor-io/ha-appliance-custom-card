@@ -56,6 +56,14 @@ Mind felülírható a kártya `entities:` blokkjából; itt az alapértelmezés 
 | szellőztető gázretesz | `input_boolean.szellozteto_gaz_retesz` | on/off |
 | zónaválasztó | `input_select.futes_zona` | `komfort` \| `ejszaka` \| `eco` \| `tavol` \| `fagyvedelem` |
 | kinti hőmérséklet | nincs alapértelmezés (`entities.outside`) | °C |
+| 3 napos kinti átlag | nincs alapértelmezés (`entities.outdoor_3day`) | °C |
+
+`auto` évszakban a hűtést a 3 napos kinti átlag dönti el, ezért a kártya az
+évszakváltó alatt ki is írja, ha meg van adva.
+
+**A napi ütem hiányozhat.** Amíg nincs elég leolvasás az ablakban, a
+`sensor.gaz_napi_utem` `unavailable`, ami nem ugyanaz, mint a nulla: a kártya
+ilyenkor „még nincs elég leolvasás" feliratot ír a szám helyére.
 
 ### Ami a kártyában számolódik
 
@@ -87,6 +95,13 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | szünetel | `binary_sensor.<prefix>_<szoba>_szunetel` |
 | elő-fűtés/-hűtés | `sensor.<prefix>_elofutes_<szoba>` (timestamp, `irany` attribútum) |
 | fagyveszély | `binary_sensor.<prefix>_<szoba>_fagyveszely` |
+| forrásjavaslat | `sensor.<prefix>_<szoba>_forras_javaslat` (`gaz`/`klima`/`hutes`/`aeno`/`szunetel`/`ki`) |
+| javaslat indoklása | `sensor.<prefix>_<szoba>_forras_indoklas` |
+
+A szoba forrása eltérhet a házétól, és ez nem hiba: egy klíma nélküli fürdő
+gázzal megy, miközben a ház a klímán, egy nyitott ablakú szoba pedig szünetel,
+bármit csinál a ház. Ezért a `sensor.futes_forras` összesítő marad, a szoba
+saját sorában pedig a szobánkénti javaslat a fő jelzés.
 
 Többhőmérős zóna (`parts:`) esetén még:
 
@@ -100,6 +115,24 @@ Többhőmérős zóna (`parts:`) esetén még:
 
 Az ablak kora a `sensor.*_ablak` entitás `last_changed` idejéből jön, nem
 attribútumból: a HA ezt magától vezeti, és így nem lehet elcsúszni tőle.
+
+## Melyik kártya mit csinál
+
+A három elem közül kettő ugyanaz a kártya, más beállítással:
+
+- **Központi kártya**: `house-heating-card` – felül a gázkeret-sáv, az
+  üzemmód- és évszakváltó, alattuk az öt szoba egy-egy sorban (aktuális/cél,
+  +/−, a forrás és az ablak ikonja). A sorra koppintva nyílik a szoba teljes
+  nézete az indoklással és a vezérlőkkel. A `show_rooms: false` kikapcsolja a
+  listát, ha csak a gázkeret kell.
+- **Szobakártya**: `heating-rooms-card` a `room:` (vagy `szoba:`) kulccsal –
+  egyetlen szoba teljes nézete, a kártya színe is a szoba saját forrását
+  követi.
+- **Szobalista**: ugyanaz a kártya `room:` nélkül – minden szoba teljes
+  nézetben, egymás alatt.
+
+Így a szoba sora és a szobakártya ugyanazt a kódot használja, tehát nem tudnak
+elcsúszni egymástól.
 
 ## Ütemterv
 
@@ -149,6 +182,7 @@ input_number.hutes_zona_<zona>_<szoba>
 | `heat_prefix` / `cool_prefix` | `input_number.futes_zona` / `input_number.hutes_zona` | zónahőmérséklet-helperek előtagja |
 | `heating_value` | `34.92` | égéshő, MJ/m³ |
 | `budget_mj` | – | a keret MJ-ban, ha a számlán ez a hiteles szám |
+| `room` / `szoba` | – | egyetlen szobára szűkíti a szobakártyát |
 | `boost_script` | `script.futes_boost` | a boost gomb scriptje, `szoba` mezővel |
 | `name`, `language`, `compact`, `animate` | – | mint a többi kártyán |
 | `show_*` | `true` | szakaszok ki/be (szerkesztőből is) |

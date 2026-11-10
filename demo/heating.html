@@ -122,14 +122,22 @@
     cards = [];
 
     const configs = [
+      /* a központi kártya: gázkeret, üzemmód, évszak és az öt szoba listája */
       {
         type: 'custom:house-heating-card',
         language: 'hu',
         rooms: ROOMS,
         show_power_note: true,
         budget_mj: 63645,
-        entities: { outside: 'sensor.kulso_homerseklet' },
+        entities: {
+          outside: 'sensor.kulso_homerseklet',
+          outdoor_3day: 'sensor.kinti_homerseklet_3_napos_atlag',
+        },
       },
+      /* két önálló szobakártya */
+      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'living' },
+      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'room_2' },
+      /* a teljes lista és a heti ütemterv */
       { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS },
       { type: 'custom:heating-schedule-card', language: 'hu', rooms: ROOMS },
     ];

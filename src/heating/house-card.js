@@ -9,6 +9,7 @@ import {
 import { fill, getLanguage, translator } from './i18n.js';
 import { buildHouseModel, buildRoomsModel, openWindows, outsideCoolingSeason } from './model.js';
 import { num } from './entities.js';
+import { applyRoomAction, compactRowHtml } from './room-ui.js';
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
 import { escapeHtml, formatClock, formatDecimal } from '../shared/format.js';
@@ -23,10 +24,11 @@ export const HOUSE_DEFAULTS = {
   show_source: true,
   show_mode: true,
   show_meter: true,
+  show_rooms: true,
   show_power_note: false,
 };
 
-const SECTIONS = ['header', 'alerts', 'gas', 'pace', 'source', 'mode', 'meter'];
+const SECTIONS = ['header', 'alerts', 'gas', 'pace', 'source', 'mode', 'rooms', 'meter'];
 
 /** House-level card: the gas budget, what is heating the house, and why. */
 export class HouseHeatingCard extends HTMLElement {
@@ -47,6 +49,8 @@ export class HouseHeatingCard extends HTMLElement {
     /* a season the user picked that needs a second look - held here, not
        written, until they answer */
     this._pendingSeason = null;
+    /* which rooms the list is showing in full */
+    this._open = new Set();
   }
 
   setConfig(config) {
@@ -91,6 +95,7 @@ export class HouseHeatingCard extends HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'wrap';
     wrap.addEventListener('click', (ev) => this._onClick(ev));
+    wrap.addEventListener('change', (ev) => this._onChange(ev));
 
     for (const name of SECTIONS) {
       const node = document.createElement('div');
@@ -129,6 +134,7 @@ export class HouseHeatingCard extends HTMLElement {
     this._section('pace', this._config.show_pace ? this._paceHtml(model, t) : '');
     this._section('source', this._config.show_source ? this._sourceHtml(model, t) : '');
     this._section('mode', this._config.show_mode ? this._modeHtml(model, t) : '');
+    this._section('rooms', this._config.show_rooms ? this._roomsHtml(rooms, t) : '');
     this._section('meter', this._config.show_meter ? this._meterHtml(model, t) : '');
   }
 
@@ -260,7 +266,7 @@ export class HouseHeatingCard extends HTMLElement {
 
   _paceHtml(model, t) {
     const { pace, forecast, gas } = model;
-    if (pace.actual === null && pace.heatingDaily === null) return '';
+    if (pace.actual === null && !pace.unknown && pace.heatingDaily === null) return '';
 
     const allowedTotal =
       pace.heatingDaily === null ? null : pace.heatingDaily + (pace.hotWater || 0);
@@ -269,8 +275,8 @@ export class HouseHeatingCard extends HTMLElement {
     const boxes = [
       `<div class="pacebox${over ? ' over' : ''}">
         <div class="k">${escapeHtml(t('ui.pace_actual'))}</div>
-        <div class="v">${escapeHtml(formatDecimal(pace.actual, this._hass, 1))}</div>
-        <div class="u">${escapeHtml(t('ui.per_day'))}</div>
+        <div class="v">${escapeHtml(pace.unknown ? '–' : formatDecimal(pace.actual, this._hass, 1))}</div>
+        <div class="u">${escapeHtml(pace.unknown ? t('ui.pace_unknown') : t('ui.per_day'))}</div>
       </div>`,
       allowedTotal === null
         ? ''
@@ -357,6 +363,17 @@ export class HouseHeatingCard extends HTMLElement {
         ? `<div class="muted">${icon('info')} ${escapeHtml(t('ui.overridden'))}</div>`
         : '';
 
+    /* in `auto` the three-day outdoor average is what decides cooling, so it
+       is the one number that explains the season switch */
+    const outdoor =
+      model.season.outdoor3 === null
+        ? ''
+        : `<div class="muted">${escapeHtml(
+            fill(t('ui.outdoor_3day'), {
+              value: formatDecimal(model.season.outdoor3, this._hass, 1),
+            }),
+          )}</div>`;
+
     const confirm = this._pendingSeason
       ? `<div class="confirm">
           <div class="q">${escapeHtml(t('ui.cool_confirm'))}</div>
@@ -374,7 +391,25 @@ export class HouseHeatingCard extends HTMLElement {
         <div class="seg" data-group="mode">${modeButtons}</div>
         <div class="section-title">${escapeHtml(t('ui.season_title'))}</div>
         <div class="seg" data-group="season">${seasonButtons}</div>
-        ${overridden}${confirm}
+        ${outdoor}${overridden}${confirm}
+      </div>`;
+  }
+
+  /** The five rooms in one line each, opening into the full row on a tap. */
+  _roomsHtml(rooms, t) {
+    if (!rooms.length) return '';
+    const options = {
+      t,
+      hass: this._hass,
+      season: this._model.season.active,
+      showBoost: true,
+    };
+    return `
+      <div class="section">
+        <div class="section-title">${escapeHtml(t('rooms_card_name'))}</div>
+        <div class="rooms">${rooms
+          .map((room) => compactRowHtml(room, { ...options, expanded: this._open.has(room.key) }))
+          .join('')}</div>
       </div>`;
   }
 
@@ -470,9 +505,38 @@ export class HouseHeatingCard extends HTMLElement {
       case 'meter-save':
         this._saveMeter();
         break;
+      case 'toggle-room':
+        if (this._open.has(target.dataset.room)) this._open.delete(target.dataset.room);
+        else this._open.add(target.dataset.room);
+        this._render();
+        break;
+      case 'step':
+      case 'boost':
+        this._roomAction(target);
+        break;
       default:
         break;
     }
+  }
+
+  _onChange(ev) {
+    const target = ev.target.closest('[data-action]');
+    if (target && ['source', 'aggregation'].includes(target.dataset.action)) {
+      this._roomAction(target);
+    }
+  }
+
+  _roomAction(target) {
+    const room = this._rooms?.find((item) => item.key === target.dataset.room);
+    if (!room) return;
+    const changed = applyRoomAction({
+      hass: this._hass,
+      config: this._config,
+      room,
+      action: target.dataset.action,
+      target,
+    });
+    if (changed) this._haptic(target.dataset.action === 'boost' ? 'medium' : 'light');
   }
 
   /**

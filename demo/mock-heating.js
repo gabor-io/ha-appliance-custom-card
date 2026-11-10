@@ -55,14 +55,31 @@ export const SEASONS = {
     season_choice: 'auto',
     source: 'klima',
     reason:
-      'A kazán ki van kapcsolva. A gázkeret csak részben fedezné a fűtést, javasolt: hibrid.',
+      'A kazán ki van kapcsolva, a klíma fűt. A gáz a várható fűtési igény kb. 70%-át fedezné, javasolt: kazán be, hibrid üzem.',
     outside: 2,
+    outdoor3: 3.4,
     rooms: {
-      bath: { temp: 21.8, target: 20.5, active: 'aeno' },
-      living: { temp: 20.1, target: 20.5, active: 'klima_futes' },
-      room_1: { temp: 20.4, target: 20.5, active: 'klima_futes' },
-      room_2: { temp: 18.2, target: 20.5, active: 'nincs', window: 'buko', paused: true },
-      room_3: { temp: 20.6, target: 20.5, active: 'nincs' },
+      bath: {
+        temp: 21.8, target: 20.5, active: 'aeno',
+        suggestion: 'gaz',
+        why: 'Nincs klíma, a gáz fűt; zuhany előtt AENO boost.',
+      },
+      living: {
+        temp: 20.1, target: 20.5, active: 'klima_futes',
+        suggestion: 'klima', why: 'Kint 2 °C, a klíma itt gyors (1,4 °C/h) – a klíma fűt.',
+      },
+      room_1: {
+        temp: 20.4, target: 20.5, active: 'klima_futes',
+        suggestion: 'klima', why: 'Kint 2 °C, a klíma itt gyors (1,3 °C/h) – a klíma fűt.',
+      },
+      room_2: {
+        temp: 18.2, target: 20.5, active: 'nincs', window: 'buko', paused: true,
+        suggestion: 'szunetel', why: 'Az ablak 34 perce bukóban, a fűtés szünetel.',
+      },
+      room_3: {
+        temp: 20.6, target: 20.5, active: 'nincs',
+        suggestion: 'gaz', why: 'Kint 2 °C, a klíma itt lassú (0,65 °C/h) – a gáz fűt.',
+      },
       hall: { temp: 11.4 },
     },
   },
@@ -72,12 +89,16 @@ export const SEASONS = {
     source: 'hutes',
     reason: 'Három napja 20 °C fölött van a kinti átlag, a klíma hűt.',
     outside: 31,
+    outdoor3: 24.8,
     rooms: {
-      bath: { temp: 26.2, target: 25.5, active: 'nincs' },
-      living: { temp: 26.8, target: 25.5, active: 'klima_hutes' },
-      room_1: { temp: 25.9, target: 25.5, active: 'klima_hutes' },
-      room_2: { temp: 27.4, target: 25.5, active: 'nincs', window: 'buko', paused: true },
-      room_3: { temp: 25.4, target: 25.5, active: 'nincs' },
+      bath: { temp: 26.2, target: 25.5, active: 'nincs', suggestion: 'ki', why: 'Nincs klíma a fürdőben, hűteni nem tud.' },
+      living: { temp: 26.8, target: 25.5, active: 'klima_hutes', suggestion: 'hutes', why: 'Kint 31 °C, a klíma hűt.' },
+      room_1: { temp: 25.9, target: 25.5, active: 'klima_hutes', suggestion: 'hutes', why: 'Kint 31 °C, a klíma hűt.' },
+      room_2: {
+        temp: 27.4, target: 25.5, active: 'nincs', window: 'buko', paused: true,
+        suggestion: 'szunetel', why: 'Az ablak 34 perce bukóban, a hűtés szünetel.',
+      },
+      room_3: { temp: 25.4, target: 25.5, active: 'nincs', suggestion: 'ki', why: 'Elérte a célt, a klíma áll.' },
       hall: { temp: 24.8 },
     },
   },
@@ -87,12 +108,16 @@ export const SEASONS = {
     source: 'ki',
     reason: 'Átmeneti idő: se fűtés, se hűtés nem indokolt.',
     outside: 16,
+    outdoor3: 14.2,
+    /* the shoulder-season mock also shows the pace sensor before it has
+       enough readings - a state the card has to say out loud */
+    paceUnknown: true,
     rooms: {
-      bath: { temp: 21.2, target: 20.5, active: 'nincs' },
-      living: { temp: 21.6, target: 20.5, active: 'nincs' },
-      room_1: { temp: 21.1, target: 20.5, active: 'nincs' },
-      room_2: { temp: 20.8, target: 20.5, active: 'nincs' },
-      room_3: { temp: 21.3, target: 20.5, active: 'nincs' },
+      bath: { temp: 21.2, target: 20.5, active: 'nincs', suggestion: 'ki', why: 'Átmeneti idő, nincs fűtési igény.' },
+      living: { temp: 21.6, target: 20.5, active: 'nincs', suggestion: 'ki', why: 'Átmeneti idő, nincs fűtési igény.' },
+      room_1: { temp: 21.1, target: 20.5, active: 'nincs', suggestion: 'ki', why: 'Átmeneti idő, nincs fűtési igény.' },
+      room_2: { temp: 20.8, target: 20.5, active: 'nincs', suggestion: 'ki', why: 'Átmeneti idő, nincs fűtési igény.' },
+      room_3: { temp: 21.3, target: 20.5, active: 'nincs', suggestion: 'ki', why: 'Átmeneti idő, nincs fűtési igény.' },
       hall: { temp: 17.9 },
     },
   },
@@ -117,14 +142,14 @@ export function makeHass(seasonKey = 'futes') {
   const season = SEASONS[seasonKey] || SEASONS.futes;
 
   const used = 1278.75;
-  const budget = 1822.5;
+  const budget = 1822.6;
   const left = Number((budget - used).toFixed(2));
   const reserve = 90;
-  const allowed = 1350;
+  const allowed = 1345.4;
   const daysLeft = 50;
   const hotWater = 2.5;
-  const heatingDaily = 6.6;
-  const forecast = 600;
+  const heatingDaily = 6.58;
+  const forecast = 598;
 
   const states = Object.fromEntries([
     /* --- gas meter and budget --- */
@@ -142,7 +167,9 @@ export function makeHass(seasonKey = 'futes') {
     entity('input_number.gazkeret_tartalek', reserve, { min: 0, max: 400, step: 5 }),
     entity('sensor.gazkeret_hatralevo_nap', daysLeft, { unit_of_measurement: 'd' }),
 
-    entity('sensor.gaz_napi_utem', 2.3, { unit_of_measurement: 'm³/d' }),
+    entity('sensor.gaz_napi_utem', season.paceUnknown ? 'unavailable' : 2.3, {
+      unit_of_measurement: 'm³/d',
+    }),
     entity('sensor.gaz_futesi_keret_napi', heatingDaily, { unit_of_measurement: 'm³/d' }),
     entity('input_number.gaz_melegviz_napi', hotWater, { min: 0, max: 10, step: 0.1 }),
     entity('sensor.gaz_elorejelzes_csak_gaz', forecast, { unit_of_measurement: 'm³' }),
@@ -164,6 +191,10 @@ export function makeHass(seasonKey = 'futes') {
     entity('input_boolean.kazan_uzemkesz', 'off'),
     entity('input_boolean.szellozteto_gaz_retesz', 'off'),
     entity('sensor.kulso_homerseklet', season.outside, { unit_of_measurement: '°C' }),
+    entity('sensor.kinti_homerseklet_3_napos_atlag', season.outdoor3, {
+      unit_of_measurement: '°C',
+      friendly_name: 'Kinti hőmérséklet, 3 napos átlag',
+    }),
 
     /* --- the zone the schedule drives --- */
     entity('input_select.futes_zona', 'komfort', {
@@ -243,6 +274,8 @@ export function makeHass(seasonKey = 'futes') {
 
     put(`sensor.futes_${room.key}_cel`, mock.target, { unit_of_measurement: '°C' });
     put(`sensor.futes_${room.key}_aktiv`, mock.active || 'nincs');
+    put(`sensor.futes_${room.key}_forras_javaslat`, mock.suggestion || 'ki');
+    put(`sensor.futes_${room.key}_forras_indoklas`, mock.why || '');
     put(`input_number.futes_${room.key}_felulir`, mock.override ?? mock.target, {
       min: 5,
       max: 30,
