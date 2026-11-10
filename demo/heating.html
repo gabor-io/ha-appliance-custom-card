@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fűtés és gázkeret – demó</title>
+<style>
+  body {
+    margin: 0; padding: 24px; font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f2f4f7; color: #212121;
+    --primary-color: #03a9f4; --primary-text-color: #212121; --secondary-text-color: #70757a;
+    --card-background-color: #ffffff; --divider-color: rgba(127,127,127,.22);
+    --success-color: #43a047; --warning-color: #fb8c00; --error-color: #db4437; --info-color: #039be5;
+    --state-icon-color: #8a9199; --text-primary-color: #fff;
+  }
+  body.dark {
+    background: #111418; color: #e1e1e1;
+    --primary-text-color: #e1e1e1; --secondary-text-color: #9b9b9b;
+    --card-background-color: #1c1f26; --divider-color: rgba(255,255,255,.14);
+  }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+  .toolbar .label { font-size: .85rem; opacity: .7; margin-right: 4px; }
+  button { font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+  button[aria-pressed="true"] { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  body.dark button { background: #22262e; color: #e1e1e1; border-color: #3a3f48; }
+  body.dark button[aria-pressed="true"] { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+  .hint { font-size: .8rem; opacity: .7; margin: 0 0 18px; max-width: 70ch; line-height: 1.45; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .log { margin-top: 20px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(127,127,127,.12); border-radius: 10px; padding: 10px 12px; max-height: 180px; overflow: auto; }
+</style>
+</head>
+<body>
+  <div class="toolbar" id="toolbar"></div>
+  <p class="hint">
+    Mock adatok – a kártyák nem élő rendszerhez beszélnek. A gombok és a mezők mégis
+    működnek: a hívásokat a demó visszaírja a mock állapotba, így a felülírás, a
+    zónatáblázat és az ütemterv szerkesztése is kipróbálható. Fűtési idényben a
+    „Hűtés” választása megerősítést kér.
+  </p>
+  <div class="grid" id="grid"></div>
+  <div class="log" id="log"></div>
+
+<script type="module">
+  import { makeHass, ROOMS } from './mock-heating.js';
+  import '../dist/heating-cards.js';
+
+  class HaCard extends HTMLElement {
+    connectedCallback() {
+      if (this.shadowRoot) return;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host { display: block; background: var(--card-background-color, #fff);
+          border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+      </style><slot></slot>`;
+    }
+  }
+  customElements.define('ha-card', HaCard);
+
+  const grid = document.getElementById('grid');
+  const toolbar = document.getElementById('toolbar');
+  const log = document.getElementById('log');
+
+  let season = 'futes';
+  let hass;
+  let cards = [];
+
+  function note(text) {
+    const line = document.createElement('div');
+    line.textContent = `${new Date().toLocaleTimeString('hu-HU')} · ${text}`;
+    log.prepend(line);
+  }
+
+  /** The demo applies the calls the cards make, so the mock answers back. */
+  function handleService(domain, service, data) {
+    note(`${domain}.${service} ${JSON.stringify(data)}`);
+    const set = (id, state, attrs) => {
+      const old = hass.states[id];
+      hass.states[id] = {
+        entity_id: id,
+        state: String(state),
+        attributes: { ...(old?.attributes || {}), ...(attrs || {}) },
+        last_changed: new Date().toISOString(),
+        last_updated: new Date().toISOString(),
+      };
+    };
+
+    if (domain === 'input_select' && service === 'select_option') set(data.entity_id, data.option);
+    if (domain === 'input_number' && service === 'set_value') set(data.entity_id, data.value);
+
+    if (domain === 'scheduler' && (service === 'edit' || service === 'add')) {
+      const id = service === 'edit' ? data.entity_id : `switch.schedule_demo_${Date.now()}`;
+      const slots = data.timeslots || [];
+      set(id, 'on', {
+        friendly_name: hass.states[id]?.attributes?.friendly_name || 'Új ütemterv',
+        weekdays: data.weekdays || hass.states[id]?.attributes?.weekdays || ['daily'],
+        timeslots: slots.map((slot) => slot.start),
+        entities: ['input_select.futes_zona'],
+        actions: slots.map((slot) => ({
+          service: slot.actions[0].service,
+          service_data: slot.actions[0].service_data,
+        })),
+        current_slot: null,
+      });
+    }
+    if (domain === 'scheduler' && service === 'remove') delete hass.states[data.entity_id];
+
+    push();
+    return Promise.resolve();
+  }
+
+  function push() {
+    for (const card of cards) card.hass = { ...hass };
+  }
+
+  function draw() {
+    hass = makeHass(season);
+    hass.callService = handleService;
+
+    grid.replaceChildren();
+    cards = [];
+
+    const configs = [
+      {
+        type: 'custom:house-heating-card',
+        language: 'hu',
+        rooms: ROOMS,
+        show_power_note: true,
+        budget_mj: 63645,
+        entities: { outside: 'sensor.kulso_homerseklet' },
+      },
+      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS },
+      { type: 'custom:heating-schedule-card', language: 'hu', rooms: ROOMS },
+    ];
+
+    for (const config of configs) {
+      const card = document.createElement(config.type.replace('custom:', ''));
+      card.setConfig(config);
+      card.hass = hass;
+      cards.push(card);
+      const holder = document.createElement('div');
+      holder.appendChild(card);
+      grid.appendChild(holder);
+    }
+    note(`évszak: ${season}`);
+  }
+
+  const seasons = [['futes', 'Fűtés'], ['hutes', 'Hűtés'], ['atmeneti', 'Átmeneti']];
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = 'Évszak:';
+  toolbar.append(label);
+  const buttons = [];
+  for (const [key, text] of seasons) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.setAttribute('aria-pressed', String(key === season));
+    button.onclick = () => {
+      season = key;
+      for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+      draw();
+    };
+    buttons.push(button);
+    toolbar.append(button);
+  }
+
+  const dark = document.createElement('button');
+  dark.textContent = 'sötét';
+  dark.onclick = () => document.body.classList.toggle('dark');
+  toolbar.append(dark);
+
+  window.demoSeason = (key) => { season = key; draw(); };
+  draw();
+</script>
+</body>
+</html>

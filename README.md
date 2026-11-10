@@ -14,10 +14,20 @@ Tíz Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:netatmo-weather-card` | Netatmo időjárás-állomás: kinti hőmérséklet, légnyomás, szobánkénti CO₂ | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 | `custom:aeno-heater-card` | AENO infra fűtőpanel (fejlesztve: **AGH0001S**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 | `custom:nanoleaf-shapes-card` | Nanoleaf Shapes világító panelek (fejlesztve: **Shapes Hexagons, NL42**) | beépített [`nanoleaf`](https://www.home-assistant.io/integrations/nanoleaf) integráció |
+| `custom:house-heating-card` | Gázkeret, napi ütem és az aktív fűtési forrás | saját helper entitások ([szerződés](docs/heating-capabilities.md)) |
+| `custom:heating-rooms-card` | Szobánkénti hőmérséklet, felülírás, forrás, ablakállapot | saját helper entitások |
+| `custom:heating-schedule-card` | Heti zóna-ütemterv idővonallal, fűtésre és hűtésre | [nielsfaber/scheduler-component](https://github.com/nielsfaber/scheduler-component) |
 
 Mindegyik kártya animált rajzot és valós állapotkövetést ad, magyar és angol
-nyelven, világos és sötét témában. A kilenc háztartási kártya vezérel is; **az
+nyelven, világos és sötét témában. A háztartási kártyák vezérelnek is; **az
 autó kártya szándékosan csak állapotot jelez**, szolgáltatást nem hív.
+
+A három fűtési kártya egy fájlban van (`dist/heating-cards.js`), és nem egy
+készülékhez tartozik, hanem a ház fűtési logikájához: **soha nem ír `climate`
+entitást**, csak helper entitásokat, a döntést a Home Assistant-oldali logika
+hozza. Entitás-szerződés:
+[`docs/heating-capabilities.md`](docs/heating-capabilities.md); kipróbálható
+demó mock adatokkal: `demo/heating.html`.
 
 ## Mosogatógép kártya
 
@@ -382,7 +392,7 @@ példák: [`examples/nanoleaf.yaml`](examples/nanoleaf.yaml).
    `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
    `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`,
    `dist/netatmo-weather-card.js`, `dist/aeno-heater-card.js`, illetve
-   `dist/nanoleaf-shapes-card.js`.)
+   `dist/nanoleaf-shapes-card.js`, `dist/heating-cards.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):

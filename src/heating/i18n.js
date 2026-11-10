@@ -1,0 +1,340 @@
+import { makeTranslator, pickLanguage } from '../shared/i18n.js';
+
+const HU = {
+  house_card_name: 'Fűtés és gázkeret',
+  rooms_card_name: 'Szobák',
+  schedule_card_name: 'Fűtési ütemterv',
+
+  mode: {
+    auto: 'Automata',
+    csak_gaz: 'Csak gáz',
+    csak_klima: 'Csak klíma',
+    tavol: 'Távol',
+    ki: 'Ki',
+  },
+  season: {
+    auto: 'Automata',
+    futes: 'Fűtés',
+    hutes: 'Hűtés',
+    atmeneti: 'Átmeneti',
+  },
+  source: {
+    auto: 'Automata',
+    gaz: 'Gáz',
+    hibrid: 'Hibrid',
+    klima: 'Klíma',
+    hutes: 'Hűtés',
+    fagyvedelem: 'Fagyvédelem',
+    ki: 'Ki',
+    unknown: 'Ismeretlen',
+  },
+  active: {
+    radiator: 'Radiátor',
+    klima_futes: 'Klíma fűt',
+    klima_hutes: 'Klíma hűt',
+    aeno: 'Infrapanel',
+    nincs: 'Nem fűt',
+  },
+  window: {
+    zarva: 'Zárva',
+    buko: 'Bukóban',
+    nyitva: 'Nyitva',
+  },
+  zone: {
+    komfort: 'Komfort',
+    ejszaka: 'Éjszaka',
+    eco: 'Eco',
+    tavol: 'Távol',
+    fagyvedelem: 'Fagyvédelem',
+  },
+  day: {
+    mon: 'H', tue: 'K', wed: 'Sze', thu: 'Cs', fri: 'P', sat: 'Szo', sun: 'V',
+  },
+  day_long: {
+    mon: 'hétfő', tue: 'kedd', wed: 'szerda', thu: 'csütörtök',
+    fri: 'péntek', sat: 'szombat', sun: 'vasárnap',
+  },
+  aggregation: {
+    auto: 'Automata',
+    atlag: 'Átlag',
+    auto_heat: 'a leghidegebb pont',
+    auto_cool: 'a legmelegebb pont',
+    average: 'a három mérő átlaga',
+  },
+
+  ui: {
+    /* gas budget */
+    budget: 'Gázkeret',
+    used_of: '{used} / {total} m³',
+    megajoule: '{value} MJ',
+    pace_marker: 'Eddig elhasználható',
+    reserve: 'Tartalék',
+    left: 'Maradék',
+    /* no article before an interpolated number: in Hungarian it would have
+       to agree with how the number is spoken (a hat, az öt) */
+    days_left: 'Hátralévő nap: {days}',
+    pace_title: 'Ütem',
+    pace_actual: 'Mostani',
+    pace_allowed: 'Fűtésre engedett',
+    per_day: 'm³/nap',
+    lasts: 'Ezzel az ütemmel a keret ~{days} napig tart',
+    lasts_short: 'Ezzel az ütemmel a keret nem tart ki az időszak végéig',
+    forecast_title: 'Előrejelzés',
+    forecast_ok: 'Csak gázzal is beleférne: {balance} m³ maradna',
+    forecast_bad: 'Csak gázzal {balance} m³-rel lépné túl a keretet',
+    hot_water: 'Melegvíz és főzés: {value} m³/nap',
+
+    /* source */
+    source_title: 'Most fűt',
+    source_cooling: 'Most hűt',
+    source_idle: 'Fűtési forrás',
+    season_title: 'Évszak',
+    mode_title: 'Üzemmód',
+    overridden: 'A rendszer felülbírálta a választást',
+    boiler_off: 'A kazán nincs üzemkész állapotban',
+    erv_lock: 'A szellőztető gázreteszt kapott',
+    window_warn: '{room} ablaka {minutes} perce {state}',
+    window_warn_cold: '{room} ablaka {minutes} perce {state}, kint {temp} °C',
+
+    /* meter */
+    meter_title: 'Gázóra',
+    meter_value: 'Óraállás',
+    meter_manual: 'Kézi leolvasás',
+    meter_save: 'Rögzít',
+    meter_last: 'Utolsó leolvasás: {when}',
+    stale: 'Az óraállás 24 óránál régebbi – olvasd le a gázórát',
+    power_budget: 'Áramkeret: elfogyott',
+
+    /* confirm */
+    cool_confirm: 'Fűtési idényben kézi hűtés – biztos?',
+    cool_confirm_hint: 'Október és április között a rendszer magától soha nem hűt.',
+    yes: 'Igen, hűtsön',
+    cancel: 'Mégsem',
+
+    /* rooms */
+    now: 'Most',
+    target: 'Cél',
+    boost: 'Boost 1 óra',
+    paused_window: 'Szünetel – ablak nyitva',
+    override_until: 'Felülírva {when}-ig',
+    preheat: 'Előfűtés indul {when}',
+    precool: 'Előhűtés indul {when}',
+    readonly: 'Csak mérés',
+    frost_risk: 'Fagyveszély',
+    leading: 'mérvadó',
+    kitchen_excluded: 'a főzés miatt kihagyva',
+    overshoot: 'Egy pont túllövés miatt korlátoz',
+    no_rooms: 'Add meg a szobákat a kártya beállításaiban',
+    aggregation_title: 'Zónaérték',
+
+    /* schedule */
+    zones_title: 'Zónahőmérsékletek',
+    timeline_title: 'Napi menetrend',
+    slots_title: 'Szakaszok',
+    copy_day: 'Nap másolása',
+    copy_to: 'Másolás ezekre a napokra',
+    add_slot: 'Szakasz hozzáadása',
+    remove_slot: 'Szakasz törlése',
+    heating_tab: 'Fűtés',
+    cooling_tab: 'Hűtés',
+    current_zone: 'Most: {zone}',
+    next_change: '{zone} {time}-kor',
+    no_schedule: 'Nincs olyan ütemterv, ami ezt a zónaválasztót állítaná',
+    schedule_hint: 'A szakaszok a Scheduler bejegyzéseit írják',
+    save: 'Mentés',
+    saving: 'Mentés…',
+
+    minute_short: 'p',
+    hour_short: 'ó',
+    unavailable: 'Nem elérhető',
+    not_configured: 'Nincs beállítva',
+  },
+
+  editor: {
+    language: 'Nyelv',
+    language_auto: 'Automatikus',
+    name: 'Név',
+    sections: 'Megjelenő részek',
+    custom: 'Egyedi (YAML-ben)',
+    prefix: 'Entitás-előtag',
+    show_gas: 'Gázkeret',
+    show_pace: 'Ütem',
+    show_forecast: 'Előrejelzés',
+    show_source: 'Aktív forrás',
+    show_mode: 'Üzemmód és évszak',
+    show_meter: 'Gázóra',
+    show_power_note: 'Áramkeret jelzés',
+    show_rooms: 'Szobák',
+    show_zones: 'Zónatáblázat',
+    show_timeline: 'Idővonal',
+    compact: 'Tömör elrendezés',
+    animate: 'Animációk',
+  },
+};
+
+const EN = {
+  house_card_name: 'Heating and gas budget',
+  rooms_card_name: 'Rooms',
+  schedule_card_name: 'Heating schedule',
+
+  mode: {
+    auto: 'Automatic',
+    csak_gaz: 'Gas only',
+    csak_klima: 'Heat pump only',
+    tavol: 'Away',
+    ki: 'Off',
+  },
+  season: { auto: 'Automatic', futes: 'Heating', hutes: 'Cooling', atmeneti: 'Shoulder season' },
+  source: {
+    auto: 'Automatic',
+    gaz: 'Gas',
+    hibrid: 'Hybrid',
+    klima: 'Heat pump',
+    hutes: 'Cooling',
+    fagyvedelem: 'Frost guard',
+    ki: 'Off',
+    unknown: 'Unknown',
+  },
+  active: {
+    radiator: 'Radiator',
+    klima_futes: 'Heat pump heating',
+    klima_hutes: 'Heat pump cooling',
+    aeno: 'Infrared panel',
+    nincs: 'Not heating',
+  },
+  window: { zarva: 'Closed', buko: 'On the latch', nyitva: 'Open' },
+  zone: {
+    komfort: 'Comfort', ejszaka: 'Night', eco: 'Eco', tavol: 'Away', fagyvedelem: 'Frost guard',
+  },
+  day: { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' },
+  day_long: {
+    mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+    fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+  },
+  aggregation: {
+    auto: 'Automatic',
+    atlag: 'Average',
+    auto_heat: 'the coldest point',
+    auto_cool: 'the warmest point',
+    average: 'the average of the three sensors',
+  },
+
+  ui: {
+    budget: 'Gas budget',
+    used_of: '{used} / {total} m³',
+    megajoule: '{value} MJ',
+    pace_marker: 'Allowed so far',
+    reserve: 'Reserve',
+    left: 'Left',
+    days_left: 'Days left: {days}',
+    pace_title: 'Pace',
+    pace_actual: 'Current',
+    pace_allowed: 'Allowed for heating',
+    per_day: 'm³/day',
+    lasts: 'At this pace the budget lasts ~{days} days',
+    lasts_short: 'At this pace the budget will not last to the end of the period',
+    forecast_title: 'Forecast',
+    forecast_ok: 'Gas alone would fit, with {balance} m³ to spare',
+    forecast_bad: 'Gas alone would overshoot the budget by {balance} m³',
+    hot_water: 'Hot water and cooking: {value} m³/day',
+
+    source_title: 'Heating now',
+    source_cooling: 'Cooling now',
+    source_idle: 'Heat source',
+    season_title: 'Season',
+    mode_title: 'Mode',
+    overridden: 'The system overrode this choice',
+    boiler_off: 'The boiler is not ready to heat',
+    erv_lock: 'The ventilator holds a gas interlock',
+    window_warn: '{room}: window {state} for {minutes} minutes',
+    window_warn_cold: '{room}: window {state} for {minutes} minutes, {temp} °C outside',
+
+    meter_title: 'Gas meter',
+    meter_value: 'Reading',
+    meter_manual: 'Manual reading',
+    meter_save: 'Save',
+    meter_last: 'Last reading: {when}',
+    stale: 'The meter reading is over 24 hours old - please read the meter',
+    power_budget: 'Electricity budget: used up',
+
+    cool_confirm: 'Manual cooling during the heating season - are you sure?',
+    cool_confirm_hint: 'Between October and April the system never cools on its own.',
+    yes: 'Yes, cool',
+    cancel: 'Cancel',
+
+    now: 'Now',
+    target: 'Target',
+    boost: 'Boost 1 hour',
+    paused_window: 'Paused - window open',
+    override_until: 'Overridden until {when}',
+    preheat: 'Pre-heating starts at {when}',
+    precool: 'Pre-cooling starts at {when}',
+    readonly: 'Measurement only',
+    frost_risk: 'Frost risk',
+    leading: 'leading',
+    kitchen_excluded: 'left out while cooking',
+    overshoot: 'One point is capping the room',
+    no_rooms: 'Add the rooms in the card settings',
+    aggregation_title: 'Zone value',
+
+    zones_title: 'Zone temperatures',
+    timeline_title: 'Daily plan',
+    slots_title: 'Segments',
+    copy_day: 'Copy day',
+    copy_to: 'Copy to these days',
+    add_slot: 'Add segment',
+    remove_slot: 'Remove segment',
+    heating_tab: 'Heating',
+    cooling_tab: 'Cooling',
+    current_zone: 'Now: {zone}',
+    next_change: '{zone} at {time}',
+    no_schedule: 'No schedule drives this zone selector',
+    schedule_hint: 'Segments are stored as Scheduler entries',
+    save: 'Save',
+    saving: 'Saving...',
+
+    minute_short: 'min',
+    hour_short: 'h',
+    unavailable: 'Unavailable',
+    not_configured: 'Not configured',
+  },
+
+  editor: {
+    language: 'Language',
+    language_auto: 'Automatic',
+    name: 'Name',
+    sections: 'Sections',
+    custom: 'Custom (in YAML)',
+    prefix: 'Entity prefix',
+    show_gas: 'Gas budget',
+    show_pace: 'Pace',
+    show_forecast: 'Forecast',
+    show_source: 'Active source',
+    show_mode: 'Mode and season',
+    show_meter: 'Gas meter',
+    show_power_note: 'Electricity budget note',
+    show_rooms: 'Rooms',
+    show_zones: 'Zone table',
+    show_timeline: 'Timeline',
+    compact: 'Compact layout',
+    animate: 'Animations',
+  },
+};
+
+const DICTS = { hu: HU, en: EN };
+export const LANGUAGES = Object.keys(DICTS);
+
+export function getLanguage(config, hass) {
+  return pickLanguage(config, hass, LANGUAGES);
+}
+
+export function translator(lang) {
+  return makeTranslator(DICTS, lang);
+}
+
+/** `fill('Hátralévő nap: {days}', { days: 50 })` */
+export function fill(template, values) {
+  return String(template).replace(/\{(\w+)\}/g, (match, key) =>
+    values[key] === undefined || values[key] === null ? match : String(values[key]),
+  );
+}
