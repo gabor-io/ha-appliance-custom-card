@@ -44,6 +44,7 @@ export function listRooms(config) {
          across the house rather than as each room's own sensor */
       ids.preheat = `sensor.${prefix}_elofutes_${key}`;
       ids.learning = `input_text.${prefix}_tanulas_${key}`;
+      ids.trend = `sensor.${prefix}_trend_${key}`;
 
       /* the room's own thermostat - a template climate entity the heating
          logic publishes. There is no naming rule for it, so it comes from
@@ -76,6 +77,13 @@ export function listRooms(config) {
         comfortKey,
         learnedIds: learned,
         readonly: Boolean(room.readonly),
+        /* a room can follow its own weekly plan: the bathroom warms up for a
+           shower and cools down again long before the rest of the house */
+        scheduleEntity: room.schedule_entity || null,
+        scheduleId: room.schedule_id || null,
+        /* boost is a per-room thing: only rooms with something to boost get
+           the button, so it never promises an action nothing answers */
+        boost: room.boost,
         parts,
         entities: { ...ids, ...(room.entities || {}) },
       };

@@ -88,15 +88,16 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | Szerep | Entitás |
 | --- | --- |
 | termosztát | `climate.*` – **a configból**, mert nincs rá névszabály |
-| mért hőmérséklet | `sensor.<prefix>_<szoba>_homerseklet` (ha nincs, a termosztát `current_temperature`-je) |
+| mért hőmérséklet | `sensor.<prefix>_<szoba>_homerseklet`, ha van (zónánál ez a számolt érték); egyébként a termosztát `current_temperature`-je |
 | cél | a termosztát `temperature` attribútuma; mögötte `input_number.<prefix>_<szoba>_cel` |
 | üzemmód | a termosztát `hvac_modes` / állapota; mögötte `input_select.<prefix>_<szoba>_uzemmod` |
 | mi fut | `sensor.<prefix>_<szoba>_aktiv` (`radiator`/`klima_futes`/`klima_hutes`/`aeno`/`nincs`) |
 | ablak | `sensor.<prefix>_<szoba>_ablak` (`zarva`/`buko`/`nyitva`) |
 | szünetel | `binary_sensor.<prefix>_<szoba>_szunetel` |
-| elő-fűtés/-hűtés | `sensor.<prefix>_elofutes_<szoba>` (timestamp, `irany` attribútum) |
+| elő-fűtés/-hűtés | `sensor.<prefix>_elofutes_<szoba>` (timestamp) |
+| hőtrend | `sensor.<prefix>_trend_<szoba>` (°C/óra) |
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
-| tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes>` (°C/óra) |
+| tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
 | hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
 | komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
 | fagyveszély | `binary_sensor.<prefix>_<szoba>_fagyveszely` |
@@ -106,6 +107,14 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 A komfortszenzorok kulcsa nem feltétlenül a szobakulcs (egy zóna pontjainak
 saját kulcsuk van), ezért `comfort_key`-jel felülírható, szobára és
 részpontra is.
+
+Az előfűtés-szenzornak nem kell `irany` attribútum: ha nincs, a kártya a
+`sensor.klima_evszak_aktiv`-ból dönt (hűtés → előhűtés). Az `unknown` állapot
+sem hiba – a komfort sávon belül nincs mit számolni.
+
+Tanult sebességből csak az jelenik meg, amihez van entitás. A fürdőnek nincs
+hőszivattyúja, ezért ott csak a gáz és az infrapanel (`aeno`) látszik – a
+hiányzó entitás nem nulla, hanem „nem értelmezett".
 
 **A +/− a termosztátot írja** (`climate.set_temperature`), az üzemmód-gombok
 pedig a `climate.set_hvac_mode`-ot. A beállított cél a következő ütemezett
@@ -129,6 +138,30 @@ Többhőmérős zóna (`parts:`) esetén még:
 
 Az ablak kora a `sensor.*_ablak` entitás `last_changed` idejéből jön, nem
 attribútumból: a HA ezt magától vezeti, és így nem lehet elcsúszni tőle.
+
+## Hőtrend és előrejelzés
+
+A szabályozás nem a mért értékre lép, hanem egy fél órás előrejelzésre:
+
+```
+előrejelzés = mért + trend × 0,5 óra        (a trend ±1,5 °C/órára vágva)
+fűtés indul, ha  előrejelzés < cél − 0,05   (infrapanelnél − 0,1)
+fűtés leáll, ha  előrejelzés > cél + 0,15   (infrapanelnél + 0,1,
+                                             vagy ha a mért ≥ cél + 0,3)
+```
+
+A kártya ugyanezt számolja ki, és a szoba sorában kiírja: egy nyíl, a
+„30 perc múlva ≈ x,x °C", és ha a küszöböt átlépi, az is, hogy emiatt indul
+vagy leáll a fűtés. **Ettől lesz érthető az a szoba, ami a célja alatt van,
+mégsem fűt**: már elég gyorsan melegszik magától.
+
+Melyik küszöbpárt használja, abból derül ki, hogy a szobának van-e
+`..._tanult_<szoba>_aeno` helpere – az infrapanel gyorsabban reagál, ezért
+szűkebb sávot kap, ahogy a logika is.
+
+A trendszenzor neve a funkciót teszi a szoba elé (`sensor.futes_trend_<szoba>`),
+mint az előfűtésnél. Amíg egy szobánál még más a neve, `rooms[].entities.trend`
+alatt megadható.
 
 ## Melyik kártya mit csinál
 
@@ -168,6 +201,20 @@ A HA core 2026.10 forrásából ellenőrizve:
 - A `create` / `update` / `delete` parancsok **admin jogot** kérnek: nem
   admin felhasználónál a kártya kirajzolja az ütemtervet, de a mentés
   elutasításra kerül.
+
+### Több ütemterv egyszerre
+
+Egy szoba saját heti tervet követhet: a fürdő zuhany előtt felmelegszik és
+jóval a ház előtt vissza is hűl. Ezt a `rooms[].schedule_entity` (és ha a
+felismerés bizonytalan, a `rooms[].schedule_id`) adja meg, ami felülírja a
+kártyaszintű `schedule_entity`-t.
+
+Ilyenkor az ütemterv-kártya tetején megjelenik egy **tervválasztó**: a
+legtöbb szobát vivő terv az első, és minden terv a saját szobáit mutatja a
+zónatáblázatban. A szobasorokban pedig ott a saját sávjuk („Komfort
+21:30-ig"), a saját helperük `next_event`-je szerint – így látszik, miért
+tér el az a szoba a többitől. Egy `schedule/list` hívás minden tervet
+lehoz, tehát a második terv nem kerül külön körbe.
 
 A tárolt elem azonosítója (`schedule_id`) az entitás unique_id-ja, ami nincs
 benne az állapotgépben. A kártya ezért az entitásregiszterből olvassa ki;
@@ -214,6 +261,10 @@ annál a táblázat gondolatjelet mutat, nem üres beviteli mezőt.
 | `room` / `szoba` | – | egyetlen szobára szűkíti a szobakártyát |
 | `rooms[].climate` | – | a szoba termosztátja (template `climate` entitás) |
 | `rooms[].comfort_key` | a szobakulcs | melyik `hoerzet`/`komfort` szenzorhoz tartozik |
+| `rooms[].schedule_entity` | a kártyaszintű | a szoba saját heti terve |
+| `rooms[].schedule_id` | automatikus | a saját terv tárolt azonosítója |
+| `rooms[].boost` | a kártyaszintű `show_boost` | van-e boost ebben a szobában |
+| `rooms[].entities.trend` | `sensor.<prefix>_trend_<szoba>` | a hőtrend szenzora |
 | `boost_script` | `script.futes_boost` | a boost gomb scriptje, `szoba` mezővel |
 | `name`, `language`, `compact`, `animate` | – | mint a többi kártyán |
 | `show_*` | `true` | szakaszok ki/be (szerkesztőből is) |
@@ -224,16 +275,18 @@ Példa:
 type: custom:heating-rooms-card
 prefix: futes
 rooms:
-  - key: bath
+  - key: bathroom
     name: Fürdő
     climate: climate.furdo
+    schedule_entity: schedule.furdo_komfort
+    boost: false
   - key: living
     name: Étkező
     climate: climate.etkezo_zona
     parts:
-      - { key: etkezo, name: Étkező, entity: sensor.dining_room_temperature, comfort_key: dining }
-      - { key: konyha, name: Konyha, entity: sensor.kitchen_temperature, comfort_key: kitchen }
-      - { key: eloszoba, name: Előszoba, entity: sensor.ante_room_temperature, comfort_key: eloszoba }
+      - { key: etkezo, name: Étkező, entity: sensor.dining_room_temperature_sensor_temperature, comfort_key: dining }
+      - { key: konyha, name: Konyha, entity: sensor.kitchen_temperature_sensor_temperature, comfort_key: kitchen }
+      - { key: eloszoba, name: Előszoba, entity: sensor.ante_room_temperature_sensor_temperature, comfort_key: eloszoba }
   - key: hall
     name: Előtér
     readonly: true

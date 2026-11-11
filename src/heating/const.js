@@ -167,8 +167,31 @@ export const COMFORT_LEVELS = {
   'túl meleg': 'hot',
 };
 
-/** The heat-up / cool-down rates the logic learns, per source. */
-export const LEARNED_SOURCES = ['klima', 'gaz', 'hutes'];
+/**
+ * The heat-up / cool-down rates the logic learns, per source.
+ *
+ * A room only has helpers for the sources it actually owns - the bathroom
+ * heats with an infrared panel and has no heat-pump rate at all - so a
+ * missing entity means "not applicable", not "zero".
+ */
+export const LEARNED_SOURCES = ['klima', 'gaz', 'hutes', 'aeno'];
+
+/**
+ * The predictive control the heating logic runs, as far as the card needs it
+ * to explain itself.
+ *
+ * The logic looks half an hour ahead: `predicted = measured + trend × 0.5`,
+ * with the trend clamped so a noisy derivative cannot swing the forecast.
+ * Heating starts when the forecast falls below the target by more than the
+ * lower band and stops when it rises above it by more than the upper one.
+ * The infrared panel reacts faster, so it gets its own, tighter bands.
+ */
+export const PREDICT_HOURS = 0.5;
+export const TREND_CLAMP = 1.5;
+export const PREDICT_BANDS = {
+  default: { start: -0.05, stop: 0.15, hardStop: null },
+  aeno: { start: -0.1, stop: 0.1, hardStop: 0.3 },
+};
 
 /** The two zones the weekly schedule has today; eco and away come later. */
 export const SCHEDULE_ZONES = ['komfort', 'ejszaka'];

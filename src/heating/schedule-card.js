@@ -17,6 +17,7 @@ import {
   clockToMinutes,
   DAY_KEYS,
   minutesToClock,
+  scheduleGroups,
 } from './model.js';
 import { listRooms, stateObj } from './entities.js';
 import { STYLES } from './styles.js';
@@ -67,8 +68,9 @@ export class HeatingScheduleCard extends HTMLElement {
     this._day = WEEKDAYS[(new Date().getDay() + 6) % 7];
     this._tab = null; // null = follow the active season
     this._copyOpen = false;
-    this._blocks = null;
-    this._scheduleId = null;
+    this._blocksByEntity = {};
+    this._idByEntity = {};
+    this._group = 0;
     this._loading = false;
     this._error = null;
   }
@@ -76,8 +78,9 @@ export class HeatingScheduleCard extends HTMLElement {
   setConfig(config) {
     this._config = { ...SCHEDULE_DEFAULTS, ...(config || {}) };
     this._signatures = {};
-    this._blocks = null;
-    this._scheduleId = null;
+    this._blocksByEntity = {};
+    this._idByEntity = {};
+    this._group = 0;
     if (this._hass) this._render();
   }
 
@@ -85,11 +88,14 @@ export class HeatingScheduleCard extends HTMLElement {
     const previous = this._hass;
     this._hass = hass;
     /* the weekly blocks are not in the state machine, so they are fetched
-       once and then only when the helper itself says something changed */
-    const entityId = this._config?.schedule_entity || 'schedule.futes_komfort';
-    if (!this._blocks || previous?.states?.[entityId] !== hass?.states?.[entityId]) {
-      this._loadBlocks();
-    }
+       once and then only when one of the helpers says something changed */
+    const groups = this._config ? scheduleGroups(this._config) : [];
+    const stale = groups.some(
+      (group) =>
+        !this._blocksByEntity[group.entity] ||
+        previous?.states?.[group.entity] !== hass?.states?.[group.entity],
+    );
+    if (stale) this._loadBlocks();
     this._render();
   }
 
@@ -103,6 +109,15 @@ export class HeatingScheduleCard extends HTMLElement {
 
   getGridOptions() {
     return { columns: 12, min_columns: 8, rows: 'auto' };
+  }
+
+  get _groups() {
+    return scheduleGroups(this._config);
+  }
+
+  get _entity() {
+    const groups = this._groups;
+    return (groups[this._group] || groups[0])?.entity;
   }
 
   get _season() {
@@ -142,18 +157,28 @@ export class HeatingScheduleCard extends HTMLElement {
 
   async _loadBlocks() {
     if (this._loading || !this._hass?.callWS) return;
-    const entityId = this._config?.schedule_entity || 'schedule.futes_komfort';
-    if (!stateObj(this._hass, entityId)) return;
+    const groups = scheduleGroups(this._config);
+    if (!groups.some((group) => stateObj(this._hass, group.entity))) return;
+
     this._loading = true;
     try {
+      /* one list call covers every helper, so two plans cost no more than
+         one round trip */
       const items = await this._hass.callWS({ type: 'schedule/list' });
-      const id = await this._resolveScheduleId(items || [], entityId);
-      const item = (items || []).find((entry) => entry.id === id);
-      this._scheduleId = id;
-      this._blocks = item
-        ? Object.fromEntries(Object.values(DAY_KEYS).map((day) => [day, item[day] || []]))
-        : { ...EMPTY_WEEK };
-      this._name = item?.name || null;
+      const blocks = {};
+      const ids = {};
+      for (const group of groups) {
+        if (!stateObj(this._hass, group.entity)) continue;
+        const id = group.id || (await this._resolveScheduleId(items || [], group.entity));
+        const item = (items || []).find((entry) => entry.id === id);
+        ids[group.entity] = id;
+        blocks[group.entity] = item
+          ? Object.fromEntries(Object.values(DAY_KEYS).map((day) => [day, item[day] || []]))
+          : { ...EMPTY_WEEK };
+        if (item?.name) this._names = { ...this._names, [group.entity]: item.name };
+      }
+      this._blocksByEntity = blocks;
+      this._idByEntity = ids;
       this._error = null;
     } catch (err) {
       this._error = String(err?.message || err);
@@ -166,15 +191,17 @@ export class HeatingScheduleCard extends HTMLElement {
 
   /** Writes the whole week back; `schedule/update` replaces the item. */
   async _save(blocks) {
-    if (!this._scheduleId || !this._hass?.callWS) return;
-    this._blocks = blocks;
+    const entity = this._entity;
+    const id = this._idByEntity[entity];
+    if (!id || !this._hass?.callWS) return;
+    this._blocksByEntity = { ...this._blocksByEntity, [entity]: blocks };
     this._signatures = {};
     this._render();
     try {
       await this._hass.callWS({
         type: 'schedule/update',
-        schedule_id: this._scheduleId,
-        name: this._name || this._config.name || 'Fűtés',
+        schedule_id: id,
+        name: this._names?.[entity] || this._config.name || 'Fűtés',
         ...blocks,
       });
     } catch (err) {
@@ -214,8 +241,19 @@ export class HeatingScheduleCard extends HTMLElement {
     const house = buildHouseModel(this._hass, this._config);
     this._houseSeason = house.season.active;
 
-    const model = buildScheduleModel(this._hass, this._config, this._blocks);
-    const rooms = listRooms(this._config).filter((room) => !room.readonly);
+    const groups = this._groups;
+    const group = groups[this._group] || groups[0];
+    const model = buildScheduleModel(
+      this._hass,
+      this._config,
+      this._blocksByEntity[group.entity],
+      group.entity,
+    );
+    /* the table shows the rooms that follow the plan on screen - the
+       bathroom's own plan has nothing to say about the bedrooms */
+    const rooms = group.rooms.length
+      ? group.rooms
+      : listRooms(this._config).filter((room) => !room.readonly);
     this._model = model;
     this._rooms = rooms;
 
@@ -226,7 +264,7 @@ export class HeatingScheduleCard extends HTMLElement {
     if (this._wrap.className !== className) this._wrap.className = className;
 
     this._section('header', this._headerHtml(model, t));
-    this._section('tabs', this._tabsHtml(t));
+    this._section('tabs', `${this._plansHtml(groups, t)}${this._tabsHtml(t)}`);
     this._section('days', model.ok ? this._daysHtml(t) : '');
     this._section('timeline', model.ok && this._config.show_timeline ? this._timelineHtml(model, t) : '');
     this._section('slots', model.ok ? this._bandsHtml(model, rooms, t) : this._emptyHtml(model, t));
@@ -277,6 +315,21 @@ export class HeatingScheduleCard extends HTMLElement {
         </div>
         <div class="spacer"></div>
         <div class="meta">${now}</div>
+      </div>`;
+  }
+
+  /** One button per weekly plan, when the house runs more than one. */
+  _plansHtml(groups, t) {
+    if (groups.length < 2) return '';
+    return `
+      <div class="tabs plans">
+        ${groups
+          .map(
+            (group, index) =>
+              `<button type="button" data-action="plan" data-value="${index}" aria-pressed="${index === this._group}">
+                ${escapeHtml(group.label || t('ui.plan_rooms'))}</button>`,
+          )
+          .join('')}
       </div>`;
   }
 
@@ -436,6 +489,11 @@ export class HeatingScheduleCard extends HTMLElement {
     const { action, value } = target.dataset;
 
     switch (action) {
+      case 'plan':
+        this._group = Number(value);
+        this._signatures = {};
+        this._render();
+        break;
       case 'tab':
         this._tab = value;
         this._signatures = {};
@@ -489,7 +547,7 @@ export class HeatingScheduleCard extends HTMLElement {
   }
 
   _week() {
-    return { ...EMPTY_WEEK, ...(this._blocks || {}) };
+    return { ...EMPTY_WEEK, ...(this._blocksByEntity[this._entity] || {}) };
   }
 
   /**

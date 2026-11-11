@@ -14,11 +14,19 @@ const HEATING_VALUE = 34.92; // MJ/m³
 
 /** The room list the cards take in their config. */
 export const ROOMS = [
-  { key: 'bath', name: 'Fürdő', climate: 'climate.bath' },
+  {
+    key: 'bath',
+    name: 'Fürdő',
+    climate: 'climate.bath',
+    /* the bathroom warms up for a shower on a plan of its own */
+    schedule_entity: 'schedule.furdo_komfort',
+    boost: false,
+  },
   {
     key: 'living',
     name: 'Étkező · konyha · előszoba',
     climate: 'climate.living',
+    boost: false,
     /* the parts are plain sensors wherever they happen to live - a zone's
        points are rarely named after the zone */
     parts: [
@@ -27,9 +35,10 @@ export const ROOMS = [
       { key: 'eloszoba', name: 'Előszoba', entity: 'sensor.ante_room_temperature', comfort_key: 'eloszoba' },
     ],
   },
-  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1' },
-  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2' },
-  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3' },
+  /* boost only where there is something to boost */
+  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1', boost: true },
+  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2', boost: false },
+  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3', boost: false },
   { key: 'hall', name: 'Előtér', readonly: true },
 ];
 
@@ -59,24 +68,24 @@ export const SEASONS = {
     rooms: {
       bath: {
         temp: 21.8, target: 20.5, active: 'aeno',
-        suggestion: 'gaz',
+        suggestion: 'gaz', trend: 0.9,
         why: 'Nincs klíma, a gáz fűt; zuhany előtt AENO boost.',
       },
       living: {
         temp: 20.1, target: 20.5, active: 'klima_futes',
-        suggestion: 'klima', why: 'Kint 2 °C, a klíma itt gyors (1,4 °C/h) – a klíma fűt.',
+        suggestion: 'klima', trend: 0.4, why: 'Kint 2 °C, a klíma itt gyors (1,4 °C/h) – a klíma fűt.',
       },
       room_1: {
         temp: 20.4, target: 20.5, active: 'klima_futes',
-        suggestion: 'klima', why: 'Kint 2 °C, a klíma itt gyors (1,3 °C/h) – a klíma fűt.',
+        suggestion: 'klima', trend: 1.2, why: 'Kint 2 °C, a klíma itt gyors (1,3 °C/h) – a klíma fűt.',
       },
       room_2: {
         temp: 18.2, target: 20.5, active: 'nincs', window: 'buko', paused: true,
-        suggestion: 'szunetel', why: 'Az ablak 34 perce bukóban, a fűtés szünetel.',
+        suggestion: 'szunetel', trend: -1.8, why: 'Az ablak 34 perce bukóban, a fűtés szünetel.',
       },
       room_3: {
         temp: 20.6, target: 20.5, active: 'nincs',
-        suggestion: 'gaz', why: 'Kint 2 °C, a klíma itt lassú (0,65 °C/h) – a gáz fűt.',
+        suggestion: 'gaz', trend: 0.2, why: 'Kint 2 °C, a klíma itt lassú (0,65 °C/h) – a gáz fűt.',
       },
       hall: { temp: 11.4 },
     },
@@ -127,6 +136,17 @@ export const SEASONS = {
  * so copying a day has something to do.
  */
 const BAND = (from, to) => ({ from, to });
+export const bathSchedule = {
+  id: 'furdo_komfort',
+  name: 'Fürdő – komfort sáv',
+  ...Object.fromEntries(
+    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => [
+      day,
+      [BAND('05:30:00', '09:00:00'), BAND('19:30:00', '23:00:00')],
+    ]),
+  ),
+};
+
 export const schedule = {
   id: 'futes_komfort',
   name: 'Fűtés – komfort sáv',
@@ -218,6 +238,11 @@ export function makeHass(seasonKey = 'futes') {
       next_event: new Date(new Date().setHours(21, 30, 0, 0)).toISOString(),
       editable: true,
     }),
+    entity('schedule.furdo_komfort', 'off', {
+      friendly_name: 'Fürdő – komfort sáv',
+      next_event: new Date(new Date().setHours(19, 30, 0, 0)).toISOString(),
+      editable: true,
+    }),
     entity('input_boolean.futes_automatika', 'on'),
   ]);
 
@@ -306,11 +331,20 @@ export function makeHass(seasonKey = 'futes') {
     );
 
     /* the learned heat-up rates, and the measurement that is running now */
-    const learned = { klima: 1.3, gaz: 0.85, hutes: 1.1 };
+    /* the bathroom has no heat pump: gas and the infrared panel only */
+    const learned =
+      room.key === 'bath'
+        ? { gaz: 0.8, aeno: 0.98 }
+        : { klima: 1.3, gaz: 0.85, hutes: 1.1 };
     for (const [source, value] of Object.entries(learned)) {
-      if (room.key === 'bath' && source !== 'gaz') continue;
       put(`input_number.futes_tanult_${room.key}_${source}`, value, { min: 0, max: 5, step: 0.05 });
     }
+
+    /* where the room is heading: a derivative helper, °C/hour */
+    put(`sensor.futes_trend_${room.key}`, mock.trend ?? 0, {
+      unit_of_measurement: '°C/h',
+      friendly_name: `${room.name} trend`,
+    });
     put(
       `input_text.futes_tanulas_${room.key}`,
       room.key === 'room_3' ? `${Math.floor(Date.now() / 1000) - 1800}|19.4|gaz|20.5|fel` : '',
@@ -352,14 +386,18 @@ export function makeHass(seasonKey = 'futes') {
     callWS: (message) => {
       // eslint-disable-next-line no-console
       console.log('callWS', JSON.stringify(message));
-      if (message.type === 'schedule/list') return Promise.resolve([{ ...schedule }]);
+      if (message.type === 'schedule/list') {
+        return Promise.resolve([{ ...schedule }, { ...bathSchedule }]);
+      }
       if (message.type === 'config/entity_registry/get') {
-        return Promise.resolve({ entity_id: message.entity_id, unique_id: schedule.id });
+        const unique = message.entity_id === 'schedule.furdo_komfort' ? bathSchedule.id : schedule.id;
+        return Promise.resolve({ entity_id: message.entity_id, unique_id: unique });
       }
       if (message.type === 'schedule/update') {
         const { type, schedule_id: id, ...rest } = message;
-        Object.assign(schedule, rest);
-        return Promise.resolve({ ...schedule });
+        const item = id === bathSchedule.id ? bathSchedule : schedule;
+        Object.assign(item, rest);
+        return Promise.resolve({ ...item });
       }
       return Promise.reject(new Error(`unsupported: ${message.type}`));
     },

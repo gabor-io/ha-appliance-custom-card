@@ -150,6 +150,8 @@ const FAMILY_STYLES = `
 .room .parts .lead { color: var(--ap-accent); }
 .room .parts .out { text-decoration: line-through; opacity: .7; }
 .room .note { font-size: .74rem; color: var(--ap-muted); }
+.room .note.trend { display: flex; align-items: center; gap: 5px; }
+.room .note.trend .icon { width: 14px; height: 14px; }
 .room .controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .step-btn {
   width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;

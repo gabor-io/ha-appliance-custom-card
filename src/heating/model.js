@@ -12,6 +12,8 @@ import {
   COOLING_FROM,
   COOLING_TO,
   LEARNED_SOURCES,
+  PREDICT_BANDS,
+  PREDICT_HOURS,
   ROOM_ACTIVE,
   ROOM_SUGGESTION,
   SCHEDULE_ZONES,
@@ -19,6 +21,7 @@ import {
   TEMP_MAX,
   TEMP_MIN,
   TEMP_STEP,
+  TREND_CLAMP,
   WEEKDAYS,
   WINDOW_STATES,
 } from './const.js';
@@ -40,6 +43,39 @@ import {
 export const DEFAULT_HEATING_VALUE = 34.92;
 
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+/**
+ * Where the room is heading, and what the control will do about it.
+ *
+ * The heating logic does not act on the measured temperature but on a
+ * half-hour forecast, so a room can be below its target and still be left
+ * alone - it is already climbing fast enough. Showing the forecast is what
+ * makes that look deliberate rather than broken.
+ */
+export function trendOf(rate, measured, target, bands) {
+  if (rate === null || rate === undefined || measured === null || measured === undefined) {
+    return null;
+  }
+  const clamped = Math.min(TREND_CLAMP, Math.max(-TREND_CLAMP, rate));
+  const predicted = measured + clamped * PREDICT_HOURS;
+
+  let verdict = null;
+  if (target !== null && target !== undefined) {
+    if (predicted < target + bands.start) verdict = 'start';
+    else if (predicted > target + bands.stop) verdict = 'stop';
+    else if (bands.hardStop !== null && measured >= target + bands.hardStop) verdict = 'stop';
+  }
+
+  return {
+    rate,
+    clamped,
+    clipped: clamped !== rate,
+    predicted,
+    minutes: Math.round(PREDICT_HOURS * 60),
+    direction: rate > 0.05 ? 'up' : rate < -0.05 ? 'down' : 'flat',
+    verdict,
+  };
+}
 
 /** `1793577484|18.2|klima|20.5|fel` -> what the card can show about it. */
 export function parseLearning(raw) {
@@ -279,6 +315,19 @@ export function buildRoomsModel(hass, config) {
       },
       learning,
       learned,
+      /* the infrared panel reacts faster than a radiator, so a room it heats
+         is judged by tighter bands - the logic does the same */
+      trend: trendOf(
+        num(hass, ids.trend),
+        temperature,
+        target,
+        learned.aeno !== null ? PREDICT_BANDS.aeno : PREDICT_BANDS.default,
+      ),
+      boost: room.boost,
+      /* a room can follow its own weekly plan; the entity's state and
+         next_event are enough for the row - the weekly blocks are only
+         needed by the schedule card, which fetches them separately */
+      schedule: roomSchedule(hass, config, room.scheduleEntity),
       comfort: comfortOf(hass, config, room.comfortKey),
       active: active ? { key: activeKey, ...active } : null,
       suggestion: suggestion
@@ -324,6 +373,23 @@ export function buildRoomsModel(hass, config) {
   });
 
   return { ok: rooms.length > 0, reason: rooms.length ? null : 'no_rooms', rooms };
+}
+
+/** Which band a room is in right now, per its own schedule helper. */
+export function roomSchedule(hass, config, entityId) {
+  const ids = houseEntities(config);
+  const entity = entityId || config?.schedule_entity || ids.schedule;
+  const obj = stateObj(hass, entity);
+  if (!obj) return null;
+  const zoneOn = config?.zone_on || SCHEDULE_ZONES[0];
+  const zoneOff = config?.zone_off || SCHEDULE_ZONES[1];
+  const next = obj.attributes?.next_event ? new Date(obj.attributes.next_event) : null;
+  return {
+    entity,
+    own: Boolean(entityId),
+    zone: obj.state === 'on' ? zoneOn : zoneOff,
+    nextEvent: next && Number.isFinite(next.getTime()) ? next : null,
+  };
 }
 
 /** The rooms whose window has been open long enough to be worth a warning. */
@@ -399,9 +465,9 @@ export function segmentsForDay(ranges, zoneOn, zoneOff) {
  * integration: a day is a list of `{from, to}` ranges, sorted, without
  * overlap, and `24:00:00` is allowed as an end.
  */
-export function buildScheduleModel(hass, config, blocks) {
+export function buildScheduleModel(hass, config, blocks, entityOverride) {
   const ids = houseEntities(config);
-  const entityId = config?.schedule_entity || ids.schedule;
+  const entityId = entityOverride || config?.schedule_entity || ids.schedule;
   const obj = stateObj(hass, entityId);
 
   const zoneOn = config?.zone_on || SCHEDULE_ZONES[0];
@@ -444,6 +510,43 @@ export function nextChange(days, now) {
     }
   }
   return null;
+}
+
+/**
+ * The weekly plans in play, with the rooms that follow each.
+ *
+ * Most houses have one; here the bathroom warms up for a shower on its own
+ * plan, so the card has to edit two and keep them apart.
+ */
+export function scheduleGroups(config) {
+  const ids = houseEntities(config);
+  const fallback = config?.schedule_entity || ids.schedule;
+  const groups = new Map();
+
+  for (const room of listRooms(config)) {
+    if (room.readonly) continue;
+    const entity = room.scheduleEntity || fallback;
+    if (!groups.has(entity)) {
+      groups.set(entity, { entity, id: room.scheduleId || null, rooms: [] });
+    }
+    const group = groups.get(entity);
+    group.rooms.push(room);
+    if (room.scheduleId) group.id = room.scheduleId;
+  }
+
+  if (!groups.size) groups.set(fallback, { entity: fallback, id: null, rooms: [] });
+
+  /* the plan most rooms follow comes first, so the card opens on the house
+     rather than on whichever room happens to be first in the config */
+  return [...groups.values()]
+    .sort((a, b) => b.rooms.length - a.rooms.length)
+    .map((group) => ({
+      ...group,
+    /* a group of one or two reads better by name than as "the rooms" */
+      label: group.rooms.length && group.rooms.length <= 2
+        ? group.rooms.map((room) => room.name).join(', ')
+        : null,
+    }));
 }
 
 /** The zone setpoints of one season, as `{ zone: { room: value } }`. */

@@ -71,6 +71,53 @@ export function learnedHtml(room, { t, hass }) {
   return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>`;
 }
 
+/**
+ * Which band the room is in, and until when.
+ *
+ * A room can follow a plan of its own - the bathroom warms up for a shower
+ * long before the rest of the house - so the row says which plan it is on
+ * rather than leaving the difference unexplained.
+ */
+export function bandText(room, { t, hass }) {
+  const schedule = room.schedule;
+  if (!schedule) return '';
+  const zone = t(`zone.${schedule.zone}`, schedule.zone);
+  return schedule.nextEvent
+    ? fill(t('ui.band_until'), { zone, time: formatClock(schedule.nextEvent, hass) })
+    : zone;
+}
+
+export function bandHtml(room, options) {
+  const text = bandText(room, options);
+  return text ? `<span class="tag idle">${icon('calendar')}${escapeHtml(text)}</span>` : '';
+}
+
+/**
+ * Where the room is heading in the next half hour.
+ *
+ * The control acts on this forecast rather than on the measured value, so
+ * the line doubles as the explanation for a room that is below its target
+ * and still not being heated.
+ */
+export function trendHtml(room, { t, hass, season }) {
+  const trend = room.trend;
+  if (!trend) return '';
+  const arrow = trend.direction === 'up' ? 'trend_up' : trend.direction === 'down' ? 'trend_down' : 'trend_stable';
+  const text = fill(t('ui.predicted'), {
+    minutes: trend.minutes,
+    value: formatDecimal(trend.predicted, hass, 1),
+  });
+  const cooling = season === 'hutes';
+  const verdict =
+    trend.verdict === 'start'
+      ? t(cooling ? 'ui.verdict_cool_start' : 'ui.verdict_start')
+      : trend.verdict === 'stop'
+        ? t(cooling ? 'ui.verdict_cool_stop' : 'ui.verdict_stop')
+        : '';
+  const rate = fill(t('ui.trend_rate'), { value: formatDecimal(trend.rate, hass, 2) });
+  return `<div class="note trend" title="${escapeHtml(rate)}">${icon(arrow)} ${escapeHtml(text)}${verdict ? ` · ${escapeHtml(verdict)}` : ''}</div>`;
+}
+
 /** Why the logic would heat this room the way it does. */
 export function suggestionHtml(room, { t, withReason = true }) {
   if (!room.suggestion) return '';
@@ -162,7 +209,10 @@ export function controlsHtml(room, options) {
         </select>`
       : '';
 
-  const boost = showBoost
+  /* a room flag wins over the card-wide switch: a button that answers
+     nothing is worse than no button */
+  const wantsBoost = room.boost === undefined ? showBoost : Boolean(room.boost);
+  const boost = wantsBoost
     ? `<button class="chip" type="button" data-action="boost" data-room="${escapeHtml(room.key)}">
         ${icon('boost')}<span>${escapeHtml(t('ui.boost'))}</span></button>`
     : '';
@@ -215,6 +265,7 @@ export function roomRowHtml(room, options) {
         <div class="name">${escapeHtml(room.name)}</div>
         <div class="spacer"></div>
         ${comfortHtml(room, options)}
+        ${bandHtml(room, options)}
         ${tagsHtml(room, options)}
         <div>
           <div class="temp">${escapeHtml(temp(room.temperature, hass))}</div>
@@ -223,6 +274,7 @@ export function roomRowHtml(room, options) {
       </div>
       ${suggestionHtml(room, options)}
       ${showParts ? partsHtml(room, options) : ''}
+      ${trendHtml(room, options)}
       ${notesHtml(room, options)}
       ${learnedHtml(room, options)}
       ${showControls ? controlsHtml(room, options) : ''}
@@ -263,6 +315,11 @@ export function compactRowHtml(room, options) {
   if (room.learning) {
     marks.push(`<span class="mark" title="${escapeHtml(t('ui.learning'))}">${icon('timer')}</span>`);
   }
+  if (room.schedule?.own) {
+    marks.push(
+      `<span class="mark" title="${escapeHtml(bandText(room, { t, hass }))}">${icon('calendar')}</span>`,
+    );
+  }
   if (room.comfort?.level) {
     marks.push(
       `<span class="mark comfort-${room.comfort.level}" title="${escapeHtml(room.comfort.text || '')}">${icon('target')}</span>`,
@@ -282,7 +339,7 @@ export function compactRowHtml(room, options) {
         <span class="quick">${stepButtonsHtml(room, options)}</span>
         ${icon(expanded ? 'chevron_up' : 'chevron')}
       </div>
-      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${notesHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
+      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${trendHtml(room, options)}${notesHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
     </div>`;
 }
 
