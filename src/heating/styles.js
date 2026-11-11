@@ -201,6 +201,22 @@ const FAMILY_STYLES = `
    the house-wide ones */
 .seg.small button { min-width: 62px; padding: 6px 8px; font-size: .78rem; }
 
+/* ---------- 24 hour sparkline ---------- */
+.spark { display: flex; align-items: stretch; gap: 6px; }
+.spark svg { flex: 1 1 auto; height: 46px; width: 100%; overflow: visible; }
+.spark path { fill: none; vector-effect: non-scaling-stroke; }
+.spark path.measured { stroke: var(--ap-accent); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.spark path.target { stroke: var(--ap-muted); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .8; }
+.spark .scale { display: flex; flex-direction: column; justify-content: space-between;
+  font-size: .64rem; color: var(--ap-muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- per-room zone setpoints ---------- */
+.zoneset { display: grid; gap: 6px; margin-top: 4px; }
+.zonerow { display: flex; align-items: center; gap: 8px; }
+.zonerow .zname { font-size: .82rem; color: var(--ap-text); }
+.zonerow .zval { font-size: .9rem; font-weight: 700; color: var(--ap-text);
+  font-variant-numeric: tabular-nums; min-width: 62px; text-align: center; }
+
 /* ---------- schedule ---------- */
 .days { display: flex; gap: 6px; flex-wrap: wrap; }
 .days button {

@@ -46,6 +46,13 @@ export function listRooms(config) {
       ids.learning = `input_text.${prefix}_tanulas_${key}`;
       ids.trend = `sensor.${prefix}_trend_${key}`;
 
+      /* humidity has no naming rule of its own - the sensors sit wherever
+         the hardware put them - so it only exists when the config says so */
+      if (room.humidity) ids.humidity = room.humidity;
+      /* what the 24 hour sparkline charts; falls back to the measured
+         temperature, and to the thermostat when that is all there is */
+      if (room.history) ids.history = room.history;
+
       /* the room's own thermostat - a template climate entity the heating
          logic publishes. There is no naming rule for it, so it comes from
          the config; without one the card falls back to the helpers. */
@@ -55,6 +62,7 @@ export function listRooms(config) {
         key: part.key,
         name: part.name || part.key,
         comfortKey: part.comfort_key || part.key,
+        humidity: part.humidity || null,
         entity: part.entity || build('sensor', prefix, key, part.key),
         /* a part can be left out of the zone value for a while - the kitchen
            while someone is cooking - and says so with its own flag */

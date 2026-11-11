@@ -71,6 +71,87 @@ export function learnedHtml(room, { t, hass }) {
   return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>`;
 }
 
+/** The air in the room, next to how warm it feels. */
+export function humidityHtml(room, { t, hass }) {
+  if (room.humidity === null || room.humidity === undefined) return '';
+  return `<span class="tag idle" title="${escapeHtml(t('ui.humidity'))}">${icon('water_percent')}${escapeHtml(formatDecimal(room.humidity, hass, 0))}%</span>`;
+}
+
+/** The heat pump is running and still losing ground. */
+export function laggingHtml(room, { t }) {
+  if (!room.lagging) return '';
+  return `<span class="tag warn">${icon('alert')}${escapeHtml(t('ui.lagging'))}</span>`;
+}
+
+/**
+ * The last 24 hours, as a line.
+ *
+ * Drawn from the history the card fetched, with the target behind it as a
+ * step: the gap between the two is the swing the heating is trying to flatten.
+ */
+export function sparklineHtml(series, { t, hass }) {
+  if (!series?.points?.length) return '';
+  const { points, targets = [] } = series;
+  const values = [...points.map((point) => point.v), ...targets.map((point) => point.v)];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(0.5, max - min);
+  const from = points[0].t;
+  const to = points[points.length - 1].t;
+  const width = Math.max(1, to - from);
+
+  const x = (time) => ((time - from) / width) * 100;
+  const y = (value) => 28 - ((value - min) / span) * 24;
+
+  const line = points.map((point, index) => `${index ? 'L' : 'M'}${x(point.t).toFixed(2)},${y(point.v).toFixed(2)}`).join('');
+  /* the target only ever changes in steps, so it is drawn as one */
+  const step = targets
+    .map((point, index) => {
+      const px = x(point.t).toFixed(2);
+      const py = y(point.v).toFixed(2);
+      return index === 0 ? `M${px},${py}` : `L${px},${(y(targets[index - 1].v)).toFixed(2)}L${px},${py}`;
+    })
+    .join('');
+  const tail = targets.length ? `L100,${y(targets[targets.length - 1].v).toFixed(2)}` : '';
+
+  return `
+    <div class="spark" title="${escapeHtml(t('ui.history_hint'))}">
+      <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
+        ${step ? `<path class="target" d="${step}${tail}"></path>` : ''}
+        <path class="measured" d="${line}"></path>
+      </svg>
+      <div class="scale"><span>${escapeHtml(formatDecimal(max, hass, 1))}</span><span>${escapeHtml(formatDecimal(min, hass, 1))}</span></div>
+    </div>`;
+}
+
+/**
+ * The room's own zone setpoints.
+ *
+ * On a room page this is what people reach for: the comfort and night
+ * temperatures of that one room, without the whole house's table.
+ */
+export function zoneSetpointsHtml(room, { t, hass, zones = [], season }) {
+  const rows = zones.filter((zone) => zone.entity);
+  if (!rows.length) return '';
+  return `
+    <div class="zoneset">
+      <div class="section-title">${escapeHtml(t('ui.zones_title'))} · ${escapeHtml(season === 'hutes' ? t('ui.cooling_tab') : t('ui.heating_tab'))}</div>
+      ${rows
+        .map(
+          (zone) => `
+        <div class="zonerow">
+          <i class="zdot" style="background:${zone.colour}"></i>
+          <span class="zname">${escapeHtml(t(`zone.${zone.key}`, zone.key))}</span>
+          <div class="spacer"></div>
+          <button class="step-btn" type="button" data-action="zone-step" data-entity="${escapeHtml(zone.entity)}" data-dir="-1">−</button>
+          <span class="zval">${escapeHtml(zone.value === null ? '–' : `${formatDecimal(zone.value, hass, 1)} °C`)}</span>
+          <button class="step-btn" type="button" data-action="zone-step" data-entity="${escapeHtml(zone.entity)}" data-dir="1">+</button>
+        </div>`,
+        )
+        .join('')}
+    </div>`;
+}
+
 /**
  * Which band the room is in, and until when.
  *
@@ -118,9 +199,30 @@ export function trendHtml(room, { t, hass, season }) {
   return `<div class="note trend" title="${escapeHtml(rate)}">${icon(arrow)} ${escapeHtml(text)}${verdict ? ` · ${escapeHtml(verdict)}` : ''}</div>`;
 }
 
+/**
+ * What the active state and the suggestion mean to each other.
+ *
+ * When they agree the row would say the same thing twice - "Klíma fűt" as
+ * the tag and again as the suggestion - so one of them steps aside and only
+ * the sentence behind it stays.
+ */
+const SAME_AS_ACTIVE = {
+  radiator: 'gaz',
+  klima_futes: 'klima',
+  klima_hutes: 'hutes',
+  aeno: 'aeno',
+  nincs: 'ki',
+};
+
 /** Why the logic would heat this room the way it does. */
 export function suggestionHtml(room, { t, withReason = true }) {
   if (!room.suggestion) return '';
+  const agrees = room.active && SAME_AS_ACTIVE[room.active.key] === room.suggestion.key;
+  if (agrees) {
+    return room.suggestion.reason && withReason
+      ? `<div class="note">${escapeHtml(room.suggestion.reason)}</div>`
+      : '';
+  }
   const label = t(`suggestion.${room.suggestion.key}`, room.suggestion.key);
   const reason =
     withReason && room.suggestion.reason
@@ -144,7 +246,11 @@ function partsHtml(room, { t, hass }) {
         : part.key === room.leading
           ? ` (${t('ui.leading')})`
           : '';
-      return `<span class="${classes.join(' ')}">${escapeHtml(part.name)} <b>${escapeHtml(temp(part.value, hass))}</b>${escapeHtml(suffix)}</span>`;
+      const humidity =
+        part.humidity === null || part.humidity === undefined
+          ? ''
+          : ` ${formatDecimal(part.humidity, hass, 0)}%`;
+      return `<span class="${classes.join(' ')}">${escapeHtml(part.name)} <b>${escapeHtml(temp(part.value, hass))}</b>${escapeHtml(humidity)}${escapeHtml(suffix)}</span>`;
     })
     .join('')}</div>`;
 }
@@ -265,6 +371,8 @@ export function roomRowHtml(room, options) {
         <div class="name">${escapeHtml(room.name)}</div>
         <div class="spacer"></div>
         ${comfortHtml(room, options)}
+        ${humidityHtml(room, options)}
+        ${laggingHtml(room, options)}
         ${bandHtml(room, options)}
         ${tagsHtml(room, options)}
         <div>
@@ -275,9 +383,11 @@ export function roomRowHtml(room, options) {
       ${suggestionHtml(room, options)}
       ${showParts ? partsHtml(room, options) : ''}
       ${trendHtml(room, options)}
+      ${options.series ? sparklineHtml(options.series, options) : ''}
       ${notesHtml(room, options)}
       ${learnedHtml(room, options)}
       ${showControls ? controlsHtml(room, options) : ''}
+      ${options.zones ? zoneSetpointsHtml(room, options) : ''}
     </div>`;
 }
 
@@ -314,6 +424,9 @@ export function compactRowHtml(room, options) {
   }
   if (room.learning) {
     marks.push(`<span class="mark" title="${escapeHtml(t('ui.learning'))}">${icon('timer')}</span>`);
+  }
+  if (room.lagging) {
+    marks.push(`<span class="mark warn" title="${escapeHtml(t('ui.lagging'))}">${icon('alert')}</span>`);
   }
   if (room.schedule?.own) {
     marks.push(
@@ -398,6 +511,20 @@ export function applyRoomAction({ hass, config, room, action, target }) {
       entity_id: room.aggregation.entity,
       option: target.value,
     });
+    return true;
+  }
+
+  if (action === 'zone-step') {
+    const entity = target.dataset.entity;
+    const current = Number(hass?.states?.[entity]?.state);
+    if (!entity || !Number.isFinite(current)) return false;
+    const step = Number(hass.states[entity].attributes?.step) || TEMP_STEP;
+    const next = Math.min(
+      Number(hass.states[entity].attributes?.max ?? TEMP_MAX),
+      Math.max(Number(hass.states[entity].attributes?.min ?? TEMP_MIN), current + Number(target.dataset.dir) * step),
+    );
+    if (next === current) return false;
+    call('input_number', 'set_value', { entity_id: entity, value: next });
     return true;
   }
 

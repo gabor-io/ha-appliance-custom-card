@@ -80,6 +80,9 @@ export const ROOM_SUFFIXES = {
      entity publishes as its target */
   target_number: ['input_number', 'cel'],
   mode: ['input_select', 'uzemmod'],
+  /* the room cannot keep up: the heat pump is running and the room is
+     still more than a degree below its target */
+  lagging: ['binary_sensor', 'elmarad'],
   suggestion: ['sensor', 'forras_javaslat'],
   suggestion_reason: ['sensor', 'forras_indoklas'],
   leading: ['sensor', 'mertado'],
@@ -224,6 +227,9 @@ export const TEMP_MAX = 30;
  */
 export const COOLING_FROM = { month: 5, day: 1 };
 export const COOLING_TO = { month: 9, day: 30 };
+
+/** How far back the room card's temperature sparkline reaches. */
+export const HISTORY_HOURS = 24;
 
 /** A window open this long during heating is worth a line on the house card. */
 export const WINDOW_WARN_MINUTES = 30;

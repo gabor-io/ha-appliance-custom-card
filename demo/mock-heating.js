@@ -21,24 +21,26 @@ export const ROOMS = [
     /* the bathroom warms up for a shower on a plan of its own */
     schedule_entity: 'schedule.furdo_komfort',
     boost: false,
+    humidity: 'sensor.bath_humidity',
   },
   {
     key: 'living',
     name: 'Étkező · konyha · előszoba',
     climate: 'climate.living',
     boost: false,
+    humidity: 'sensor.living_humidity',
     /* the parts are plain sensors wherever they happen to live - a zone's
        points are rarely named after the zone */
     parts: [
-      { key: 'etkezo', name: 'Étkező', entity: 'sensor.dining_room_temperature', comfort_key: 'dining' },
-      { key: 'konyha', name: 'Konyha', entity: 'sensor.kitchen_temperature', comfort_key: 'kitchen' },
-      { key: 'eloszoba', name: 'Előszoba', entity: 'sensor.ante_room_temperature', comfort_key: 'eloszoba' },
+      { key: 'etkezo', name: 'Étkező', entity: 'sensor.dining_room_temperature', comfort_key: 'dining', humidity: 'sensor.dining_room_humidity' },
+      { key: 'konyha', name: 'Konyha', entity: 'sensor.kitchen_temperature', comfort_key: 'kitchen', humidity: 'sensor.kitchen_humidity' },
+      { key: 'eloszoba', name: 'Előszoba', entity: 'sensor.ante_room_temperature', comfort_key: 'eloszoba', humidity: 'sensor.ante_room_humidity' },
     ],
   },
   /* boost only where there is something to boost */
-  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1', boost: true },
-  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2', boost: false },
-  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3', boost: false },
+  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1', boost: true, humidity: 'sensor.room_1_humidity' },
+  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2', boost: false, humidity: 'sensor.room_2_humidity' },
+  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3', boost: false, humidity: 'sensor.room_3_humidity' },
   { key: 'hall', name: 'Előtér', readonly: true },
 ];
 
@@ -67,7 +69,7 @@ export const SEASONS = {
     outdoor3: 3.4,
     rooms: {
       bath: {
-        temp: 21.8, target: 20.5, active: 'aeno',
+        temp: 21.8, target: 20.5, active: 'aeno', humidity: 58,
         suggestion: 'gaz', trend: 0.9,
         why: 'Nincs klíma, a gáz fűt; zuhany előtt AENO boost.',
       },
@@ -80,7 +82,7 @@ export const SEASONS = {
         suggestion: 'klima', trend: 1.2, why: 'Kint 2 °C, a klíma itt gyors (1,3 °C/h) – a klíma fűt.',
       },
       room_2: {
-        temp: 18.2, target: 20.5, active: 'nincs', window: 'buko', paused: true,
+        temp: 18.2, target: 20.5, active: 'nincs', window: 'buko', paused: true, humidity: 39,
         suggestion: 'szunetel', trend: -1.8, why: 'Az ablak 34 perce bukóban, a fűtés szünetel.',
       },
       room_3: {
@@ -287,7 +289,11 @@ export function makeHass(seasonKey = 'futes') {
   for (const room of ROOMS) {
     const mock = season.rooms[room.key] || {};
 
-    put(`sensor.futes_${room.key}_homerseklet`, mock.temp, { unit_of_measurement: '°C' });
+    /* only the zone has a computed temperature sensor of its own; in every
+       other room the thermostat reports the Sonoff sensor behind it */
+    if (room.parts?.length || room.readonly) {
+      put(`sensor.futes_${room.key}_homerseklet`, mock.temp, { unit_of_measurement: '°C' });
+    }
     putComfort(room.key, mock.temp);
     if (room.readonly) {
       put(`binary_sensor.futes_${room.key}_fagyveszely`, mock.temp !== undefined && mock.temp < 6 ? 'on' : 'off');
@@ -340,6 +346,11 @@ export function makeHass(seasonKey = 'futes') {
       put(`input_number.futes_tanult_${room.key}_${source}`, value, { min: 0, max: 5, step: 0.05 });
     }
 
+    if (room.humidity) put(room.humidity, mock.humidity ?? 46, { unit_of_measurement: '%', device_class: 'humidity' });
+    /* only one room is fitted with the sensor that says the heat pump is
+       losing ground; elsewhere the entity simply does not exist */
+    if (room.key === 'room_1') put(`binary_sensor.futes_${room.key}_elmarad`, 'on');
+
     /* where the room is heading: a derivative helper, °C/hour */
     put(`sensor.futes_trend_${room.key}`, mock.trend ?? 0, {
       unit_of_measurement: '°C/h',
@@ -356,6 +367,12 @@ export function makeHass(seasonKey = 'futes') {
       for (const part of room.parts) {
         const value = Number(((mock.temp || 0) + offsets[part.key]).toFixed(1));
         put(part.entity, value, { unit_of_measurement: '°C' });
+        if (part.humidity) {
+          put(part.humidity, part.key === 'konyha' ? 61 : 44, {
+            unit_of_measurement: '%',
+            device_class: 'humidity',
+          });
+        }
         put(`binary_sensor.futes_${room.key}_${part.key}_kizarva`, part.key === 'konyha' ? 'on' : 'off');
         putComfort(part.comfort_key, value);
       }
@@ -398,6 +415,38 @@ export function makeHass(seasonKey = 'futes') {
         const item = id === bathSchedule.id ? bathSchedule : schedule;
         Object.assign(item, rest);
         return Promise.resolve({ ...item });
+      }
+      if (message.type === 'history/history_during_period') {
+        /* 24 hours of plausible readings so the sparkline has something to
+           draw: a slow daily swing around the room's current value */
+        const now = Date.now();
+        const out = {};
+        for (const id of message.entity_ids || []) {
+          const climate = id.startsWith('climate.');
+          const base = climate
+            ? Number(states[id]?.attributes?.current_temperature)
+            : Number(states[id]?.state);
+          if (!Number.isFinite(base)) continue;
+          const rows = [];
+          for (let step = 0; step <= 48; step += 1) {
+            const when = now - (48 - step) * 30 * 60 * 1000;
+            const swing = id.startsWith('input_number.')
+              ? 0
+              : Math.sin((step / 48) * Math.PI * 2) * 0.8 + (Math.random() - 0.5) * 0.15;
+            rows.push(
+              climate
+                ? { s: states[id].state, lu: when / 1000, a: { current_temperature: Number((base + swing).toFixed(2)) } }
+                : { s: (base + swing).toFixed(2), lu: when / 1000 },
+            );
+          }
+          /* a setpoint moves in steps, so the mock gives it one */
+          if (id.startsWith('input_number.')) {
+            rows[20] = { s: (base - 1.5).toFixed(2), lu: rows[20].lu };
+            for (let i = 0; i < 20; i += 1) rows[i] = { s: (base - 1.5).toFixed(2), lu: rows[i].lu };
+          }
+          out[id] = rows;
+        }
+        return Promise.resolve(out);
       }
       return Promise.reject(new Error(`unsupported: ${message.type}`));
     },

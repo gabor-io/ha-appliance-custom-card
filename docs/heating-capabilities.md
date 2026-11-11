@@ -53,9 +53,9 @@ Mind felülírható a kártya `entities:` blokkjából; itt az alapértelmezés 
 | évszak (tényleges) | `sensor.klima_evszak_aktiv` | `futes` \| `hutes` \| `atmeneti` |
 | forrás | `sensor.futes_forras` | `gaz` \| `hibrid` \| `klima` \| `hutes` \| `fagyvedelem` \| `ki` |
 | indoklás | `sensor.futes_forras_indoklas` | magyar mondat |
-| fűtésautomatika | `input_boolean.futes_automatika` | on/off |
-| kazán üzemkész | `input_boolean.kazan_uzemkesz` | on/off |
-| szellőztető gázretesz | `input_boolean.szellozteto_gaz_retesz` | on/off |
+| fűtésautomatika | `input_boolean.futes_automatika` | on/off, **kapcsolható a kártyáról** |
+| kazán üzemkész | `input_boolean.kazan_uzemkesz` | on/off, **kapcsolható a kártyáról** |
+| szellőztető gázretesz | `input_boolean.szellozteto_gaz_retesz` | on/off, **kapcsolható a kártyáról** |
 | heti ütemterv | `schedule.futes_komfort` | on = komfort sáv, off = éjszaka |
 | kinti hőmérséklet | nincs alapértelmezés (`entities.outside`) | °C |
 | 3 napos kinti átlag | nincs alapértelmezés (`entities.outdoor_3day`) | °C |
@@ -98,9 +98,11 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | hőtrend | `sensor.<prefix>_trend_<szoba>` (°C/óra) |
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
 | tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
+| páratartalom | nincs névszabály – `rooms[].humidity`, részpontnál `parts[].humidity` |
 | hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
 | komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
 | fagyveszély | `binary_sensor.<prefix>_<szoba>_fagyveszely` |
+| klíma nem bírja | `binary_sensor.<prefix>_<szoba>_elmarad` |
 | forrásjavaslat | `sensor.<prefix>_<szoba>_forras_javaslat` (`gaz`/`klima`/`hutes`/`aeno`/`szunetel`/`ki`) |
 | javaslat indoklása | `sensor.<prefix>_<szoba>_forras_indoklas` |
 
@@ -138,6 +140,26 @@ Többhőmérős zóna (`parts:`) esetén még:
 
 Az ablak kora a `sensor.*_ablak` entitás `last_changed` idejéből jön, nem
 attribútumból: a HA ezt magától vezeti, és így nem lehet elcsúszni tőle.
+
+## 24 órás görbe
+
+A szobakártya kirajzolja az elmúlt napot: a vonal a mért hőmérséklet, a
+szaggatott lépcső a cél. A kettő közti rés maga a hőingadozás.
+
+Az előzmény nincs az állapotgépben, ezért a kártya websocketen kéri le
+(`history/history_during_period`), negyedóránként egyszer. Amit kirajzol,
+ebben a sorrendben: `rooms[].history`, ha meg van adva; különben a mért
+hőmérséklet szenzora; és ha az sincs, maga a termosztát – olyankor a kártya
+az attribútumokat is elkéri, mert ott a mért érték a
+`current_temperature`. A célt a `input_number.<prefix>_<szoba>_cel`
+előzményéből veszi.
+
+Recorder nélkül, vagy ha a felhasználónak nincs joga az előzményhez, a
+kártya egyszerűen nem rajzol görbét.
+
+Alapértelmezésben csak az **egy szobára szűkített** kártyán jelenik meg (öt
+szoba öt görbéje feleslegesen terheli a recordert); a `show_history`
+kapcsolóval mindkét irányba felülbírálható.
 
 ## Hőtrend és előrejelzés
 
@@ -232,6 +254,13 @@ input_number.hutes_zona_<zona>_<szoba>
 Amelyik szobának nincs adott évszakra készlete – a fürdőnek nincs hűtési –,
 annál a táblázat gondolatjelet mutat, nem üres beviteli mezőt.
 
+## Zóna-hőmérsékletek a szobakártyán
+
+Egy szobaoldalon nem a ház egész táblázata kell, hanem annak az egy szobának
+a komfort- és éjszakai hőfoka. A szobakártya ezért +/− gombokkal kiírja a
+saját zónaértékeit az épp aktív évszakra. Ez is az egy szobára szűkített
+kártyán alapértelmezés, és a `show_zones` kapcsolóval állítható.
+
 ## Hűtés
 
 - A kártya fűtés/hűtés fülre vált, és az aktív évszak készletét szerkeszti.
@@ -265,6 +294,12 @@ annál a táblázat gondolatjelet mutat, nem üres beviteli mezőt.
 | `rooms[].schedule_id` | automatikus | a saját terv tárolt azonosítója |
 | `rooms[].boost` | a kártyaszintű `show_boost` | van-e boost ebben a szobában |
 | `rooms[].entities.trend` | `sensor.<prefix>_trend_<szoba>` | a hőtrend szenzora |
+| `rooms[].entities.lagging` | `binary_sensor.<prefix>_<szoba>_elmarad` | „a klíma nem bírja" jelzés |
+| `rooms[].humidity` | – | a szoba páraszenzora |
+| `rooms[].history` | a mért hőmérséklet, majd a termosztát | amit a 24 órás görbe rajzol |
+| `show_history` | egy szobánál igen | 24 órás görbe a szobakártyán |
+| `show_zones` (szobakártya) | egy szobánál igen | a szoba saját zónaértékei |
+| `show_switches` (házkártya) | `true` | kazán és gázretesz kapcsoló |
 | `boost_script` | `script.futes_boost` | a boost gomb scriptje, `szoba` mezővel |
 | `name`, `language`, `compact`, `animate` | – | mint a többi kártyán |
 | `show_*` | `true` | szakaszok ki/be (szerkesztőből is) |

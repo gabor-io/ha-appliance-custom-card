@@ -1,6 +1,13 @@
-import { CARD_VERSION, ROOMS_CARD_NAME, ROOMS_EDITOR_NAME } from './const.js';
+import {
+  CARD_VERSION,
+  HISTORY_HOURS,
+  ROOMS_CARD_NAME,
+  ROOMS_EDITOR_NAME,
+  SCHEDULE_ZONES,
+  ZONES,
+} from './const.js';
 import { getLanguage, translator } from './i18n.js';
-import { buildHouseModel, buildRoomsModel } from './model.js';
+import { buildHouseModel, buildRoomsModel, buildZoneTable } from './model.js';
 import { applyRoomAction, roomRowHtml } from './room-ui.js';
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
@@ -13,7 +20,13 @@ export const ROOMS_DEFAULTS = {
   show_controls: true,
   show_parts: true,
   show_boost: true,
+  /* null = follow the view: a single room's own card charts its last day
+     and offers its zone setpoints, a list of five rooms does neither */
+  show_history: null,
+  show_zones: null,
 };
+
+const ZONE_BY_KEY = Object.fromEntries(ZONES.map((zone) => [zone.key, zone]));
 
 /**
  * The rooms.
@@ -37,6 +50,8 @@ export class HeatingRoomsCard extends HTMLElement {
     this._sections = {};
     this._signatures = {};
     this._built = false;
+    this._history = {};
+    this._historyAt = 0;
   }
 
   setConfig(config) {
@@ -48,6 +63,7 @@ export class HeatingRoomsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     this._render();
+    this._loadHistory();
   }
 
   get hass() {
@@ -62,6 +78,95 @@ export class HeatingRoomsCard extends HTMLElement {
   disconnectedCallback() {
     if (this._timer) window.clearInterval(this._timer);
     this._timer = undefined;
+  }
+
+  get _wantsHistory() {
+    return this._config.show_history === null ? Boolean(this._only) : Boolean(this._config.show_history);
+  }
+
+  get _wantsZones() {
+    return this._config.show_zones === null ? Boolean(this._only) : Boolean(this._config.show_zones);
+  }
+
+  /**
+   * The last day, fetched once every quarter of an hour.
+   *
+   * The history is not in the state machine, so it comes over the websocket.
+   * A `climate` entity is asked for with its attributes, because there the
+   * measured value is `current_temperature` rather than the state.
+   */
+  async _loadHistory() {
+    if (!this._wantsHistory || !this._hass?.callWS || this._historyLoading) return;
+    if (Date.now() - this._historyAt < 15 * 60000) return;
+
+    const rooms = this._rooms || [];
+    const wanted = [];
+    for (const room of rooms) {
+      if (room.readonly) continue;
+      if (room.historyEntity) wanted.push(room.historyEntity);
+      if (room.targetEntity) wanted.push(room.targetEntity);
+    }
+    if (!wanted.length) return;
+
+    this._historyLoading = true;
+    try {
+      const start = new Date(Date.now() - HISTORY_HOURS * 3600 * 1000).toISOString();
+      const result = await this._hass.callWS({
+        type: 'history/history_during_period',
+        start_time: start,
+        entity_ids: wanted,
+        minimal_response: !wanted.some((id) => id.startsWith('climate.')),
+        no_attributes: !wanted.some((id) => id.startsWith('climate.')),
+        significant_changes_only: false,
+      });
+      this._history = result || {};
+      this._historyAt = Date.now();
+      this._signatures = {};
+      this._render();
+    } catch (err) {
+      /* no recorder, no permission, or the entity has no history - the card
+         simply draws no chart rather than shouting about it */
+      this._historyAt = Date.now();
+    } finally {
+      this._historyLoading = false;
+    }
+  }
+
+  /** `{points, targets}` for one room, in the shape the sparkline wants. */
+  _series(room) {
+    if (!this._wantsHistory) return null;
+    const read = (entityId, climate) => {
+      const rows = this._history?.[entityId];
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map((row) => {
+          const raw = climate ? row.a?.current_temperature : row.s;
+          const value = Number(raw);
+          const time = Number(row.lu ?? row.lc);
+          return Number.isFinite(value) && Number.isFinite(time) ? { t: time, v: value } : null;
+        })
+        .filter(Boolean);
+    };
+
+    const points = read(room.historyEntity, String(room.historyEntity).startsWith('climate.'));
+    if (points.length < 2) return null;
+    return { points, targets: read(room.targetEntity, false) };
+  }
+
+  /** The room's own zone setpoints, for the season on show. */
+  _zones(room) {
+    if (!this._wantsZones) return null;
+    const season = this._season === 'hutes' ? 'hutes' : 'futes';
+    const keys = this._config.zones || SCHEDULE_ZONES;
+    const table = buildZoneTable(this._hass, this._config, season, [room]);
+    return keys
+      .map((key) => ({
+        key,
+        colour: ZONE_BY_KEY[key]?.colour || 'var(--ap-line)',
+        entity: table[key]?.[room.key]?.entity,
+        value: table[key]?.[room.key]?.value ?? null,
+      }))
+      .filter((zone) => zone.entity && this._hass.states[zone.entity]);
   }
 
   getCardSize() {
@@ -151,7 +256,15 @@ export class HeatingRoomsCard extends HTMLElement {
       showParts: this._config.show_parts,
       showBoost: this._config.show_boost,
     };
-    return `<div class="rooms">${rooms.map((room) => roomRowHtml(room, options)).join('')}</div>`;
+    return `<div class="rooms">${rooms
+      .map((room) =>
+        roomRowHtml(room, {
+          ...options,
+          series: this._series(room),
+          zones: this._zones(room),
+        }),
+      )
+      .join('')}</div>`;
   }
 
   /* ------------------------------ actions ----------------------------- */
@@ -163,7 +276,11 @@ export class HeatingRoomsCard extends HTMLElement {
   _act(ev) {
     const target = ev.target.closest('[data-action]');
     if (!target || target.hasAttribute('disabled')) return;
-    const room = this._room(target.dataset.room);
+    /* a zone setpoint belongs to a zone, not to a room, so it names its own
+       entity and needs no room lookup */
+    const room = target.dataset.action === 'zone-step'
+      ? this._rooms?.[0]
+      : this._room(target.dataset.room);
     if (!room) return;
     const changed = applyRoomAction({
       hass: this._hass,

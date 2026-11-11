@@ -25,6 +25,7 @@ export const HOUSE_DEFAULTS = {
   show_mode: true,
   show_meter: true,
   show_rooms: true,
+  show_switches: true,
   show_power_note: false,
 };
 
@@ -387,11 +388,27 @@ export class HouseHeatingCard extends HTMLElement {
 
     /* the master switch: with it off the logic stops deciding anything, so
        it belongs above the mode rather than hidden among the details */
-    const automation =
-      model.flags.automation === null
+    /* These three are switches, not readings. The boiler one matters most:
+       it is what someone flips when they light the gas boiler, and reading
+       it without being able to set it made the card a dead end. */
+    const toggle = (flag, entity, iconName, label) =>
+      flag === null
         ? ''
-        : `<button class="chip" type="button" data-action="automation" aria-pressed="${model.flags.automation}">
-            ${icon('auto')}<span>${escapeHtml(t('ui.automation'))}</span></button>`;
+        : `<button class="chip" type="button" data-action="toggle-flag" data-entity="${escapeHtml(entity)}"
+            aria-pressed="${flag}">${icon(iconName)}<span>${escapeHtml(t(label))}</span></button>`;
+
+    const switches = [
+      toggle(model.flags.automation, model.entities.automation, 'auto', 'ui.automation'),
+      this._config.show_switches === false
+        ? ''
+        : toggle(model.flags.boiler, model.entities.boiler, 'heat', 'ui.boiler'),
+      this._config.show_switches === false
+        ? ''
+        : toggle(model.flags.ervLock, model.entities.erv_lock, 'exhaust', 'ui.erv_lock_switch'),
+    ]
+      .filter(Boolean)
+      .join('');
+    const automation = switches;
 
     return `
       <div class="section">
@@ -514,9 +531,9 @@ export class HouseHeatingCard extends HTMLElement {
       case 'meter-save':
         this._saveMeter();
         break;
-      case 'automation':
+      case 'toggle-flag':
         this._haptic('medium');
-        this._call('input_boolean', 'toggle', { entity_id: model.flags.automationEntity });
+        this._call('input_boolean', 'toggle', { entity_id: target.dataset.entity });
         break;
       case 'toggle-room':
         if (this._open.has(target.dataset.room)) this._open.delete(target.dataset.room);

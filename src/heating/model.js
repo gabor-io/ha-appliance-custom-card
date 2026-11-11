@@ -254,6 +254,7 @@ export function buildRoomsModel(hass, config) {
       key: part.key,
       name: part.name,
       value: num(hass, part.entity),
+      humidity: num(hass, part.humidity),
       excluded: isOn(hass, part.excluded),
       comfort: comfortOf(hass, config, part.comfortKey),
     }));
@@ -323,6 +324,11 @@ export function buildRoomsModel(hass, config) {
         target,
         learned.aeno !== null ? PREDICT_BANDS.aeno : PREDICT_BANDS.default,
       ),
+      humidity: num(hass, ids.humidity),
+      lagging: isOn(hass, ids.lagging),
+      /* the sparkline charts the first of these that exists */
+      historyEntity: ids.history || ids.temperature || ids.climate || null,
+      targetEntity: ids.target_number || null,
       boost: room.boost,
       /* a room can follow its own weekly plan; the entity's state and
          next_event are enough for the row - the weekly blocks are only
