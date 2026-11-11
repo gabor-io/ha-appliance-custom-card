@@ -20,6 +20,11 @@ const FAMILY_STYLES = `
 .wrap.accent-frost { --ap-accent: var(--ht-frost); }
 .wrap.accent-idle { --ap-accent: var(--ht-idle); }
 
+/* An inline mdi path has no intrinsic size, so an icon dropped into a plain
+   text line - the night note under the bands - would render enormous. Every
+   context rule below is more specific, so this only catches the gaps. */
+.icon { width: 16px; height: 16px; }
+
 /* the header's status group travels together and drops to its own line on a
    narrow card rather than forcing the card wider than its column */
 .header { flex-wrap: wrap; }
@@ -183,6 +188,16 @@ const FAMILY_STYLES = `
 .accent-frost { --ap-accent: var(--ht-frost); }
 .accent-idle { --ap-accent: var(--ht-idle); }
 .suggest { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- comfort colours ---------- */
+.tag.comfort-cold, .mark.comfort-cold { background: color-mix(in srgb, #3f6fd8 18%, transparent); color: #3f6fd8; }
+.tag.comfort-good, .mark.comfort-good { background: color-mix(in srgb, var(--ht-ok) 18%, transparent); color: var(--ht-ok); }
+.tag.comfort-warm, .mark.comfort-warm { background: color-mix(in srgb, var(--ht-warn) 18%, transparent); color: var(--ht-warn); }
+.tag.comfort-hot, .mark.comfort-hot { background: color-mix(in srgb, var(--ht-bad) 18%, transparent); color: var(--ht-bad); }
+
+/* the thermostat's mode buttons sit in a room row, so they are smaller than
+   the house-wide ones */
+.seg.small button { min-width: 62px; padding: 6px 8px; font-size: .78rem; }
 
 /* ---------- schedule ---------- */
 .days { display: flex; gap: 6px; flex-wrap: wrap; }

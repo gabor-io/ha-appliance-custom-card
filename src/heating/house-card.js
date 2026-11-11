@@ -385,8 +385,17 @@ export class HouseHeatingCard extends HTMLElement {
         </div>`
       : '';
 
+    /* the master switch: with it off the logic stops deciding anything, so
+       it belongs above the mode rather than hidden among the details */
+    const automation =
+      model.flags.automation === null
+        ? ''
+        : `<button class="chip" type="button" data-action="automation" aria-pressed="${model.flags.automation}">
+            ${icon('auto')}<span>${escapeHtml(t('ui.automation'))}</span></button>`;
+
     return `
       <div class="section">
+        ${automation ? `<div class="chips">${automation}</div>` : ''}
         <div class="section-title">${escapeHtml(t('ui.mode_title'))}</div>
         <div class="seg" data-group="mode">${modeButtons}</div>
         <div class="section-title">${escapeHtml(t('ui.season_title'))}</div>
@@ -505,6 +514,10 @@ export class HouseHeatingCard extends HTMLElement {
       case 'meter-save':
         this._saveMeter();
         break;
+      case 'automation':
+        this._haptic('medium');
+        this._call('input_boolean', 'toggle', { entity_id: model.flags.automationEntity });
+        break;
       case 'toggle-room':
         if (this._open.has(target.dataset.room)) this._open.delete(target.dataset.room);
         else this._open.add(target.dataset.room);
@@ -512,6 +525,7 @@ export class HouseHeatingCard extends HTMLElement {
         break;
       case 'step':
       case 'boost':
+      case 'hvac':
         this._roomAction(target);
         break;
       default:

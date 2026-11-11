@@ -10,21 +10,22 @@ Három kártya egy családban:
 
 Mindhárom egy `dist/heating-cards.js` fájlban van.
 
-## Alapelv: a kártya soha nem ír eszközt
+## Alapelv: a kártya nem nyúl a készülékekhez
 
-A fűtési logika Home Assistantban fut, és **ő** vezérli a `climate.*`
-entitásokat (Daikin klímák, Netatmo szelepek, infrapanel). A kártyák ezekhez
-nem nyúlnak: minden gomb egy **helper entitást** ír (`input_select`,
-`input_number`, `input_datetime`) vagy egy scriptet hív, és onnantól a logika
-dolga, hogy mit kezd vele. Enélkül két gazdája lenne ugyanannak a szelepnek.
+A fűtési logika Home Assistantban fut, és **ő** vezérli a tényleges
+készülékeket: a Daikin klímákat, a Netatmo szelepeket, az infrapanelt. A
+kártyák ezekhez nem nyúlnak.
 
-Ebből következik két dolog, ami elsőre hiánynak látszik:
+Amit a kártya ír, az kétféle lehet:
 
-- A szobakártya +/− gombja **csak a felülírás értékét** írja, a felülírás
-  végét (`..._felulir_vege`) nem. Azt a logika tudja, mert ő ismeri a
-  következő zónaváltás időpontját.
-- A kártya nem számol célhőmérsékletet és nem dönt forrásról. Amit mutat, azt
-  Home Assistant már eldöntötte.
+1. **Helper entitások** (`input_select`, `input_number`, `input_boolean`,
+   `input_text`) és scriptek.
+2. **A szoba saját termosztátja**: egy `climate.*` **template** entitás,
+   amit a fűtési logika pont ebből a célból tesz közzé. Ez nem a hardver,
+   hanem a logika felülete – a szobakártya fő vezérlője ez.
+
+A kártya nem számol célhőmérsékletet és nem dönt forrásról. Amit mutat, azt
+Home Assistant már eldöntötte.
 
 ## Ház szintű entitások
 
@@ -52,9 +53,10 @@ Mind felülírható a kártya `entities:` blokkjából; itt az alapértelmezés 
 | évszak (tényleges) | `sensor.klima_evszak_aktiv` | `futes` \| `hutes` \| `atmeneti` |
 | forrás | `sensor.futes_forras` | `gaz` \| `hibrid` \| `klima` \| `hutes` \| `fagyvedelem` \| `ki` |
 | indoklás | `sensor.futes_forras_indoklas` | magyar mondat |
+| fűtésautomatika | `input_boolean.futes_automatika` | on/off |
 | kazán üzemkész | `input_boolean.kazan_uzemkesz` | on/off |
 | szellőztető gázretesz | `input_boolean.szellozteto_gaz_retesz` | on/off |
-| zónaválasztó | `input_select.futes_zona` | `komfort` \| `ejszaka` \| `eco` \| `tavol` \| `fagyvedelem` |
+| heti ütemterv | `schedule.futes_komfort` | on = komfort sáv, off = éjszaka |
 | kinti hőmérséklet | nincs alapértelmezés (`entities.outside`) | °C |
 | 3 napos kinti átlag | nincs alapértelmezés (`entities.outdoor_3day`) | °C |
 
@@ -85,29 +87,41 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 
 | Szerep | Entitás |
 | --- | --- |
-| mért hőmérséklet | `sensor.<prefix>_<szoba>_homerseklet` |
-| cél | `sensor.<prefix>_<szoba>_cel` |
-| kézi felülírás | `input_number.<prefix>_<szoba>_felulir` |
-| felülírás vége | `input_datetime.<prefix>_<szoba>_felulir_vege` |
-| forrás | `input_select.<prefix>_<szoba>_forras` (`auto`/`gaz`/`klima`/`ki`) |
+| termosztát | `climate.*` – **a configból**, mert nincs rá névszabály |
+| mért hőmérséklet | `sensor.<prefix>_<szoba>_homerseklet` (ha nincs, a termosztát `current_temperature`-je) |
+| cél | a termosztát `temperature` attribútuma; mögötte `input_number.<prefix>_<szoba>_cel` |
+| üzemmód | a termosztát `hvac_modes` / állapota; mögötte `input_select.<prefix>_<szoba>_uzemmod` |
 | mi fut | `sensor.<prefix>_<szoba>_aktiv` (`radiator`/`klima_futes`/`klima_hutes`/`aeno`/`nincs`) |
 | ablak | `sensor.<prefix>_<szoba>_ablak` (`zarva`/`buko`/`nyitva`) |
 | szünetel | `binary_sensor.<prefix>_<szoba>_szunetel` |
 | elő-fűtés/-hűtés | `sensor.<prefix>_elofutes_<szoba>` (timestamp, `irany` attribútum) |
+| tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
+| tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes>` (°C/óra) |
+| hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
+| komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
 | fagyveszély | `binary_sensor.<prefix>_<szoba>_fagyveszely` |
 | forrásjavaslat | `sensor.<prefix>_<szoba>_forras_javaslat` (`gaz`/`klima`/`hutes`/`aeno`/`szunetel`/`ki`) |
 | javaslat indoklása | `sensor.<prefix>_<szoba>_forras_indoklas` |
 
+A komfortszenzorok kulcsa nem feltétlenül a szobakulcs (egy zóna pontjainak
+saját kulcsuk van), ezért `comfort_key`-jel felülírható, szobára és
+részpontra is.
+
+**A +/− a termosztátot írja** (`climate.set_temperature`), az üzemmód-gombok
+pedig a `climate.set_hvac_mode`-ot. A beállított cél a következő ütemezett
+váltásig él – ezt a logika intézi, a kártya nem ír időpontot. Ha egy szobához
+nincs termosztát megadva, a kártya visszaesik a régi
+`input_number.<prefix>_<szoba>_felulir` helperre.
+
 A szoba forrása eltérhet a házétól, és ez nem hiba: egy klíma nélküli fürdő
 gázzal megy, miközben a ház a klímán, egy nyitott ablakú szoba pedig szünetel,
-bármit csinál a ház. Ezért a `sensor.futes_forras` összesítő marad, a szoba
-saját sorában pedig a szobánkénti javaslat a fő jelzés.
+bármit csinál a ház.
 
 Többhőmérős zóna (`parts:`) esetén még:
 
 | Szerep | Entitás |
 | --- | --- |
-| részérték | `sensor.<prefix>_<szoba>_<resz>` |
+| részérték | `sensor.<prefix>_<szoba>_<resz>`, vagy a `parts[].entity` szerinti bármilyen szenzor |
 | rész kihagyva | `binary_sensor.<prefix>_<szoba>_<resz>_kizarva` |
 | mérvadó pont | `sensor.<prefix>_<szoba>_mertado` |
 | aggregálás | `input_select.<prefix>_<szoba>_aggregalas` (`auto`/`atlag`) |
@@ -136,22 +150,30 @@ elcsúszni egymástól.
 
 ## Ütemterv
 
-A heti ütemtervet a [nielsfaber Scheduler](https://github.com/nielsfaber/scheduler-component)
-tárolja. **3.3.9-re ellenőrizve**, a `switch.schedule_*` entitás ezeket adja:
+A heti ütemtervet a **Home Assistant beépített `schedule` helpere** tárolja
+(`schedule.futes_komfort`). A sávon belül komfort, a sávon kívül éjszaka –
+egyelőre ez a két zóna van, az eco és a távol később jön.
 
-- `weekdays`: `["mon","tue"]`, vagy `daily` / `workday` / `weekend`
-- `timeslots`: szövegek, `"05:45:00"` vagy `"05:45:00 - 21:30:00"`
-- `entities`: amit a bejegyzés állít
-- `actions`: időszakonként egy `{service, service_data}`, a célentitás nélkül
-- `current_slot`, `next_slot`, `next_trigger`
+A HA core 2026.10 forrásából ellenőrizve:
 
-A kártya **csak azokat a bejegyzéseket kezeli, amelyek `entities` listájában
-ott a zónaválasztó.** Egy zónaváltás egy időpont: a timeslotnak csak `start`
-ideje van, `stop` nélkül, és az akciója
-`input_select.select_option` a zóna nevével. Íráskor a kártya a
-`scheduler.edit` / `scheduler.add` / `scheduler.remove` szolgáltatást hívja,
-és mindig a bejegyzés **teljes** timeslot-listáját küldi, mert a `scheduler.edit`
-lecseréli azt.
+- Az entitás állapota `on`/`off`, és egyetlen érdemi attribútuma a
+  `next_event`. **A heti blokkok nincsenek az állapotgépben.**
+- A blokkok a helper tárolt gyűjteményében vannak, websocketen érhetők el:
+  `schedule/list` olvas, `schedule/update` ír. A kártya ugyanezt a kettőt
+  használja, mint a helper saját szerkesztője.
+- Egy nap `{from, to}` tartományok listája (`monday` … `sunday`), rendezve,
+  átfedés nélkül, `from` < `to`; a `24:00:00` megengedett záróidő.
+- Az `update` a **teljes** elemet lecseréli, ezért a kártya mindig az egész
+  hetet küldi, és mentés előtt rendezi és kiszűri az átfedő sávokat.
+- A `create` / `update` / `delete` parancsok **admin jogot** kérnek: nem
+  admin felhasználónál a kártya kirajzolja az ütemtervet, de a mentés
+  elutasításra kerül.
+
+A tárolt elem azonosítója (`schedule_id`) az entitás unique_id-ja, ami nincs
+benne az állapotgépben. A kártya ezért az entitásregiszterből olvassa ki;
+ha az nem elérhető, egyetlen elem esetén azt használja, egyébként név
+szerint próbál párosítani. Ha ez bizonytalan, add meg kézzel:
+`schedule_id: futes_komfort`.
 
 A zónák hőmérsékletei külön helperekben vannak, évszakonként:
 
@@ -160,9 +182,13 @@ input_number.futes_zona_<zona>_<szoba>
 input_number.hutes_zona_<zona>_<szoba>
 ```
 
+Amelyik szobának nincs adott évszakra készlete – a fürdőnek nincs hűtési –,
+annál a táblázat gondolatjelet mutat, nem üres beviteli mezőt.
+
 ## Hűtés
 
 - A kártya fűtés/hűtés fülre vált, és az aktív évszak készletét szerkeszti.
+  Amelyik szobának nincs hűtési készlete, ott a táblázat gondolatjelet mutat.
 - Hűtésben a gázkeret és az ütem a kártyán marad, de halványítva: a keret
   olyankor is korlát, csak nem az a nap kérdése.
 - Az előfűtés felirata „előhűtés" lesz.
@@ -178,11 +204,16 @@ input_number.hutes_zona_<zona>_<szoba>
 | `rooms` | `[]` | szobalista: `{key, name, parts?, readonly?, entities?}` |
 | `prefix` | `futes` | a szobaentitások előtagja |
 | `zones` | az öt zóna | zónakulcsok sorrendben |
-| `zone_select` | `input_select.futes_zona` | amit az ütemterv állít |
+| `schedule_entity` | `schedule.futes_komfort` | a heti ütemterv helpere |
+| `schedule_id` | automatikus | a tárolt elem azonosítója, ha a felismerés bizonytalan |
+| `zone_on` / `zone_off` | `komfort` / `ejszaka` | a sávon belüli és kívüli zóna |
+| `felt_prefix` / `comfort_prefix` | `sensor.hoerzet` / `sensor.komfort` | a komfortszenzorok előtagja |
 | `heat_prefix` / `cool_prefix` | `input_number.futes_zona` / `input_number.hutes_zona` | zónahőmérséklet-helperek előtagja |
 | `heating_value` | `34.92` | égéshő, MJ/m³ |
 | `budget_mj` | – | a keret MJ-ban, ha a számlán ez a hiteles szám |
 | `room` / `szoba` | – | egyetlen szobára szűkíti a szobakártyát |
+| `rooms[].climate` | – | a szoba termosztátja (template `climate` entitás) |
+| `rooms[].comfort_key` | a szobakulcs | melyik `hoerzet`/`komfort` szenzorhoz tartozik |
 | `boost_script` | `script.futes_boost` | a boost gomb scriptje, `szoba` mezővel |
 | `name`, `language`, `compact`, `animate` | – | mint a többi kártyán |
 | `show_*` | `true` | szakaszok ki/be (szerkesztőből is) |
@@ -195,12 +226,14 @@ prefix: futes
 rooms:
   - key: bath
     name: Fürdő
+    climate: climate.furdo
   - key: living
     name: Étkező
+    climate: climate.etkezo_zona
     parts:
-      - { key: etkezo, name: Étkező }
-      - { key: konyha, name: Konyha }
-      - { key: eloszoba, name: Előszoba }
+      - { key: etkezo, name: Étkező, entity: sensor.dining_room_temperature, comfort_key: dining }
+      - { key: konyha, name: Konyha, entity: sensor.kitchen_temperature, comfort_key: kitchen }
+      - { key: eloszoba, name: Előszoba, entity: sensor.ante_room_temperature, comfort_key: eloszoba }
   - key: hall
     name: Előtér
     readonly: true

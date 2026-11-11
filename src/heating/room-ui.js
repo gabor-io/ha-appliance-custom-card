@@ -30,7 +30,45 @@ function tagsHtml(room, { t }) {
       `<span class="tag warn">${icon(room.window.icon)}${escapeHtml(t(`window.${room.window.state}`))}${escapeHtml(minutes)}</span>`,
     );
   }
-  return tags.join('');
+  tags.push(learningHtml(room, { t }));
+  return tags.filter(Boolean).join('');
+}
+
+/** How the room feels, in its own colour. */
+export function comfortHtml(room, { t, hass }) {
+  const comfort = room.comfort;
+  if (!comfort || (!comfort.text && comfort.felt === null)) return '';
+  const felt =
+    comfort.felt === null
+      ? ''
+      : ` title="${escapeHtml(fill(t('ui.felt'), { value: formatDecimal(comfort.felt, hass, 1) }))}"`;
+  const level = comfort.level ? ` comfort-${comfort.level}` : '';
+  return `<span class="tag comfort${level}"${felt}>${icon('target')}${escapeHtml(comfort.text || '')}</span>`;
+}
+
+/** A measurement is running: the logic is learning how fast the room warms. */
+export function learningHtml(room, { t }) {
+  if (!room.learning) return '';
+  const detail = fill(t('ui.learning_detail'), {
+    source: t(`source.${room.learning.source}`, room.learning.source || ''),
+    from: room.learning.from,
+    target: room.learning.target,
+  });
+  return `<span class="tag idle" title="${escapeHtml(detail)}">${icon('timer')}${escapeHtml(t('ui.learning'))}</span>`;
+}
+
+/** The learned heat-up rates, one line in the detail view. */
+export function learnedHtml(room, { t, hass }) {
+  const parts = Object.entries(room.learned || {})
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([source, value]) =>
+      fill(t('ui.learned_rate'), {
+        source: t(`source.${source}`, source),
+        value: formatDecimal(value, hass, 2),
+      }),
+    );
+  if (!parts.length) return '';
+  return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>`;
 }
 
 /** Why the logic would heat this room the way it does. */
@@ -80,12 +118,34 @@ function notesHtml(room, { t, hass, season }) {
 }
 
 export function stepButtonsHtml(room, { t }) {
-  const disabled = room.override.entity ? '' : 'disabled';
+  const disabled = room.climate || room.override.entity ? '' : 'disabled';
   return `
     <button class="step-btn" type="button" data-action="step" data-room="${escapeHtml(room.key)}" data-dir="-1"
       aria-label="${escapeHtml(t('ui.target'))} −" ${disabled}>−</button>
     <button class="step-btn" type="button" data-action="step" data-room="${escapeHtml(room.key)}" data-dir="1"
       aria-label="${escapeHtml(t('ui.target'))} +" ${disabled}>+</button>`;
+}
+
+/**
+ * The room thermostat's mode.
+ *
+ * This writes a template `climate` entity the heating logic publishes for
+ * the card - not the Daikin or Netatmo hardware behind it, which stays the
+ * logic's to drive.
+ */
+export function modeButtonsHtml(room, { t }) {
+  const modes = room.climate?.modes || [];
+  if (!modes.length) return '';
+  return `
+    <div class="seg small">
+      ${modes
+        .map(
+          (mode) =>
+            `<button type="button" data-action="hvac" data-room="${escapeHtml(room.key)}" data-value="${escapeHtml(mode)}"
+              aria-pressed="${mode === room.climate.mode}">${escapeHtml(t(`hvac.${mode}`, mode))}</button>`,
+        )
+        .join('')}
+    </div>`;
 }
 
 export function controlsHtml(room, options) {
@@ -107,10 +167,16 @@ export function controlsHtml(room, options) {
         ${icon('boost')}<span>${escapeHtml(t('ui.boost'))}</span></button>`
     : '';
 
+  /* with a thermostat the mode comes from it; the source select is only for
+     installations that have no room thermostat */
+  const mode = room.climate
+    ? modeButtonsHtml(room, options)
+    : select('source', room.source.options, room.source.value, t('ui.source_title'));
+
   return `
     <div class="controls">
       ${stepButtonsHtml(room, options)}
-      ${select('source', room.source.options, room.source.value, t('ui.source_title'))}
+      ${mode}
       ${room.parts.length ? select('aggregation', room.aggregation.options, room.aggregation.value, t('ui.aggregation_title')) : ''}
       ${boost}
     </div>`;
@@ -148,6 +214,7 @@ export function roomRowHtml(room, options) {
       <div class="line">
         <div class="name">${escapeHtml(room.name)}</div>
         <div class="spacer"></div>
+        ${comfortHtml(room, options)}
         ${tagsHtml(room, options)}
         <div>
           <div class="temp">${escapeHtml(temp(room.temperature, hass))}</div>
@@ -157,6 +224,7 @@ export function roomRowHtml(room, options) {
       ${suggestionHtml(room, options)}
       ${showParts ? partsHtml(room, options) : ''}
       ${notesHtml(room, options)}
+      ${learnedHtml(room, options)}
       ${showControls ? controlsHtml(room, options) : ''}
     </div>`;
 }
@@ -192,6 +260,14 @@ export function compactRowHtml(room, options) {
       `<span class="mark warn" title="${escapeHtml(t(`window.${room.window.state}`))}">${icon(room.window.icon)}</span>`,
     );
   }
+  if (room.learning) {
+    marks.push(`<span class="mark" title="${escapeHtml(t('ui.learning'))}">${icon('timer')}</span>`);
+  }
+  if (room.comfort?.level) {
+    marks.push(
+      `<span class="mark comfort-${room.comfort.level}" title="${escapeHtml(room.comfort.text || '')}">${icon('target')}</span>`,
+    );
+  }
 
   return `
     <div class="room compact${expanded ? ' open' : ''}" data-room="${escapeHtml(room.key)}">
@@ -206,7 +282,7 @@ export function compactRowHtml(room, options) {
         <span class="quick">${stepButtonsHtml(room, options)}</span>
         ${icon(expanded ? 'chevron_up' : 'chevron')}
       </div>
-      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${notesHtml(room, options)}${controlsHtml(room, options)}` : ''}
+      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${notesHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
     </div>`;
 }
 
@@ -221,14 +297,37 @@ export function applyRoomAction({ hass, config, room, action, target }) {
   const call = (domain, service, data) => hass?.callService?.(domain, service, data);
 
   if (action === 'step') {
+    const direction = Number(target.dataset.dir);
+
+    /* a room thermostat owns its own setpoint; the override helper is only
+       for installations that have no thermostat entity */
+    if (room.climate) {
+      const base = room.target ?? room.temperature;
+      if (base === null || base === undefined) return false;
+      const step = room.climate.step || TEMP_STEP;
+      const next = Math.min(
+        room.climate.max ?? TEMP_MAX,
+        Math.max(room.climate.min ?? TEMP_MIN, base + direction * step),
+      );
+      if (next === base) return false;
+      call('climate', 'set_temperature', { entity_id: room.climate.entity, temperature: next });
+      return true;
+    }
+
     const base = room.override.value ?? room.target ?? room.temperature;
     if (base === null || base === undefined || !room.override.entity) return false;
-    const next = Math.min(
-      TEMP_MAX,
-      Math.max(TEMP_MIN, base + Number(target.dataset.dir) * TEMP_STEP),
-    );
+    const next = Math.min(TEMP_MAX, Math.max(TEMP_MIN, base + direction * TEMP_STEP));
     if (next === base) return false;
     call('input_number', 'set_value', { entity_id: room.override.entity, value: next });
+    return true;
+  }
+
+  if (action === 'hvac') {
+    if (!room.climate) return false;
+    call('climate', 'set_hvac_mode', {
+      entity_id: room.climate.entity,
+      hvac_mode: target.dataset.value,
+    });
     return true;
   }
 

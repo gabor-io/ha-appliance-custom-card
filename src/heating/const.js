@@ -49,7 +49,11 @@ export const HOUSE_ENTITIES = {
   source: 'sensor.futes_forras',
   reason: 'sensor.futes_forras_indoklas',
   boiler: 'input_boolean.kazan_uzemkesz',
+  automation: 'input_boolean.futes_automatika',
   erv_lock: 'input_boolean.szellozteto_gaz_retesz',
+  /* the weekly plan is a built-in Home Assistant schedule helper: on means
+     the comfort band, off means the night band */
+  schedule: 'schedule.futes_komfort',
   zone_select: 'input_select.futes_zona',
   /* no sensible default: every house names its weather station differently */
   outside: null,
@@ -72,6 +76,10 @@ export const ROOM_SUFFIXES = {
   paused: ['binary_sensor', 'szunetel'],
   preheat: ['sensor', null], // sensor.<prefix>_elofutes_<room>, built separately
   frost: ['binary_sensor', 'fagyveszely'],
+  /* the thermostat behind the room: an input_number the template climate
+     entity publishes as its target */
+  target_number: ['input_number', 'cel'],
+  mode: ['input_select', 'uzemmod'],
   suggestion: ['sensor', 'forras_javaslat'],
   suggestion_reason: ['sensor', 'forras_indoklas'],
   leading: ['sensor', 'mertado'],
@@ -141,6 +149,29 @@ export const WINDOW_STATES = {
   buko: { icon: 'window_open', warn: true },
   nyitva: { icon: 'window_open', warn: true },
 };
+
+/**
+ * How warm the room feels, from `sensor.komfort_<kulcs>`.
+ *
+ * The state is a Hungarian word, optionally followed by ` · száraz` or
+ * ` · párás`, so the first word decides the colour and the rest rides along
+ * as written.
+ */
+export const COMFORT_LEVELS = {
+  hideg: 'cold',
+  huvos: 'cold',
+  hűvös: 'cold',
+  kellemes: 'good',
+  meleg: 'warm',
+  'tul meleg': 'hot',
+  'túl meleg': 'hot',
+};
+
+/** The heat-up / cool-down rates the logic learns, per source. */
+export const LEARNED_SOURCES = ['klima', 'gaz', 'hutes'];
+
+/** The two zones the weekly schedule has today; eco and away come later. */
+export const SCHEDULE_ZONES = ['komfort', 'ejszaka'];
 
 /** The five zones of the weekly schedule, with the Netatmo-like colours. */
 export const ZONES = [

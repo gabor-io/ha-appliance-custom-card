@@ -88,6 +88,18 @@
 
     if (domain === 'input_select' && service === 'select_option') set(data.entity_id, data.option);
     if (domain === 'input_number' && service === 'set_value') set(data.entity_id, data.value);
+    if (domain === 'input_boolean' && service === 'toggle') {
+      set(data.entity_id, hass.states[data.entity_id]?.state === 'on' ? 'off' : 'on');
+    }
+    /* the room thermostats are template climate entities, so the demo moves
+       them the way the heating logic would */
+    if (domain === 'climate' && service === 'set_temperature') {
+      const old = hass.states[data.entity_id];
+      set(data.entity_id, old.state, { temperature: data.temperature });
+    }
+    if (domain === 'climate' && service === 'set_hvac_mode') {
+      set(data.entity_id, data.hvac_mode);
+    }
 
     if (domain === 'scheduler' && (service === 'edit' || service === 'add')) {
       const id = service === 'edit' ? data.entity_id : `switch.schedule_demo_${Date.now()}`;
@@ -114,9 +126,26 @@
     for (const card of cards) card.hass = { ...hass };
   }
 
+  /* the schedule helper's blocks live outside the state machine, so the demo
+     answers the same websocket commands Home Assistant would */
+  function handleWS(message) {
+    note(`ws ${message.type}`);
+    const answer = hass.callWSRaw(message);
+    if (message.type === 'schedule/update') {
+      /* the helper recomputes next_event on a save; the mock keeps it simple
+         and just nudges the state object so the card reloads its blocks */
+      const id = 'schedule.futes_komfort';
+      hass.states[id] = { ...hass.states[id], last_updated: new Date().toISOString() };
+      answer.then(() => push());
+    }
+    return answer;
+  }
+
   function draw() {
     hass = makeHass(season);
     hass.callService = handleService;
+    hass.callWSRaw = hass.callWS;
+    hass.callWS = handleWS;
 
     grid.replaceChildren();
     cards = [];

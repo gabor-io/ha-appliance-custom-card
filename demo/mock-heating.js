@@ -14,37 +14,35 @@ const HEATING_VALUE = 34.92; // MJ/m³
 
 /** The room list the cards take in their config. */
 export const ROOMS = [
-  { key: 'bath', name: 'Fürdő' },
+  { key: 'bath', name: 'Fürdő', climate: 'climate.bath' },
   {
     key: 'living',
     name: 'Étkező · konyha · előszoba',
+    climate: 'climate.living',
+    /* the parts are plain sensors wherever they happen to live - a zone's
+       points are rarely named after the zone */
     parts: [
-      { key: 'etkezo', name: 'Étkező' },
-      { key: 'konyha', name: 'Konyha' },
-      { key: 'eloszoba', name: 'Előszoba' },
+      { key: 'etkezo', name: 'Étkező', entity: 'sensor.dining_room_temperature', comfort_key: 'dining' },
+      { key: 'konyha', name: 'Konyha', entity: 'sensor.kitchen_temperature', comfort_key: 'kitchen' },
+      { key: 'eloszoba', name: 'Előszoba', entity: 'sensor.ante_room_temperature', comfort_key: 'eloszoba' },
     ],
   },
-  { key: 'room_1', name: 'Háló 1' },
-  { key: 'room_2', name: 'Háló 2' },
-  { key: 'room_3', name: 'Háló 3' },
+  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1' },
+  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2' },
+  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3' },
   { key: 'hall', name: 'Előtér', readonly: true },
 ];
 
+/* Two zones for now - eco and away come later, and the bathroom has no
+   cooling setpoints at all, which the card has to survive. */
 const ZONE_TEMPS = {
   futes: {
     komfort: { bath: 20.5, living: 20.5, room_1: 20.5, room_2: 20.5, room_3: 20.5 },
     ejszaka: { bath: 19, living: 19, room_1: 19.5, room_2: 19.5, room_3: 19.5 },
-    eco: { bath: 18, living: 18, room_1: 18, room_2: 18, room_3: 18 },
-    tavol: { bath: 12, living: 12, room_1: 12, room_2: 12, room_3: 12 },
-    fagyvedelem: { bath: 7, living: 7, room_1: 7, room_2: 7, room_3: 7 },
   },
   hutes: {
-    komfort: { bath: 25.5, living: 25.5, room_1: 25.5, room_2: 25.5, room_3: 25.5 },
-    ejszaka: { bath: 26.5, living: 26.5, room_1: 26.5, room_2: 26.5, room_3: 26.5 },
-    eco: { bath: 28, living: 28, room_1: 28, room_2: 28, room_3: 28 },
-    tavol: { bath: 30, living: 30, room_1: 30, room_2: 30, room_3: 30 },
-    /* no frost guard in summer: the zone exists, it just never cools */
-    fagyvedelem: { bath: 32, living: 32, room_1: 32, room_2: 32, room_3: 32 },
+    komfort: { living: 25.5, room_1: 25.5, room_2: 25.5, room_3: 25.5 },
+    ejszaka: { living: 26.5, room_1: 26.5, room_2: 26.5, room_3: 26.5 },
   },
 };
 
@@ -123,6 +121,24 @@ export const SEASONS = {
   },
 };
 
+/**
+ * The weekly plan as the schedule helper stores it: only the comfort bands,
+ * everything between them is the night band. Weekdays and the weekend differ,
+ * so copying a day has something to do.
+ */
+const BAND = (from, to) => ({ from, to });
+export const schedule = {
+  id: 'futes_komfort',
+  name: 'Fűtés – komfort sáv',
+  monday: [BAND('05:45:00', '21:30:00')],
+  tuesday: [BAND('05:45:00', '21:30:00')],
+  wednesday: [BAND('05:45:00', '21:30:00')],
+  thursday: [BAND('05:45:00', '21:30:00')],
+  friday: [BAND('05:45:00', '22:30:00')],
+  saturday: [BAND('07:30:00', '23:00:00')],
+  sunday: [BAND('07:30:00', '21:30:00')],
+};
+
 function entity(entity_id, state, attributes = {}, lastChanged) {
   return [
     entity_id,
@@ -196,50 +212,13 @@ export function makeHass(seasonKey = 'futes') {
       friendly_name: 'Kinti hőmérséklet, 3 napos átlag',
     }),
 
-    /* --- the zone the schedule drives --- */
-    entity('input_select.futes_zona', 'komfort', {
-      options: ['komfort', 'ejszaka', 'eco', 'tavol', 'fagyvedelem'],
+    /* --- the weekly plan: a built-in schedule helper --- */
+    entity('schedule.futes_komfort', 'on', {
+      friendly_name: 'Fűtés – komfort sáv',
+      next_event: new Date(new Date().setHours(21, 30, 0, 0)).toISOString(),
+      editable: true,
     }),
-
-    /* --- the weekly schedule, as scheduler-component 3.3.9 reports it --- */
-    entity('switch.schedule_hetkoznap', 'on', {
-      friendly_name: 'Hétköznap',
-      weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
-      timeslots: ['00:00:00', '05:45:00', '21:30:00'],
-      entities: ['input_select.futes_zona'],
-      actions: [
-        { service: 'input_select.select_option', service_data: { option: 'ejszaka' } },
-        { service: 'input_select.select_option', service_data: { option: 'komfort' } },
-        { service: 'input_select.select_option', service_data: { option: 'ejszaka' } },
-      ],
-      current_slot: 1,
-      next_slot: 2,
-      tags: [],
-    }),
-    entity('switch.schedule_hetvege', 'on', {
-      friendly_name: 'Hétvége',
-      weekdays: ['sat', 'sun'],
-      timeslots: ['00:00:00', '07:30:00', '13:00:00', '22:30:00'],
-      entities: ['input_select.futes_zona'],
-      actions: [
-        { service: 'input_select.select_option', service_data: { option: 'ejszaka' } },
-        { service: 'input_select.select_option', service_data: { option: 'komfort' } },
-        { service: 'input_select.select_option', service_data: { option: 'eco' } },
-        { service: 'input_select.select_option', service_data: { option: 'ejszaka' } },
-      ],
-      current_slot: null,
-      next_slot: 0,
-      tags: [],
-    }),
-    /* a schedule that drives something else entirely - the card must ignore it */
-    entity('switch.schedule_locsolas', 'on', {
-      friendly_name: 'Locsolás',
-      weekdays: ['daily'],
-      timeslots: ['06:00:00'],
-      entities: ['switch.kerti_csap'],
-      actions: [{ service: 'switch.turn_on' }],
-      current_slot: null,
-    }),
+    entity('input_boolean.futes_automatika', 'on'),
   ]);
 
   /* --- zone setpoints, both seasons --- */
@@ -258,35 +237,61 @@ export function makeHass(seasonKey = 'futes') {
     }
   }
 
+  const put = (...args) => {
+    const [id, obj] = entity(...args);
+    states[id] = obj;
+  };
+
+  /**
+   * How a place feels. The word carries a humidity note after a separator,
+   * exactly as the Home Assistant side writes it.
+   */
+  function putComfort(key, measured) {
+    if (!key || measured === null || measured === undefined) return;
+    const felt = Number((measured - 0.4).toFixed(1));
+    let word = 'Kellemes';
+    if (felt < 18) word = 'Hideg';
+    else if (felt < 19.5) word = 'Hűvös';
+    else if (felt > 27) word = 'Túl meleg';
+    else if (felt > 24.5) word = 'Meleg';
+    put(`sensor.hoerzet_${key}`, felt, { unit_of_measurement: '°C' });
+    put(`sensor.komfort_${key}`, key === 'kitchen' ? `${word} · párás` : word);
+  }
+
   /* --- rooms --- */
   for (const room of ROOMS) {
     const mock = season.rooms[room.key] || {};
-    const put = (...args) => {
-      const [id, obj] = entity(...args);
-      states[id] = obj;
-    };
 
     put(`sensor.futes_${room.key}_homerseklet`, mock.temp, { unit_of_measurement: '°C' });
+    putComfort(room.key, mock.temp);
     if (room.readonly) {
       put(`binary_sensor.futes_${room.key}_fagyveszely`, mock.temp !== undefined && mock.temp < 6 ? 'on' : 'off');
       continue;
     }
 
     put(`sensor.futes_${room.key}_cel`, mock.target, { unit_of_measurement: '°C' });
+    put(`input_number.futes_${room.key}_cel`, mock.target, { min: 5, max: 30, step: 0.5 });
+    put(`input_select.futes_${room.key}_uzemmod`, mock.mode === 'off' ? 'ki' : 'auto', {
+      options: ['auto', 'ki'],
+    });
+
+    /* the room thermostat: a template climate entity the logic publishes */
+    const modes = room.key === 'bath' ? ['heat', 'off'] : ['heat', 'cool', 'off'];
+    put(room.climate || `climate.${room.key}`, mock.mode || (seasonKey === 'hutes' ? 'cool' : 'heat'), {
+      friendly_name: room.name,
+      hvac_modes: modes,
+      current_temperature: mock.temp,
+      temperature: mock.target,
+      min_temp: 5,
+      max_temp: 30,
+      target_temp_step: 0.5,
+      hvac_action: mock.active && mock.active !== 'nincs' ? 'heating' : 'idle',
+      supported_features: 1,
+    });
+
     put(`sensor.futes_${room.key}_aktiv`, mock.active || 'nincs');
     put(`sensor.futes_${room.key}_forras_javaslat`, mock.suggestion || 'ki');
     put(`sensor.futes_${room.key}_forras_indoklas`, mock.why || '');
-    put(`input_number.futes_${room.key}_felulir`, mock.override ?? mock.target, {
-      min: 5,
-      max: 30,
-      step: 0.5,
-    });
-    put(`input_datetime.futes_${room.key}_felulir_vege`, 'unknown');
-    put(`input_select.futes_${room.key}_forras`, mock.source || 'auto', {
-      options: ['auto', 'gaz', 'klima', 'ki'],
-    });
-    /* the tilted window has been open for 34 minutes - long enough for the
-       house card to say so, and for the room to show that it is paused */
     put(
       `sensor.futes_${room.key}_ablak`,
       mock.window || 'zarva',
@@ -296,24 +301,29 @@ export function makeHass(seasonKey = 'futes') {
     put(`binary_sensor.futes_${room.key}_szunetel`, mock.paused ? 'on' : 'off');
     put(
       `sensor.futes_elofutes_${room.key}`,
-      room.key === 'room_1' ? '2026-11-10T03:50:00+00:00' : 'unknown',
-      room.key === 'room_1'
-        ? {
-            device_class: 'timestamp',
-            irany: seasonKey === 'hutes' ? 'hutes' : 'futes',
-            cel: mock.target,
-            becsult_sebesseg_c_per_ora: 1.4,
-          }
-        : {},
+      room.key === 'room_1' ? new Date(Date.now() + 95 * 60000).toISOString() : 'unknown',
+      room.key === 'room_1' ? { device_class: 'timestamp', irany: seasonKey === 'hutes' ? 'hutes' : 'futes' } : {},
+    );
+
+    /* the learned heat-up rates, and the measurement that is running now */
+    const learned = { klima: 1.3, gaz: 0.85, hutes: 1.1 };
+    for (const [source, value] of Object.entries(learned)) {
+      if (room.key === 'bath' && source !== 'gaz') continue;
+      put(`input_number.futes_tanult_${room.key}_${source}`, value, { min: 0, max: 5, step: 0.05 });
+    }
+    put(
+      `input_text.futes_tanulas_${room.key}`,
+      room.key === 'room_3' ? `${Math.floor(Date.now() / 1000) - 1800}|19.4|gaz|20.5|fel` : '',
+      { max: 255 },
     );
 
     if (room.parts?.length) {
-      const values = { etkezo: mock.temp, konyha: (mock.temp || 0) + 1.9, eloszoba: (mock.temp || 0) - 1.1 };
+      const offsets = { etkezo: 0, konyha: 1.9, eloszoba: -1.1 };
       for (const part of room.parts) {
-        put(`sensor.futes_${room.key}_${part.key}`, Number(values[part.key].toFixed(1)), {
-          unit_of_measurement: '°C',
-        });
+        const value = Number(((mock.temp || 0) + offsets[part.key]).toFixed(1));
+        put(part.entity, value, { unit_of_measurement: '°C' });
         put(`binary_sensor.futes_${room.key}_${part.key}_kizarva`, part.key === 'konyha' ? 'on' : 'off');
+        putComfort(part.comfort_key, value);
       }
       put(`sensor.futes_${room.key}_mertado`, seasonKey === 'hutes' ? 'konyha' : 'eloszoba');
       put(`input_select.futes_${room.key}_aggregalas`, 'auto', { options: ['auto', 'atlag'] });
@@ -334,7 +344,26 @@ export function makeHass(seasonKey = 'futes') {
       console.log('callService', domain, service, data);
       return Promise.resolve();
     },
+    /**
+     * The weekly blocks do not live in the state machine, so the card reads
+     * and writes them over the websocket, exactly as the helper's own editor
+     * does. The demo answers the same three commands.
+     */
+    callWS: (message) => {
+      // eslint-disable-next-line no-console
+      console.log('callWS', JSON.stringify(message));
+      if (message.type === 'schedule/list') return Promise.resolve([{ ...schedule }]);
+      if (message.type === 'config/entity_registry/get') {
+        return Promise.resolve({ entity_id: message.entity_id, unique_id: schedule.id });
+      }
+      if (message.type === 'schedule/update') {
+        const { type, schedule_id: id, ...rest } = message;
+        Object.assign(schedule, rest);
+        return Promise.resolve({ ...schedule });
+      }
+      return Promise.reject(new Error(`unsupported: ${message.type}`));
+    },
   };
 }
 
-window.demoHeating = { ROOMS, SEASONS, makeHass };
+window.demoHeating = { ROOMS, SEASONS, makeHass, schedule };

@@ -2,24 +2,26 @@ import {
   CARD_VERSION,
   SCHEDULE_CARD_NAME,
   SCHEDULE_EDITOR_NAME,
+  SCHEDULE_ZONES,
   TEMP_MAX,
   TEMP_MIN,
   TEMP_STEP,
   WEEKDAYS,
   ZONES,
-  ZONE_KEYS,
 } from './const.js';
 import { fill, getLanguage, translator } from './i18n.js';
 import {
   buildHouseModel,
   buildScheduleModel,
   buildZoneTable,
+  clockToMinutes,
+  DAY_KEYS,
   minutesToClock,
 } from './model.js';
-import { listRooms } from './entities.js';
+import { listRooms, stateObj } from './entities.js';
 import { STYLES } from './styles.js';
 import { icon } from '../shared/icons.js';
-import { escapeHtml, formatDecimal } from '../shared/format.js';
+import { escapeHtml, formatClock, formatDecimal } from '../shared/format.js';
 
 export const SCHEDULE_DEFAULTS = {
   language: 'auto',
@@ -30,22 +32,22 @@ export const SCHEDULE_DEFAULTS = {
 };
 
 const ZONE_BY_KEY = Object.fromEntries(ZONES.map((zone) => [zone.key, zone]));
+const EMPTY_WEEK = Object.fromEntries(Object.values(DAY_KEYS).map((day) => [day, []]));
 
-/** `"05:45"` -> 345 */
-function clockToMinutes(value) {
-  const [hours, minutes] = String(value).split(':');
-  const total = Number(hours) * 60 + Number(minutes);
-  return Number.isFinite(total) ? total : null;
-}
+/** `"06:15"` -> `"06:15:00"`, which is what the schedule helper stores. */
+const toStored = (value) => (String(value).length === 5 ? `${value}:00` : String(value));
 
 /**
- * The weekly schedule, drawn the way the Netatmo app draws it.
+ * The weekly plan, drawn the way the Netatmo app draws it.
  *
- * Every zone change is one Scheduler entry that writes the zone selector, so
- * the card reads the day's segments out of the `switch.schedule_*` attributes
- * and writes them back with `scheduler.add` / `scheduler.edit`. The setpoints
- * themselves live in `input_number` helpers, one per zone and room, in two
- * sets: one for heating and one for cooling.
+ * The plan itself is a built-in Home Assistant **schedule helper**: inside a
+ * band the house is in the comfort zone, outside it in the night zone. The
+ * entity only publishes on/off and `next_event`, so the weekly blocks are
+ * fetched over the websocket (`schedule/list`) and written back with
+ * `schedule/update` - the same pair the helper's own editor uses.
+ *
+ * The setpoints are separate: one `input_number` per zone and room, in two
+ * sets, one for heating and one for cooling.
  */
 export class HeatingScheduleCard extends HTMLElement {
   static getConfigElement() {
@@ -65,16 +67,29 @@ export class HeatingScheduleCard extends HTMLElement {
     this._day = WEEKDAYS[(new Date().getDay() + 6) % 7];
     this._tab = null; // null = follow the active season
     this._copyOpen = false;
+    this._blocks = null;
+    this._scheduleId = null;
+    this._loading = false;
+    this._error = null;
   }
 
   setConfig(config) {
     this._config = { ...SCHEDULE_DEFAULTS, ...(config || {}) };
     this._signatures = {};
+    this._blocks = null;
+    this._scheduleId = null;
     if (this._hass) this._render();
   }
 
   set hass(hass) {
+    const previous = this._hass;
     this._hass = hass;
+    /* the weekly blocks are not in the state machine, so they are fetched
+       once and then only when the helper itself says something changed */
+    const entityId = this._config?.schedule_entity || 'schedule.futes_komfort';
+    if (!this._blocks || previous?.states?.[entityId] !== hass?.states?.[entityId]) {
+      this._loadBlocks();
+    }
     this._render();
   }
 
@@ -89,6 +104,86 @@ export class HeatingScheduleCard extends HTMLElement {
   getGridOptions() {
     return { columns: 12, min_columns: 8, rows: 'auto' };
   }
+
+  get _season() {
+    if (this._tab) return this._tab;
+    return this._houseSeason === 'hutes' ? 'hutes' : 'futes';
+  }
+
+  /* ------------------------------ websocket --------------------------- */
+
+  /**
+   * Finds the helper's storage id for the configured entity.
+   *
+   * The id is the entity's unique id, which the state machine does not
+   * carry, so it is read from the entity registry; a single-item list or an
+   * explicit `schedule_id` in the config are the fallbacks.
+   */
+  async _resolveScheduleId(items, entityId) {
+    if (this._config.schedule_id) return this._config.schedule_id;
+    try {
+      const entry = await this._hass.callWS({
+        type: 'config/entity_registry/get',
+        entity_id: entityId,
+      });
+      if (entry?.unique_id && items.some((item) => item.id === entry.unique_id)) {
+        return entry.unique_id;
+      }
+    } catch (err) {
+      /* a non-admin user may not read the registry - fall through */
+    }
+    if (items.length === 1) return items[0].id;
+    const slug = entityId.split('.')[1];
+    const byName = items.find(
+      (item) => String(item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_') === slug,
+    );
+    return byName?.id || null;
+  }
+
+  async _loadBlocks() {
+    if (this._loading || !this._hass?.callWS) return;
+    const entityId = this._config?.schedule_entity || 'schedule.futes_komfort';
+    if (!stateObj(this._hass, entityId)) return;
+    this._loading = true;
+    try {
+      const items = await this._hass.callWS({ type: 'schedule/list' });
+      const id = await this._resolveScheduleId(items || [], entityId);
+      const item = (items || []).find((entry) => entry.id === id);
+      this._scheduleId = id;
+      this._blocks = item
+        ? Object.fromEntries(Object.values(DAY_KEYS).map((day) => [day, item[day] || []]))
+        : { ...EMPTY_WEEK };
+      this._name = item?.name || null;
+      this._error = null;
+    } catch (err) {
+      this._error = String(err?.message || err);
+    } finally {
+      this._loading = false;
+      this._signatures = {};
+      this._render();
+    }
+  }
+
+  /** Writes the whole week back; `schedule/update` replaces the item. */
+  async _save(blocks) {
+    if (!this._scheduleId || !this._hass?.callWS) return;
+    this._blocks = blocks;
+    this._signatures = {};
+    this._render();
+    try {
+      await this._hass.callWS({
+        type: 'schedule/update',
+        schedule_id: this._scheduleId,
+        name: this._name || this._config.name || 'Fűtés',
+        ...blocks,
+      });
+    } catch (err) {
+      this._error = String(err?.message || err);
+      this._loadBlocks();
+    }
+  }
+
+  /* ------------------------------- render ----------------------------- */
 
   _build() {
     const style = document.createElement('style');
@@ -111,11 +206,6 @@ export class HeatingScheduleCard extends HTMLElement {
     this._built = true;
   }
 
-  get _season() {
-    if (this._tab) return this._tab;
-    return this._houseSeason === 'hutes' ? 'hutes' : 'futes';
-  }
-
   _render() {
     if (!this._hass || !this._config) return;
     if (!this._built) this._build();
@@ -124,7 +214,7 @@ export class HeatingScheduleCard extends HTMLElement {
     const house = buildHouseModel(this._hass, this._config);
     this._houseSeason = house.season.active;
 
-    const model = buildScheduleModel(this._hass, this._config);
+    const model = buildScheduleModel(this._hass, this._config, this._blocks);
     const rooms = listRooms(this._config).filter((room) => !room.readonly);
     this._model = model;
     this._rooms = rooms;
@@ -137,17 +227,11 @@ export class HeatingScheduleCard extends HTMLElement {
 
     this._section('header', this._headerHtml(model, t));
     this._section('tabs', this._tabsHtml(t));
-    this._section('days', this._daysHtml(t));
-    this._section(
-      'timeline',
-      this._config.show_timeline ? this._timelineHtml(model, t) : '',
-    );
-    this._section('slots', this._slotsHtml(model, rooms, t));
+    this._section('days', model.ok ? this._daysHtml(t) : '');
+    this._section('timeline', model.ok && this._config.show_timeline ? this._timelineHtml(model, t) : '');
+    this._section('slots', model.ok ? this._bandsHtml(model, rooms, t) : this._emptyHtml(model, t));
     this._section('copy', this._copyHtml(t));
-    this._section(
-      'zones',
-      this._config.show_zones ? this._zonesHtml(rooms, t) : '',
-    );
+    this._section('zones', this._config.show_zones ? this._zonesHtml(model, rooms, t) : '');
   }
 
   _section(name, html) {
@@ -157,7 +241,14 @@ export class HeatingScheduleCard extends HTMLElement {
     this._sections[name].hidden = !html;
   }
 
-  /* ----------------------------- sections ---------------------------- */
+  _emptyHtml(model, t) {
+    const message = this._error
+      ? this._error
+      : model.reason === 'loading'
+        ? t('ui.loading')
+        : t('ui.no_schedule');
+    return `<div class="empty">${icon('calendar')}<div>${escapeHtml(message)}</div></div>`;
+  }
 
   _headerHtml(model, t) {
     const name = escapeHtml(this._config.name || t('schedule_card_name'));
@@ -166,14 +257,18 @@ export class HeatingScheduleCard extends HTMLElement {
           fill(t('ui.current_zone'), { zone: t(`zone.${model.zoneNow}`, model.zoneNow) }),
         )}</div>`
       : '';
-    const next = model.next
+
+    /* the helper's own next_event is the authority; the day strip is only a
+       drawing of the same data and can disagree while a save is in flight */
+    const next = model.nextEvent
       ? `<div class="sub">${escapeHtml(
           fill(t('ui.next_change'), {
-            zone: t(`zone.${model.next.zone}`, model.next.zone),
-            time: minutesToClock(model.next.start),
+            zone: t(`zone.${model.zoneNow === model.zoneOn ? model.zoneOff : model.zoneOn}`),
+            time: formatClock(model.nextEvent, this._hass),
           }),
-        )}${model.next.offset ? ` · ${escapeHtml(t(`day_long.${model.next.day}`))}` : ''}</div>`
+        )}</div>`
       : '';
+
     return `
       <div class="header">
         <div>
@@ -208,9 +303,6 @@ export class HeatingScheduleCard extends HTMLElement {
 
   _timelineHtml(model, t) {
     const segments = model.days[this._day] || [];
-    if (!segments.length) {
-      return `<div class="muted">${escapeHtml(t('ui.no_schedule'))}</div>`;
-    }
     const blocks = segments
       .map((segment) => {
         const colour = ZONE_BY_KEY[segment.zone]?.colour || 'var(--ap-line)';
@@ -227,48 +319,51 @@ export class HeatingScheduleCard extends HTMLElement {
       </div>`;
   }
 
-  _slotsHtml(model, rooms, t) {
-    const segments = model.days[this._day] || [];
+  /** One row per comfort band: when it starts, when it ends, and the setpoints. */
+  _bandsHtml(model, rooms, t) {
+    const dayKey = DAY_KEYS[this._day];
+    const bands = model.blocks?.[dayKey] || [];
     const table = buildZoneTable(this._hass, this._config, this._season, rooms);
 
-    const rows = segments
-      .map((segment) => {
-        const zone = ZONE_BY_KEY[segment.zone];
-        const temps = rooms
-          .map((room) => {
-            const cell = table[segment.zone]?.[room.key];
-            return cell && cell.value !== null
-              ? `${room.name} ${formatDecimal(cell.value, this._hass, 1)}`
-              : null;
-          })
-          .filter(Boolean)
-          .join(' · ');
+    const temps = (zone) =>
+      rooms
+        .map((room) => {
+          const cell = table[zone]?.[room.key];
+          return cell && cell.value !== null
+            ? `${room.name} ${formatDecimal(cell.value, this._hass, 1)}`
+            : null;
+        })
+        .filter(Boolean)
+        .join(' · ');
 
+    const rows = bands
+      .map((band, index) => {
+        const zone = ZONE_BY_KEY[model.zoneOn];
         return `
-          <div class="slot" data-entity="${escapeHtml(segment.entity_id)}" data-index="${segment.index}">
+          <div class="slot" data-index="${index}">
             <i class="swatch" style="background:${zone?.colour || 'var(--ap-line)'}"></i>
-            <input type="time" value="${minutesToClock(segment.start)}" data-action="slot-time">
-            <select data-action="slot-zone">
-              ${(this._config.zones || ZONE_KEYS)
-                .map(
-                  (key) =>
-                    `<option value="${key}" ${key === segment.zone ? 'selected' : ''}>${escapeHtml(t(`zone.${key}`, key))}</option>`,
-                )
-                .join('')}
-            </select>
-            <div class="temps">${escapeHtml(temps)}</div>
+            <span class="zone">${escapeHtml(t(`zone.${model.zoneOn}`, model.zoneOn))}</span>
+            <input type="time" value="${escapeHtml(String(band.from).slice(0, 5))}" data-action="band-from">
+            <span class="zone">–</span>
+            <input type="time" value="${escapeHtml(String(band.to).slice(0, 5))}" data-action="band-to">
             <div class="spacer"></div>
-            <button class="step-btn" type="button" data-action="slot-remove" title="${escapeHtml(t('ui.remove_slot'))}">−</button>
+            <button class="step-btn" type="button" data-action="band-remove" title="${escapeHtml(t('ui.remove_slot'))}">−</button>
+            <div class="temps">${escapeHtml(temps(model.zoneOn))}</div>
           </div>`;
       })
       .join('');
 
+    const nightNote = `<div class="muted">${icon('night')} ${escapeHtml(
+      fill(t('ui.outside_bands'), { zone: t(`zone.${model.zoneOff}`, model.zoneOff) }),
+    )}${temps(model.zoneOff) ? ` · ${escapeHtml(temps(model.zoneOff))}` : ''}</div>`;
+
     return `
       <div class="section">
         <div class="section-title">${escapeHtml(t('ui.slots_title'))}</div>
-        <div class="slots">${rows}</div>
+        <div class="slots">${rows || `<div class="muted">${escapeHtml(t('ui.no_bands'))}</div>`}</div>
+        ${nightNote}
         <div class="controls">
-          <button class="chip" type="button" data-action="slot-add">${icon('clock')}<span>${escapeHtml(t('ui.add_slot'))}</span></button>
+          <button class="chip" type="button" data-action="band-add">${icon('clock')}<span>${escapeHtml(t('ui.add_slot'))}</span></button>
           <button class="chip" type="button" data-action="copy-open">${icon('calendar')}<span>${escapeHtml(t('ui.copy_day'))}</span></button>
         </div>
         <div class="muted">${escapeHtml(t('ui.schedule_hint'))}</div>
@@ -294,9 +389,9 @@ export class HeatingScheduleCard extends HTMLElement {
       </div>`;
   }
 
-  _zonesHtml(rooms, t) {
+  _zonesHtml(model, rooms, t) {
     if (!rooms.length) return `<div class="muted">${escapeHtml(t('ui.no_rooms'))}</div>`;
-    const zones = this._config.zones || ZONE_KEYS;
+    const zones = this._config.zones || model.zones || SCHEDULE_ZONES;
     const table = buildZoneTable(this._hass, this._config, this._season, rooms);
 
     const head = rooms.map((room) => `<th>${escapeHtml(room.name)}</th>`).join('');
@@ -306,10 +401,12 @@ export class HeatingScheduleCard extends HTMLElement {
         const cells = rooms
           .map((room) => {
             const cell = table[key]?.[room.key];
-            const value = cell?.value;
+            /* a room without a setpoint for this season - the bathroom has
+               no cooling - gets a dash, not an input that writes nowhere */
+            if (!cell || !stateObj(this._hass, cell.entity)) return '<td class="muted">–</td>';
             return `<td><input class="val" type="number" step="${TEMP_STEP}" min="${TEMP_MIN}" max="${TEMP_MAX}"
-              value="${value === null || value === undefined ? '' : value}"
-              data-action="zone-temp" data-entity="${escapeHtml(cell?.entity || '')}"></td>`;
+              value="${cell.value === null ? '' : cell.value}"
+              data-action="zone-temp" data-entity="${escapeHtml(cell.entity)}"></td>`;
           })
           .join('');
         return `<tr>
@@ -341,17 +438,18 @@ export class HeatingScheduleCard extends HTMLElement {
     switch (action) {
       case 'tab':
         this._tab = value;
+        this._signatures = {};
         this._render();
         break;
       case 'day':
         this._day = value;
         this._render();
         break;
-      case 'slot-add':
-        this._addSlot();
+      case 'band-add':
+        this._addBand();
         break;
-      case 'slot-remove':
-        this._removeSlot(target.closest('.slot'));
+      case 'band-remove':
+        this._removeBand(Number(target.closest('.slot').dataset.index));
         break;
       case 'copy-open':
         this._copyOpen = true;
@@ -377,138 +475,91 @@ export class HeatingScheduleCard extends HTMLElement {
     if (action === 'zone-temp') {
       const value = Number(target.value);
       if (!target.dataset.entity || !Number.isFinite(value)) return;
-      this._call('input_number', 'set_value', { entity_id: target.dataset.entity, value });
-      return;
-    }
-
-    const slot = target.closest('.slot');
-    if (!slot) return;
-    if (action === 'slot-time') {
-      const minutes = clockToMinutes(target.value);
-      if (minutes === null) return;
-      this._editSlot(slot, (segment) => ({ ...segment, minutes }));
-    }
-    if (action === 'slot-zone') {
-      this._editSlot(slot, (segment) => ({ ...segment, zone: target.value }));
-    }
-  }
-
-  /* --------------------------- scheduler I/O --------------------------- */
-
-  /** The segments of the selected day that belong to one schedule entity. */
-  _slotsOf(entityId) {
-    const schedule = this._model.schedules.find((item) => item.entity_id === entityId);
-    return schedule ? schedule.slots.filter((slot) => slot.zone) : [];
-  }
-
-  /**
-   * One zone change is one Scheduler timeslot with a start and no stop: the
-   * entry fires at that time and the zone stays until the next one. Writing
-   * always sends the whole list, because `scheduler.edit` replaces it.
-   */
-  _timeslots(slots) {
-    return [...slots]
-      .sort((a, b) => a.minutes - b.minutes)
-      .map((slot) => ({
-        start: `${minutesToClock(slot.minutes)}:00`,
-        actions: [
-          {
-            entity_id: this._model.zoneSelect,
-            service: 'input_select.select_option',
-            service_data: { option: slot.zone },
-          },
-        ],
-      }));
-  }
-
-  _editSlot(slotNode, change) {
-    const entityId = slotNode.dataset.entity;
-    const index = Number(slotNode.dataset.index);
-    const slots = this._slotsOf(entityId).map((slot) =>
-      slot.index === index ? change(slot) : slot,
-    );
-    this._writeSchedule(entityId, slots);
-  }
-
-  _removeSlot(slotNode) {
-    const entityId = slotNode.dataset.entity;
-    const index = Number(slotNode.dataset.index);
-    const slots = this._slotsOf(entityId).filter((slot) => slot.index !== index);
-    if (!slots.length) {
-      /* Scheduler needs at least one timeslot, so an empty day means the
-         entry itself goes rather than being left behind with nothing in it */
-      this._call('scheduler', 'remove', { entity_id: entityId });
-      return;
-    }
-    this._writeSchedule(entityId, slots);
-  }
-
-  /** Adds a change in the middle of the longest stretch of the day. */
-  _addSlot() {
-    const segments = this._model.days[this._day] || [];
-    const zones = this._config.zones || ZONE_KEYS;
-
-    if (!segments.length) {
-      this._call('scheduler', 'add', {
-        weekdays: [this._day],
-        repeat_type: 'repeat',
-        timeslots: this._timeslots([{ minutes: 7 * 60, zone: zones[0] }]),
+      this._hass.callService('input_number', 'set_value', {
+        entity_id: target.dataset.entity,
+        value,
       });
       return;
     }
 
-    const longest = segments.reduce((best, segment) =>
+    if (action === 'band-from' || action === 'band-to') {
+      const index = Number(target.closest('.slot').dataset.index);
+      this._editBand(index, action === 'band-from' ? { from: toStored(target.value) } : { to: toStored(target.value) });
+    }
+  }
+
+  _week() {
+    return { ...EMPTY_WEEK, ...(this._blocks || {}) };
+  }
+
+  /**
+   * The helper refuses overlapping or inverted ranges, so the card keeps the
+   * day sorted and drops anything that would not survive the save.
+   */
+  _normalise(ranges) {
+    return [...ranges]
+      .filter((range) => clockToMinutes(range.to) > clockToMinutes(range.from))
+      .sort((a, b) => clockToMinutes(a.from) - clockToMinutes(b.from))
+      .filter((range, index, all) => index === 0 || clockToMinutes(all[index - 1].to) <= clockToMinutes(range.from));
+  }
+
+  _writeDay(day, ranges) {
+    const week = this._week();
+    week[day] = this._normalise(ranges);
+    this._save(week);
+  }
+
+  _editBand(index, change) {
+    const dayKey = DAY_KEYS[this._day];
+    const ranges = (this._week()[dayKey] || []).map((range, position) =>
+      position === index ? { ...range, ...change } : range,
+    );
+    this._writeDay(dayKey, ranges);
+  }
+
+  _removeBand(index) {
+    const dayKey = DAY_KEYS[this._day];
+    this._writeDay(
+      dayKey,
+      (this._week()[dayKey] || []).filter((range, position) => position !== index),
+    );
+  }
+
+  /** Puts a new comfort band in the longest stretch of night. */
+  _addBand() {
+    const dayKey = DAY_KEYS[this._day];
+    const ranges = this._week()[dayKey] || [];
+    const night = (this._model.days[this._day] || []).filter(
+      (segment) => segment.zone === this._model.zoneOff,
+    );
+    if (!night.length) return;
+
+    const longest = night.reduce((best, segment) =>
       segment.end - segment.start > best.end - best.start ? segment : best,
     );
-    const middle = Math.round((longest.start + longest.end) / 2 / 5) * 5;
-    const slots = [
-      ...this._slotsOf(longest.entity_id),
-      { index: -1, minutes: middle, zone: zones[0] },
-    ];
-    this._writeSchedule(longest.entity_id, slots);
+    const span = longest.end - longest.start;
+    const from = longest.start + Math.max(0, Math.round((span / 3) / 15) * 15);
+    const to = Math.min(1440, from + Math.max(60, Math.round((span / 3) / 15) * 15));
+    if (to <= from) return;
+
+    this._writeDay(dayKey, [
+      ...ranges,
+      { from: `${minutesToClock(from)}:00`, to: to === 1440 ? '24:00:00' : `${minutesToClock(to)}:00` },
+    ]);
   }
 
-  _writeSchedule(entityId, slots) {
-    this._haptic('light');
-    this._call('scheduler', 'edit', {
-      entity_id: entityId,
-      timeslots: this._timeslots(slots),
-    });
-  }
-
-  /** Copies the selected day onto the ticked days, entry by entry. */
   _applyCopy() {
     const boxes = [...this._sections.copy.querySelectorAll('[data-copy]')];
     const targets = boxes.filter((box) => box.checked).map((box) => box.dataset.copy);
-    const segments = this._model.days[this._day] || [];
-    if (!targets.length || !segments.length) {
-      this._copyOpen = false;
+    this._copyOpen = false;
+    if (!targets.length) {
       this._render();
       return;
     }
-
-    const timeslots = this._timeslots(
-      segments.map((segment) => ({ minutes: segment.start, zone: segment.zone })),
-    );
-
-    for (const day of targets) {
-      const existing = (this._model.days[day] || [])[0];
-      if (existing) {
-        this._call('scheduler', 'edit', { entity_id: existing.entity_id, timeslots });
-      } else {
-        this._call('scheduler', 'add', { weekdays: [day], repeat_type: 'repeat', timeslots });
-      }
-    }
-    this._copyOpen = false;
-    this._render();
-  }
-
-  _call(domain, service, data) {
-    this._hass?.callService?.(domain, service, data);
-  }
-
-  _haptic(kind) {
-    this.dispatchEvent(new CustomEvent('haptic', { bubbles: true, composed: true, detail: kind }));
+    const week = this._week();
+    const source = week[DAY_KEYS[this._day]] || [];
+    for (const day of targets) week[DAY_KEYS[day]] = source.map((range) => ({ ...range }));
+    this._save(week);
   }
 }
 
@@ -519,7 +570,7 @@ export function registerScheduleCard() {
   window.customCards.push({
     type: SCHEDULE_CARD_NAME,
     name: 'Fűtés – ütemterv',
-    description: 'Heti zóna-ütemterv színes idővonallal, szakaszok szerkesztésével és zónánkénti hőmérséklet-táblázattal, fűtésre és hűtésre külön.',
+    description: 'Heti ütemterv színes idővonallal a Home Assistant beépített schedule helpere fölött, komfort sávok szerkesztésével és zónánkénti hőmérséklet-táblázattal, fűtésre és hűtésre.',
     preview: true,
     documentationURL: 'https://github.com/gabor-io/ha-appliance-custom-card',
   });

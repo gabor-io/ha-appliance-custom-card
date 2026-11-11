@@ -8,14 +8,19 @@
  */
 
 import {
+  COMFORT_LEVELS,
   COOLING_FROM,
   COOLING_TO,
+  LEARNED_SOURCES,
   ROOM_ACTIVE,
   ROOM_SUGGESTION,
+  SCHEDULE_ZONES,
   SOURCES,
+  TEMP_MAX,
+  TEMP_MIN,
+  TEMP_STEP,
   WEEKDAYS,
   WINDOW_STATES,
-  ZONE_KEYS,
 } from './const.js';
 import {
   houseEntities,
@@ -35,6 +40,41 @@ import {
 export const DEFAULT_HEATING_VALUE = 34.92;
 
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+/** `1793577484|18.2|klima|20.5|fel` -> what the card can show about it. */
+export function parseLearning(raw) {
+  const [started, from, source, target, direction] = String(raw).split('|');
+  const startedAt = Number(started);
+  return {
+    raw,
+    startedAt: Number.isFinite(startedAt) ? new Date(startedAt * 1000) : null,
+    from: Number(from),
+    source: source || null,
+    target: Number(target),
+    up: direction !== 'le',
+  };
+}
+
+/**
+ * How the room feels: a degree figure and a word.
+ *
+ * The word can carry a humidity note after a separator (`Meleg · párás`), so
+ * the first part decides the colour and the whole string is shown as written.
+ */
+export function comfortOf(hass, config, key) {
+  if (!key) return null;
+  const feltId = `${config?.felt_prefix || 'sensor.hoerzet'}_${key}`;
+  const wordId = `${config?.comfort_prefix || 'sensor.komfort'}_${key}`;
+  const felt = num(hass, feltId);
+  const word = stateOf(hass, wordId);
+  if (felt === null && (!word || isUnavailable(word))) return null;
+  const head = String(word || '').split('·')[0].trim().toLowerCase();
+  return {
+    felt,
+    text: isUnavailable(word) ? null : word,
+    level: COMFORT_LEVELS[head] || null,
+  };
+}
 
 /* ------------------------------- house ------------------------------- */
 
@@ -137,6 +177,8 @@ export function buildHouseModel(hass, config) {
       stale: isOn(hass, ids.stale),
     },
     flags: {
+      automation: stateObj(hass, ids.automation) ? isOn(hass, ids.automation) : null,
+      automationEntity: ids.automation,
       boiler: stateObj(hass, ids.boiler) ? isOn(hass, ids.boiler) : null,
       ervLock: stateObj(hass, ids.erv_lock) ? isOn(hass, ids.erv_lock) : null,
     },
@@ -177,14 +219,67 @@ export function buildRoomsModel(hass, config) {
       name: part.name,
       value: num(hass, part.entity),
       excluded: isOn(hass, part.excluded),
+      comfort: comfortOf(hass, config, part.comfortKey),
     }));
+
+    /**
+     * The room thermostat.
+     *
+     * These are template `climate` entities the heating logic publishes for
+     * exactly this purpose - they are not the Daikin or Netatmo hardware,
+     * which the card still never touches. When a room has one it is the
+     * control, and the helpers behind it are only read.
+     */
+    const climate = ids.climate ? stateObj(hass, ids.climate) : null;
+    const climateTarget = climate?.attributes?.temperature;
+    const climateTemp = climate?.attributes?.current_temperature;
+
+    const target = room.readonly
+      ? null
+      : climateTarget !== undefined && climateTarget !== null
+        ? Number(climateTarget)
+        : (num(hass, ids.target_number) ?? num(hass, ids.target));
+
+    const temperature = num(hass, ids.temperature) ?? (climateTemp ?? null);
+
+    /* "tanul…": the learning helper holds `unix|start°C|source|target|up`
+       while a measurement is running, and is empty the rest of the time */
+    const learningRaw = stateOf(hass, ids.learning);
+    const learning =
+      learningRaw && !isUnavailable(learningRaw) && learningRaw.trim() !== ''
+        ? parseLearning(learningRaw)
+        : null;
+
+    const learned = {};
+    for (const source of LEARNED_SOURCES) {
+      learned[source] = num(hass, room.learnedIds?.[source]);
+    }
 
     return {
       key: room.key,
       name: room.name,
       readonly: room.readonly,
-      temperature: num(hass, ids.temperature),
-      target: room.readonly ? null : num(hass, ids.target),
+      temperature,
+      target,
+      climate: climate
+        ? {
+            entity: ids.climate,
+            mode: climate.state,
+            modes: climate.attributes?.hvac_modes || [],
+            step: climate.attributes?.target_temp_step || TEMP_STEP,
+            min: climate.attributes?.min_temp ?? TEMP_MIN,
+            max: climate.attributes?.max_temp ?? TEMP_MAX,
+            action: climate.attributes?.hvac_action || null,
+          }
+        : null,
+      mode: {
+        value: stateOf(hass, ids.mode),
+        options: optionsOf(hass, ids.mode),
+        entity: ids.mode,
+      },
+      learning,
+      learned,
+      comfort: comfortOf(hass, config, room.comfortKey),
       active: active ? { key: activeKey, ...active } : null,
       suggestion: suggestion
         ? {
@@ -242,100 +337,107 @@ export function openWindows(rooms, minimumMinutes) {
 
 const pad = (value) => String(value).padStart(2, '0');
 
-/** `"06:45:00"` or `"06:45:00 - 21:30:00"` -> minutes from midnight. */
-function startMinutes(slot) {
-  const [hours, minutes] = String(slot).split('-')[0].trim().split(':');
-  return Number(hours) * 60 + Number(minutes);
-}
-
 export function minutesToClock(minutes) {
   const total = ((Math.round(minutes) % 1440) + 1440) % 1440;
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 }
 
-/**
- * Reads the Scheduler entities that drive the zone selector.
- *
- * Verified against scheduler-component 3.3.9: a `switch.schedule_*` entity
- * carries `weekdays`, `timeslots` (strings, `"HH:MM:SS"` or `"from - to"`),
- * `entities` (what the actions target) and `actions` (one `{service,
- * service_data}` per timeslot, with the target stripped out). So the zone of
- * a segment is `actions[i].service_data.option`, and a schedule belongs to
- * this card only when its `entities` include the zone selector.
- */
-export function buildScheduleModel(hass, config) {
-  const ids = houseEntities(config);
-  const zoneSelect = config?.zone_select || ids.zone_select;
+/** Monday-first weekday keys as the Home Assistant schedule helper spells them. */
+export const DAY_KEYS = {
+  mon: 'monday',
+  tue: 'tuesday',
+  wed: 'wednesday',
+  thu: 'thursday',
+  fri: 'friday',
+  sat: 'saturday',
+  sun: 'sunday',
+};
 
-  const schedules = Object.values(hass?.states || {})
-    .filter((obj) => obj.entity_id.startsWith('switch.schedule_'))
-    .filter((obj) => (obj.attributes?.entities || []).includes(zoneSelect))
-    .map((obj) => {
-      const slots = obj.attributes?.timeslots || [];
-      const actions = obj.attributes?.actions || [];
-      return {
-        entity_id: obj.entity_id,
-        name: obj.attributes?.friendly_name || obj.entity_id,
-        enabled: obj.state !== 'off',
-        weekdays: obj.attributes?.weekdays || ['daily'],
-        currentSlot: obj.attributes?.current_slot ?? null,
-        slots: slots.map((slot, index) => ({
-          index,
-          minutes: startMinutes(slot),
-          zone: actions[index]?.service_data?.option || null,
-        })),
-      };
-    });
+/** `"21:30:00"` -> 1290; `"24:00:00"` -> 1440. */
+export function clockToMinutes(value) {
+  const [hours, minutes] = String(value).split(':');
+  const total = Number(hours) * 60 + Number(minutes || 0);
+  return Number.isFinite(total) ? total : null;
+}
+
+/**
+ * Turns a day's comfort bands into a full 24 hour strip.
+ *
+ * The schedule helper stores only the "on" ranges, so everything between
+ * them is the night band. Drawing the gaps as well is what makes the strip
+ * readable: a day is never partly undefined.
+ */
+export function segmentsForDay(ranges, zoneOn, zoneOff) {
+  const bands = (ranges || [])
+    .map((range) => ({
+      start: clockToMinutes(range.from),
+      end: clockToMinutes(range.to),
+    }))
+    .filter((band) => band.start !== null && band.end !== null && band.end > band.start)
+    .sort((a, b) => a.start - b.start);
+
+  const segments = [];
+  let cursor = 0;
+  bands.forEach((band, index) => {
+    if (band.start > cursor) {
+      segments.push({ start: cursor, end: band.start, zone: zoneOff, index: null });
+    }
+    segments.push({ start: band.start, end: band.end, zone: zoneOn, index });
+    cursor = band.end;
+  });
+  if (cursor < 1440) segments.push({ start: cursor, end: 1440, zone: zoneOff, index: null });
+  return segments;
+}
+
+/**
+ * The weekly plan, read from a built-in Home Assistant schedule helper.
+ *
+ * The entity itself only says on or off right now and when the next change
+ * falls (`next_event`); the weekly blocks live in the helper's storage
+ * collection, which the card fetches over the websocket (`schedule/list`)
+ * and writes back with `schedule/update`. Verified against the schedule
+ * integration: a day is a list of `{from, to}` ranges, sorted, without
+ * overlap, and `24:00:00` is allowed as an end.
+ */
+export function buildScheduleModel(hass, config, blocks) {
+  const ids = houseEntities(config);
+  const entityId = config?.schedule_entity || ids.schedule;
+  const obj = stateObj(hass, entityId);
+
+  const zoneOn = config?.zone_on || SCHEDULE_ZONES[0];
+  const zoneOff = config?.zone_off || SCHEDULE_ZONES[1];
 
   const days = {};
   for (const day of WEEKDAYS) {
-    const forDay = schedules.filter(
-      (schedule) =>
-        schedule.weekdays.includes('daily') ||
-        schedule.weekdays.includes(day) ||
-        (schedule.weekdays.includes('workday') && !['sat', 'sun'].includes(day)) ||
-        (schedule.weekdays.includes('weekend') && ['sat', 'sun'].includes(day)),
-    );
-
-    const segments = forDay
-      .flatMap((schedule) =>
-        schedule.slots
-          .filter((slot) => slot.zone)
-          .map((slot) => ({ ...slot, entity_id: schedule.entity_id })),
-      )
-      .sort((a, b) => a.minutes - b.minutes)
-      .map((segment, index, all) => ({
-        ...segment,
-        start: segment.minutes,
-        end: index + 1 < all.length ? all[index + 1].minutes : 1440,
-      }))
-      .filter((segment) => segment.end > segment.start);
-
-    days[day] = segments;
+    days[day] = segmentsForDay(blocks?.[DAY_KEYS[day]], zoneOn, zoneOff);
   }
 
-  const zoneNow = stateOf(hass, zoneSelect) || null;
-  const next = nextChange(days, new Date());
+  const nextEventRaw = obj?.attributes?.next_event;
+  const nextEvent = nextEventRaw ? new Date(nextEventRaw) : null;
 
   return {
-    ok: schedules.length > 0,
-    reason: schedules.length ? null : 'no_schedule',
-    zoneSelect,
-    schedules,
+    ok: Boolean(obj) && Boolean(blocks),
+    reason: obj ? (blocks ? null : 'loading') : 'no_schedule',
+    entityId,
+    zoneOn,
+    zoneOff,
+    zones: config?.zones || SCHEDULE_ZONES,
+    /* on means the comfort band is running right now */
+    zoneNow: obj ? (obj.state === 'on' ? zoneOn : zoneOff) : null,
+    nextEvent: nextEvent && Number.isFinite(nextEvent.getTime()) ? nextEvent : null,
     days,
-    zoneNow,
-    next,
+    blocks: blocks || null,
   };
 }
 
-/** The first segment that starts after now, looking into tomorrow if needed. */
+/** The first band boundary after now, looking into tomorrow if needed. */
 export function nextChange(days, now) {
   const todayIndex = (now.getDay() + 6) % 7; // Monday first
   const minutes = now.getHours() * 60 + now.getMinutes();
   for (let offset = 0; offset < 8; offset += 1) {
     const day = WEEKDAYS[(todayIndex + offset) % 7];
-    const segments = days[day] || [];
-    for (const segment of segments) {
+    for (const segment of days[day] || []) {
+      if (segment.start === 0 && offset === 0) continue;
       if (offset > 0 || segment.start > minutes) {
         return { day, offset, start: segment.start, zone: segment.zone };
       }
@@ -347,7 +449,7 @@ export function nextChange(days, now) {
 /** The zone setpoints of one season, as `{ zone: { room: value } }`. */
 export function buildZoneTable(hass, config, season, rooms) {
   const table = {};
-  for (const zone of config?.zones || ZONE_KEYS) {
+  for (const zone of config?.zones || SCHEDULE_ZONES) {
     table[zone] = {};
     for (const room of rooms) {
       const entity = zoneTempEntity(config, season, zone, room.key);

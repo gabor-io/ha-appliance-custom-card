@@ -8,7 +8,7 @@
  * from the card config, which lives in the household's own dashboard.
  */
 
-import { HOUSE_ENTITIES, ROOM_SUFFIXES } from './const.js';
+import { HOUSE_ENTITIES, LEARNED_SOURCES, ROOM_SUFFIXES } from './const.js';
 
 export const DEFAULT_PREFIX = 'futes';
 
@@ -40,22 +40,41 @@ export function listRooms(config) {
         if (!suffix) continue;
         ids[role] = build(domain, prefix, key, suffix);
       }
-      /* the pre-heat sensor names the function before the room, so it reads
-         as one series across the house rather than as a room's own sensor */
+      /* these name the function before the room, so they read as one series
+         across the house rather than as each room's own sensor */
       ids.preheat = `sensor.${prefix}_elofutes_${key}`;
+      ids.learning = `input_text.${prefix}_tanulas_${key}`;
+
+      /* the room's own thermostat - a template climate entity the heating
+         logic publishes. There is no naming rule for it, so it comes from
+         the config; without one the card falls back to the helpers. */
+      if (room.climate) ids.climate = room.climate;
 
       const parts = (room.parts || []).map((part) => ({
         key: part.key,
         name: part.name || part.key,
+        comfortKey: part.comfort_key || part.key,
         entity: part.entity || build('sensor', prefix, key, part.key),
         /* a part can be left out of the zone value for a while - the kitchen
            while someone is cooking - and says so with its own flag */
         excluded: part.excluded || build('binary_sensor', prefix, key, `${part.key}_kizarva`),
       }));
 
+      /* the learned heat-up rate per source, °C/h */
+      const learned = {};
+      for (const source of LEARNED_SOURCES) {
+        learned[source] = room.learned?.[source] || `input_number.${prefix}_tanult_${key}_${source}`;
+      }
+
+      /* the comfort sensors are keyed by place, and a zone's parts have
+         their own - so the key is configurable and defaults to the room's */
+      const comfortKey = room.comfort_key || key;
+
       return {
         key,
         name: room.name || key,
+        comfortKey,
+        learnedIds: learned,
         readonly: Boolean(room.readonly),
         parts,
         entities: { ...ids, ...(room.entities || {}) },
