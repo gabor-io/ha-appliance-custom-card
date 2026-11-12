@@ -57,6 +57,10 @@ export class HeatingRoomsCard extends HTMLElement {
   setConfig(config) {
     this._config = { ...ROOMS_DEFAULTS, ...(config || {}) };
     this._signatures = {};
+    /* a new config can name different entities, so the fetched history is
+       stale by definition */
+    this._history = {};
+    this._historyAt = 0;
     if (this._hass) this._render();
   }
 
@@ -111,15 +115,26 @@ export class HeatingRoomsCard extends HTMLElement {
     this._historyLoading = true;
     try {
       const start = new Date(Date.now() - HISTORY_HOURS * 3600 * 1000).toISOString();
-      const result = await this._hass.callWS({
-        type: 'history/history_during_period',
-        start_time: start,
-        entity_ids: wanted,
-        minimal_response: !wanted.some((id) => id.startsWith('climate.')),
-        no_attributes: !wanted.some((id) => id.startsWith('climate.')),
-        significant_changes_only: false,
-      });
-      this._history = result || {};
+      const plain = wanted.filter((id) => !id.startsWith('climate.'));
+      const thermostats = wanted.filter((id) => id.startsWith('climate.'));
+
+      /* Two requests rather than one: a thermostat only carries its measured
+         value in its attributes, and asking for attributes is far heavier -
+         so the plain sensors are fetched without them. */
+      const ask = (ids, withAttributes) =>
+        ids.length
+          ? this._hass.callWS({
+              type: 'history/history_during_period',
+              start_time: start,
+              entity_ids: ids,
+              minimal_response: !withAttributes,
+              no_attributes: !withAttributes,
+              significant_changes_only: false,
+            })
+          : Promise.resolve({});
+
+      const [light, rich] = await Promise.all([ask(plain, false), ask(thermostats, true)]);
+      this._history = { ...(light || {}), ...(rich || {}) };
       this._historyAt = Date.now();
       this._signatures = {};
       this._render();
@@ -138,10 +153,15 @@ export class HeatingRoomsCard extends HTMLElement {
     const read = (entityId, climate) => {
       const rows = this._history?.[entityId];
       if (!Array.isArray(rows)) return [];
+      let carried = null;
       return rows
         .map((row) => {
-          const raw = climate ? row.a?.current_temperature : row.s;
-          const value = Number(raw);
+          /* a compressed row repeats attributes only when they change, so a
+             missing one means "unchanged", not "no reading" */
+          if (climate && row.a?.current_temperature !== undefined) {
+            carried = Number(row.a.current_temperature);
+          }
+          const value = climate ? carried : Number(row.s);
           const time = Number(row.lu ?? row.lc);
           return Number.isFinite(value) && Number.isFinite(time) ? { t: time, v: value } : null;
         })
@@ -276,11 +296,23 @@ export class HeatingRoomsCard extends HTMLElement {
   _act(ev) {
     const target = ev.target.closest('[data-action]');
     if (!target || target.hasAttribute('disabled')) return;
-    /* a zone setpoint belongs to a zone, not to a room, so it names its own
-       entity and needs no room lookup */
-    const room = target.dataset.action === 'zone-step'
-      ? this._rooms?.[0]
-      : this._room(target.dataset.room);
+
+    /* a zone setpoint names its own entity and belongs to no room, so it is
+       handled without a room lookup - in a list card the first room is not
+       necessarily the one whose row the button sits in */
+    if (target.dataset.action === 'zone-step') {
+      const changed = applyRoomAction({
+        hass: this._hass,
+        config: this._config,
+        room: null,
+        action: 'zone-step',
+        target,
+      });
+      if (changed) this._haptic('light');
+      return;
+    }
+
+    const room = this._room(target.dataset.room);
     if (!room) return;
     const changed = applyRoomAction({
       hass: this._hass,

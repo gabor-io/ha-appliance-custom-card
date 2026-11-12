@@ -135,7 +135,7 @@ export const HouseHeatingCardEditor = createEditor({
 
 export const HeatingRoomsCardEditor = createEditor({
   cardName: ROOMS_CARD_NAME,
-  toggles: ['show_controls', 'show_parts', 'show_boost', 'show_history', 'compact', 'animate'],
+  toggles: ['show_controls', 'show_parts', 'show_boost', 'show_history', 'show_zones', 'compact', 'animate'],
   defaults: ROOMS_DEFAULTS,
 });
 

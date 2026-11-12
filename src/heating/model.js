@@ -326,9 +326,15 @@ export function buildRoomsModel(hass, config) {
       ),
       humidity: num(hass, ids.humidity),
       lagging: isOn(hass, ids.lagging),
-      /* the sparkline charts the first of these that exists */
-      historyEntity: ids.history || ids.temperature || ids.climate || null,
-      targetEntity: ids.target_number || null,
+      /* The sparkline charts the first of these that REALLY exists.
+         The id built from the naming rule is just a string: a room without
+         its own temperature sensor still produced one, so the chart asked
+         the recorder about an entity that was never there and silently drew
+         nothing instead of falling back to the thermostat. */
+      historyEntity: [ids.history, ids.temperature, ids.climate].find(
+        (id) => id && stateObj(hass, id),
+      ) || null,
+      targetEntity: [ids.target_number, ids.target].find((id) => id && stateObj(hass, id)) || null,
       boost: room.boost,
       /* a room can follow its own weekly plan; the entity's state and
          next_event are enough for the row - the weekly blocks are only

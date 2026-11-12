@@ -100,8 +100,12 @@ export function sparklineHtml(series, { t, hass }) {
   const to = points[points.length - 1].t;
   const width = Math.max(1, to - from);
 
-  const x = (time) => ((time - from) / width) * 100;
-  const y = (value) => 28 - ((value - min) / span) * 24;
+  /* The target's history can start before the measured one - a setpoint that
+     has not moved for days has its last change outside the window - so both
+     axes are clamped; without it the step line drew outside the chart. */
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+  const x = (time) => clamp(((time - from) / width) * 100, 0, 100);
+  const y = (value) => clamp(28 - ((value - min) / span) * 24, 2, 28);
 
   const line = points.map((point, index) => `${index ? 'L' : 'M'}${x(point.t).toFixed(2)},${y(point.v).toFixed(2)}`).join('');
   /* the target only ever changes in steps, so it is drawn as one */

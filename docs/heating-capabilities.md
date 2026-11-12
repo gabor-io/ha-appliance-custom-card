@@ -147,11 +147,16 @@ A szobakártya kirajzolja az elmúlt napot: a vonal a mért hőmérséklet, a
 szaggatott lépcső a cél. A kettő közti rés maga a hőingadozás.
 
 Az előzmény nincs az állapotgépben, ezért a kártya websocketen kéri le
-(`history/history_during_period`), negyedóránként egyszer. Amit kirajzol,
-ebben a sorrendben: `rooms[].history`, ha meg van adva; különben a mért
-hőmérséklet szenzora; és ha az sincs, maga a termosztát – olyankor a kártya
-az attribútumokat is elkéri, mert ott a mért érték a
-`current_temperature`. A célt a `input_number.<prefix>_<szoba>_cel`
+(`history/history_during_period`), negyedóránként egyszer. Amit kirajzol, ebben a
+sorrendben, az **elsőt, ami tényleg létezik**: `rooms[].history`; a mért
+hőmérséklet szenzora; végül maga a termosztát – olyankor a kártya az
+attribútumokat is elkéri, mert ott a mért érték a `current_temperature`.
+A „tényleg létezik" lényeges: a névszabályból képzett azonosító akkor is
+létrejön, ha olyan entitás nincs, és a kártya korábban ezért kérdezett rá
+egy nem létező szenzorra ahelyett, hogy a termosztátra esett volna vissza.
+
+A két lekérdezés külön megy: a sima szenzorok attribútumok nélkül (sokkal
+olcsóbb), a termosztátok attribútumostul. A célt a `input_number.<prefix>_<szoba>_cel`
 előzményéből veszi.
 
 Recorder nélkül, vagy ha a felhasználónak nincs joga az előzményhez, a
