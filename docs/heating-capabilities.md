@@ -108,6 +108,15 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
 | tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
 | szelep-eltolás | `input_number.<prefix>_szelep_eltolas_<szoba>` (°C) |
+| klíma COP | nincs alapértelmezés (`rooms[].entities.cop`) |
+| klímás hő ára | nincs alapértelmezés (`rooms[].entities.heat_cost`) |
+| klíma nem hatékony | nincs alapértelmezés (`rooms[].entities.inefficient`) |
+
+Egy házban több gép lehet, és ugyanabban az időjárásban **nem egyforma a
+COP-juk** – egy kisebb egység rosszabbul teljesít. Ezért a három
+klíma-szerep szobánként is megadható, és több szoba nyugodtan mutathat
+ugyanarra a szenzorra. Ahol nincs megadva, ott nem jelenik meg semmi (a
+fürdőben nincs klíma, ott nincs is mit írni).
 | páratartalom | nincs névszabály – `rooms[].humidity`, részpontnál `parts[].humidity` |
 | hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
 | komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
@@ -320,6 +329,7 @@ kártyán alapértelmezés, és a `show_zones` kapcsolóval állítható.
 | `rooms[].entities.trend` | `sensor.<prefix>_trend_<szoba>` | a hőtrend szenzora |
 | `rooms[].entities.lagging` | `binary_sensor.<prefix>_<szoba>_elmarad` | „a klíma nem bírja" jelzés |
 | `rooms[].humidity` | – | a szoba páraszenzora |
+| `rooms[].entities.cop` / `heat_cost` / `inefficient` | – | a szobát fűtő klíma hatékonysága |
 | `rooms[].history` | a mért hőmérséklet, majd a termosztát | amit a 24 órás görbe rajzol |
 | `show_history` | egy szobánál igen | 24 órás görbe a szobakártyán |
 | `show_zones` (szobakártya) | egy szobánál igen | a szoba saját zónaértékei |

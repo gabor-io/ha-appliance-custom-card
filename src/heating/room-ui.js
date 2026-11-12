@@ -30,6 +30,9 @@ function tagsHtml(room, { t }) {
       `<span class="tag warn">${icon(room.window.icon)}${escapeHtml(t(`window.${room.window.state}`))}${escapeHtml(minutes)}</span>`,
     );
   }
+  if (room.efficiency?.inefficient) {
+    tags.push(`<span class="tag warn">${icon('ac')}${escapeHtml(t('ui.inefficient_short'))}</span>`);
+  }
   tags.push(learningHtml(room, { t }));
   return tags.filter(Boolean).join('');
 }
@@ -55,6 +58,22 @@ export function learningHtml(room, { t }) {
     target: room.learning.target,
   });
   return `<span class="tag idle" title="${escapeHtml(detail)}">${icon('timer')}${escapeHtml(t('ui.learning'))}</span>`;
+}
+
+/** What this room's heat pump is worth right now. */
+export function efficiencyHtml(room, { t, hass }) {
+  const efficiency = room.efficiency;
+  if (!efficiency) return '';
+  const parts = [
+    efficiency.cop === null || efficiency.cop === undefined
+      ? null
+      : fill(t('ui.cop'), { value: formatDecimal(efficiency.cop, hass, 1) }),
+    efficiency.cost === null || efficiency.cost === undefined
+      ? null
+      : `${formatDecimal(efficiency.cost, hass, 1)} ${efficiency.costUnit || t('ui.cost_unit')}`,
+  ].filter(Boolean);
+  if (!parts.length) return '';
+  return `<div class="note">${icon('gauge')} ${escapeHtml(parts.join(' · '))}</div>`;
 }
 
 /** The learned heat-up rates, one line in the detail view. */
@@ -400,6 +419,7 @@ export function roomRowHtml(room, options) {
       ${trendHtml(room, options)}
       ${options.series ? sparklineHtml(options.series, options) : ''}
       ${notesHtml(room, options)}
+      ${efficiencyHtml(room, options)}
       ${learnedHtml(room, options)}
       ${showControls ? controlsHtml(room, options) : ''}
       ${options.zones ? zoneSetpointsHtml(room, options) : ''}
@@ -467,7 +487,7 @@ export function compactRowHtml(room, options) {
         <span class="quick">${stepButtonsHtml(room, options)}</span>
         ${icon(expanded ? 'chevron_up' : 'chevron')}
       </div>
-      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${trendHtml(room, options)}${notesHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
+      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${trendHtml(room, options)}${notesHtml(room, options)}${efficiencyHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
     </div>`;
 }
 

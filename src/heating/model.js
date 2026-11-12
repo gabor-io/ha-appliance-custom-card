@@ -325,6 +325,15 @@ export function buildRoomsModel(hass, config) {
       learning,
       learned,
       valveOffset: num(hass, ids.offset),
+      /* A room's heat pump is not always the house's: a smaller unit in one
+         bedroom has its own COP at the same outdoor temperature. These have
+         no naming rule, so they only exist when the config names them. */
+      efficiency: {
+        cop: num(hass, ids.cop),
+        cost: num(hass, ids.heat_cost),
+        costUnit: stateObj(hass, ids.heat_cost)?.attributes?.unit_of_measurement || null,
+        inefficient: stateObj(hass, ids.inefficient) ? isOn(hass, ids.inefficient) : null,
+      },
       /* the infrared panel reacts faster than a radiator, so a room it heats
          is judged by tighter bands - the logic does the same */
       trend: trendOf(

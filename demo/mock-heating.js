@@ -38,9 +38,28 @@ export const ROOMS = [
     ],
   },
   /* boost only where there is something to boost */
-  { key: 'room_1', name: 'Háló 1', climate: 'climate.room_1', boost: true, humidity: 'sensor.room_1_humidity' },
+  {
+    key: 'room_1',
+    name: 'Háló 1',
+    climate: 'climate.room_1',
+    boost: true,
+    humidity: 'sensor.room_1_humidity',
+    entities: { cop: 'sensor.klima_cop', heat_cost: 'sensor.klima_hokoltseg' },
+  },
   { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2', boost: false, humidity: 'sensor.room_2_humidity' },
-  { key: 'room_3', name: 'Háló 3', climate: 'climate.room_3', boost: false, humidity: 'sensor.room_3_humidity' },
+  {
+    key: 'room_3',
+    name: 'Háló 3',
+    climate: 'climate.room_3',
+    boost: false,
+    humidity: 'sensor.room_3_humidity',
+    /* the smaller unit: same weather, lower COP */
+    entities: {
+      cop: 'sensor.klima_cop_kicsi',
+      heat_cost: 'sensor.klima_hokoltseg_kicsi',
+      inefficient: 'binary_sensor.klima_nem_hatekony',
+    },
+  },
   { key: 'hall', name: 'Előtér', readonly: true },
 ];
 
@@ -251,6 +270,12 @@ export function makeHass(seasonKey = 'futes') {
     entity('input_boolean.futes_automatika', 'on'),
     /* the heat pump's own economics, as the house calculates them */
     entity('sensor.klima_cop', season.cop, { state_class: 'measurement' }),
+    entity('sensor.klima_cop_kicsi', season.cop ? Number((season.cop - 0.7).toFixed(1)) : null, {
+      state_class: 'measurement',
+    }),
+    entity('sensor.klima_hokoltseg_kicsi', season.cop ? Number((70 / (season.cop - 0.7)).toFixed(1)) : null, {
+      unit_of_measurement: 'Ft/kWh',
+    }),
     entity('sensor.klima_hokoltseg', season.cop ? Number((70 / season.cop).toFixed(1)) : null, {
       unit_of_measurement: 'Ft/kWh',
     }),
