@@ -151,6 +151,8 @@ const FAMILY_STYLES = `
 .room .parts .out { text-decoration: line-through; opacity: .7; }
 .room .note { font-size: .74rem; color: var(--ap-muted); }
 .room .note.trend { display: flex; align-items: center; gap: 5px; }
+.note.bad { display: flex; align-items: center; gap: 6px; color: var(--ht-bad); }
+.note.bad .icon { width: 15px; height: 15px; }
 .room .note.trend .icon { width: 14px; height: 14px; }
 .room .controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .step-btn {

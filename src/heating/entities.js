@@ -45,6 +45,9 @@ export function listRooms(config) {
       ids.preheat = `sensor.${prefix}_elofutes_${key}`;
       ids.learning = `input_text.${prefix}_tanulas_${key}`;
       ids.trend = `sensor.${prefix}_trend_${key}`;
+      /* what the logic learned about this radiator valve: how far its own
+         reading sits from the room's */
+      ids.offset = `input_number.${prefix}_szelep_eltolas_${key}`;
 
       /* humidity has no naming rule of its own - the sensors sit wherever
          the hardware put them - so it only exists when the config says so */

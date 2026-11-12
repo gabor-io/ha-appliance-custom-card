@@ -59,6 +59,9 @@ Mind felülírható a kártya `entities:` blokkjából; itt az alapértelmezés 
 | heti ütemterv | `schedule.futes_komfort` | on = komfort sáv, off = éjszaka |
 | kinti hőmérséklet | nincs alapértelmezés (`entities.outside`) | °C |
 | 3 napos kinti átlag | nincs alapértelmezés (`entities.outdoor_3day`) | °C |
+| klíma COP | nincs alapértelmezés (`entities.cop`) | szám |
+| klímás hő ára | nincs alapértelmezés (`entities.heat_cost`) | pl. Ft/kWh |
+| klíma nem hatékony | nincs alapértelmezés (`entities.inefficient`) | on/off |
 
 `auto` évszakban a hűtést a 3 napos kinti átlag dönti el, ezért a kártya az
 évszakváltó alatt ki is írja, ha meg van adva.
@@ -66,6 +69,12 @@ Mind felülírható a kártya `entities:` blokkjából; itt az alapértelmezés 
 **A napi ütem hiányozhat.** Amíg nincs elég leolvasás az ablakban, a
 `sensor.gaz_napi_utem` `unavailable`, ami nem ugyanaz, mint a nulla: a kártya
 ilyenkor „még nincs elég leolvasás" feliratot ír a szám helyére.
+
+A három klíma-entitás egy háztartás saját számítása (COP a kinti
+hőmérsékletből, abból a hő ára), ezért nincs rájuk alapértelmezett
+azonosító. Ha meg vannak adva, az aktív forrás alatt megjelenik egy sor
+(„Klíma COP 3,2 · 21,9 Ft/kWh"), és ha a „nem hatékony" jelző bekapcsol, a
+kártya figyelmeztet, hogy érdemes gázra váltani.
 
 ### Ami a kártyában számolódik
 
@@ -98,6 +107,7 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | hőtrend | `sensor.<prefix>_trend_<szoba>` (°C/óra) |
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
 | tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
+| szelep-eltolás | `input_number.<prefix>_szelep_eltolas_<szoba>` (°C) |
 | páratartalom | nincs névszabály – `rooms[].humidity`, részpontnál `parts[].humidity` |
 | hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
 | komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
@@ -140,6 +150,15 @@ Többhőmérős zóna (`parts:`) esetén még:
 
 Az ablak kora a `sensor.*_ablak` entitás `last_changed` idejéből jön, nem
 attribútumból: a HA ezt magától vezeti, és így nem lehet elcsúszni tőle.
+
+## A kézi óraállás
+
+A beviteli mező **szöveges**, nem szám típusú, és vesszőt is elfogad. Magyar
+billentyűzeten a tizedes gomb vesszőt ad; egy `type="number"` mező ettől
+érvénytelenné válik, és üres sztringként olvasható vissza – a leolvasás így
+csendben sehova nem jutott. A kártya most maga értelmezi, amit beírtak:
+levágja a szóközöket, a vesszőt pontra cseréli, és ha az eredmény nem szám,
+**kiírja a hibát** ahelyett, hogy nem csinálna semmit.
 
 ## 24 órás görbe
 

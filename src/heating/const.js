@@ -58,6 +58,11 @@ export const HOUSE_ENTITIES = {
   /* no sensible default: every house names its weather station differently */
   outside: null,
   outdoor_3day: null,
+  /* how well the heat pump is doing right now, and what its heat costs;
+     both are a household's own template sensors, so no default id */
+  cop: null,
+  heat_cost: null,
+  inefficient: null,
 };
 
 /**

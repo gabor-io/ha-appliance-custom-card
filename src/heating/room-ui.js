@@ -67,8 +67,19 @@ export function learnedHtml(room, { t, hass }) {
         value: formatDecimal(value, hass, 2),
       }),
     );
-  if (!parts.length) return '';
-  return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>`;
+  /* a radiator valve reads warmer or colder than the room; what the logic
+     learned about that belongs next to the rates it learned */
+  const offset =
+    room.valveOffset === null || room.valveOffset === undefined
+      ? ''
+      : `<div class="note">${escapeHtml(
+          fill(t('ui.valve_offset'), {
+            value: `${room.valveOffset > 0 ? '+' : ''}${formatDecimal(room.valveOffset, hass, 1)}`,
+          }),
+        )}</div>`;
+
+  if (!parts.length) return offset;
+  return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>${offset}`;
 }
 
 /** The air in the room, next to how warm it feels. */

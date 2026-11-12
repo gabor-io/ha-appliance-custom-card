@@ -212,6 +212,14 @@ export function buildHouseModel(hass, config) {
       lastRead: manualTime,
       stale: isOn(hass, ids.stale),
     },
+    /* the heat pump's own economics: below a certain outdoor temperature
+       its heat costs more than the boiler's, and that is worth saying */
+    efficiency: {
+      cop: num(hass, ids.cop),
+      cost: num(hass, ids.heat_cost),
+      costUnit: stateObj(hass, ids.heat_cost)?.attributes?.unit_of_measurement || null,
+      inefficient: stateObj(hass, ids.inefficient) ? isOn(hass, ids.inefficient) : null,
+    },
     flags: {
       automation: stateObj(hass, ids.automation) ? isOn(hass, ids.automation) : null,
       automationEntity: ids.automation,
@@ -316,6 +324,7 @@ export function buildRoomsModel(hass, config) {
       },
       learning,
       learned,
+      valveOffset: num(hass, ids.offset),
       /* the infrared panel reacts faster than a radiator, so a room it heats
          is judged by tighter bands - the logic does the same */
       trend: trendOf(

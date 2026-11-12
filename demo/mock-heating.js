@@ -67,6 +67,7 @@ export const SEASONS = {
       'A kazán ki van kapcsolva, a klíma fűt. A gáz a várható fűtési igény kb. 70%-át fedezné, javasolt: kazán be, hibrid üzem.',
     outside: 2,
     outdoor3: 3.4,
+    cop: 3.2,
     rooms: {
       bath: {
         temp: 21.8, target: 20.5, active: 'aeno', humidity: 58,
@@ -99,6 +100,7 @@ export const SEASONS = {
     reason: 'Három napja 20 °C fölött van a kinti átlag, a klíma hűt.',
     outside: 31,
     outdoor3: 24.8,
+    cop: 4.8,
     rooms: {
       bath: { temp: 26.2, target: 25.5, active: 'nincs', suggestion: 'ki', why: 'Nincs klíma a fürdőben, hűteni nem tud.' },
       living: { temp: 26.8, target: 25.5, active: 'klima_hutes', suggestion: 'hutes', why: 'Kint 31 °C, a klíma hűt.' },
@@ -118,6 +120,7 @@ export const SEASONS = {
     reason: 'Átmeneti idő: se fűtés, se hűtés nem indokolt.',
     outside: 16,
     outdoor3: 14.2,
+    cop: 4.1,
     /* the shoulder-season mock also shows the pace sensor before it has
        enough readings - a state the card has to say out loud */
     paceUnknown: true,
@@ -246,6 +249,14 @@ export function makeHass(seasonKey = 'futes') {
       editable: true,
     }),
     entity('input_boolean.futes_automatika', 'on'),
+    /* the heat pump's own economics, as the house calculates them */
+    entity('sensor.klima_cop', season.cop, { state_class: 'measurement' }),
+    entity('sensor.klima_hokoltseg', season.cop ? Number((70 / season.cop).toFixed(1)) : null, {
+      unit_of_measurement: 'Ft/kWh',
+    }),
+    entity('binary_sensor.klima_nem_hatekony', season.cop && season.cop < 2 ? 'on' : 'off', {
+      device_class: 'problem',
+    }),
   ]);
 
   /* --- zone setpoints, both seasons --- */
@@ -350,6 +361,11 @@ export function makeHass(seasonKey = 'futes') {
     /* only one room is fitted with the sensor that says the heat pump is
        losing ground; elsewhere the entity simply does not exist */
     if (room.key === 'room_1') put(`binary_sensor.futes_${room.key}_elmarad`, 'on');
+
+    /* what the logic learned about this room's radiator valve */
+    if (room.key === 'room_3') {
+      put(`input_number.futes_szelep_eltolas_${room.key}`, -1.5, { min: -4, max: 5, step: 0.1 });
+    }
 
     /* where the room is heading: a derivative helper, °C/hour */
     put(`sensor.futes_trend_${room.key}`, mock.trend ?? 0, {

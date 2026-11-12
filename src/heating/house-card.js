@@ -202,6 +202,12 @@ export class HouseHeatingCard extends HTMLElement {
       }
     }
 
+    if (model.efficiency.inefficient) {
+      alerts.push(
+        `<div class="alert">${icon('ac')}<span>${escapeHtml(t('ui.inefficient'))}</span></div>`,
+      );
+    }
+
     if (model.flags.boiler === false && ['gaz', 'hibrid'].includes(model.source.key)) {
       alerts.push(`<div class="alert">${icon('info')}<span>${escapeHtml(t('ui.boiler_off'))}</span></div>`);
     }
@@ -321,6 +327,16 @@ export class HouseHeatingCard extends HTMLElement {
     if (!model.source.key) return '';
     const label = t(`source.${model.source.key}`, t('source.unknown'));
     const why = model.source.reason ? `<div class="why">${escapeHtml(model.source.reason)}</div>` : '';
+
+    /* what the heat pump's heat is worth right now - only when the house
+       publishes the numbers, since they are its own calculation */
+    const { cop, cost, costUnit } = model.efficiency;
+    const economics = [
+      cop === null ? null : fill(t('ui.cop'), { value: formatDecimal(cop, this._hass, 1) }),
+      cost === null
+        ? null
+        : `${formatDecimal(cost, this._hass, 1)} ${costUnit || t('ui.cost_unit')}`,
+    ].filter(Boolean);
     return `
       <div class="section">
         <div class="section-title">${escapeHtml(this._sourceTitle(model, t))}</div>
@@ -329,6 +345,7 @@ export class HouseHeatingCard extends HTMLElement {
           <div>
             <div class="label">${escapeHtml(label)}</div>
             ${why}
+            ${economics.length ? `<div class="why">${icon('gauge')} ${escapeHtml(economics.join(' · '))}</div>` : ''}
           </div>
         </div>
       </div>`;
@@ -465,11 +482,18 @@ export class HouseHeatingCard extends HTMLElement {
         <div class="meter">
           <label class="field">
             <span>${escapeHtml(t('ui.meter_manual'))}</span>
-            <input type="number" inputmode="decimal" step="0.01" data-action="meter-input"
+            <!-- A number input is wrong here: on a Hungarian keyboard the
+                 decimal key types a comma, which makes the field invalid, and
+                 an invalid number input reads back as an empty string - so the
+                 reading silently never arrived. A text field keeps what was
+                 typed and the card does the parsing. -->
+            <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"
+              data-action="meter-input" autocomplete="off"
               placeholder="${escapeHtml(formatDecimal(meter.manual ?? meter.value, this._hass, 2))}">
           </label>
           <button class="btn primary" type="button" data-action="meter-save">${icon('check')}<span>${escapeHtml(t('ui.meter_save'))}</span></button>
         </div>
+        ${this._meterError ? `<div class="note bad">${icon('alert')} ${escapeHtml(t('ui.meter_invalid'))}</div>` : ''}
         ${last}
       </div>`;
   }
@@ -495,6 +519,10 @@ export class HouseHeatingCard extends HTMLElement {
       input.dataset.bound = '1';
       input.addEventListener('input', () => {
         this._meterDraft = input.value;
+        if (this._meterError) {
+          this._meterError = false;
+          this._render();
+        }
       });
     }
   }
@@ -586,18 +614,43 @@ export class HouseHeatingCard extends HTMLElement {
     this._select(this._model.entities.season_select, value);
   }
 
+  /**
+   * Reads what was typed, in whichever way it was typed.
+   *
+   * A Hungarian keyboard writes `24781,42`, and a thousands separator or a
+   * stray space is just as likely from a phone. Anything that is not a
+   * number says so on the card: a reading that quietly goes nowhere is worse
+   * than one that is refused.
+   */
   _saveMeter() {
     const input = this._sections.meter?.querySelector('[data-action="meter-input"]');
-    const raw = input?.value;
-    const value = Number(raw);
-    if (raw === undefined || raw === '' || !Number.isFinite(value)) return;
+    const raw = input?.value ?? '';
+    const cleaned = String(raw).trim().replace(/\s|\u00a0/g, '').replace(',', '.');
+    const value = Number(cleaned);
+
+    if (cleaned === '' || !Number.isFinite(value)) {
+      this._meterError = true;
+      this._render();
+      return;
+    }
+
+    /* The draft is dropped BEFORE the service call, and the field is cleared
+       from a fresh lookup afterwards. Setting the helper changes this very
+       section's placeholder, so the state update that follows re-renders it
+       and hands back a new input element - clearing the captured one would
+       be clearing a node that is no longer on screen. */
+    this._meterError = false;
+    this._meterDraft = '';
     this._haptic('medium');
     this._call('input_number', 'set_value', {
       entity_id: this._model.entities.manual,
-      value,
+      /* the helper's own step is finer than the meter's dial; rounding here
+         keeps float noise out of the stored reading */
+      value: Math.round(value * 1000) / 1000,
     });
-    this._meterDraft = '';
-    if (input) input.value = '';
+    this._render();
+    const live = this._sections.meter?.querySelector('[data-action="meter-input"]');
+    if (live) live.value = '';
   }
 
   _select(entityId, option) {
