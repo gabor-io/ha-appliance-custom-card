@@ -166,11 +166,20 @@
           inefficient: 'binary_sensor.klima_nem_hatekony',
         },
       },
-      /* két önálló szobakártya */
-      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'living' },
-      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'room_2' },
+      /* két önálló szobakártya – a kinti hőmérséklet a ΔT kiírásához kell */
+      {
+        type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'living',
+        entities: { outside: 'sensor.kulso_homerseklet' },
+      },
+      {
+        type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS, room: 'room_2',
+        entities: { outside: 'sensor.kulso_homerseklet' },
+      },
       /* a teljes lista és a heti ütemterv */
-      { type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS },
+      {
+        type: 'custom:heating-rooms-card', language: 'hu', rooms: ROOMS,
+        entities: { outside: 'sensor.kulso_homerseklet' },
+      },
       { type: 'custom:heating-schedule-card', language: 'hu', rooms: ROOMS },
     ];
 

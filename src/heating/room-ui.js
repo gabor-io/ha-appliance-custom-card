@@ -7,7 +7,7 @@
  * row, the room card shows the full row straight away.
  */
 
-import { TEMP_MAX, TEMP_MIN, TEMP_STEP } from './const.js';
+import { REFERENCE_DELTA, TEMP_MAX, TEMP_MIN, TEMP_STEP } from './const.js';
 import { fill } from './i18n.js';
 import { icon } from '../shared/icons.js';
 import { escapeHtml, formatClock, formatDecimal } from '../shared/format.js';
@@ -60,6 +60,35 @@ export function learningHtml(room, { t }) {
   return `<span class="tag idle" title="${escapeHtml(detail)}">${icon('timer')}${escapeHtml(t('ui.learning'))}</span>`;
 }
 
+/**
+ * The rate the room manages at the difference that happens to be outside.
+ *
+ * The learned figures are normalised to a reference difference; this is the
+ * same thing translated to today's weather, which is what someone actually
+ * waits for.
+ */
+export function rateNowHtml(room, { t, hass }) {
+  if (room.rateNow === null || room.rateNow === undefined) return '';
+  const source = room.rateNowSource || room.active?.key || room.suggestion?.key || null;
+  const label = source ? ` (${t(`source.${source}`, t(`active.${source}`, source))})` : '';
+  const text =
+    room.delta === null
+      ? fill(t('ui.rate_now_plain'), { value: formatDecimal(room.rateNow, hass, 2) })
+      : fill(t('ui.rate_now'), {
+          delta: formatDecimal(room.delta, hass, 0),
+          value: formatDecimal(room.rateNow, hass, 2),
+        });
+  return `<div class="note">${icon('trend_up')} ${escapeHtml(text + label)}</div>`;
+}
+
+/** How fast the room loses heat: °C per hour for every degree of difference. */
+export function lossHtml(room, { t, hass }) {
+  if (room.loss === null || room.loss === undefined) return '';
+  return `<div class="note">${escapeHtml(
+    fill(t('ui.loss'), { value: formatDecimal(room.loss, hass, 3) }),
+  )}</div>`;
+}
+
 /** What this room's heat pump is worth right now. */
 export function efficiencyHtml(room, { t, hass }) {
   const efficiency = room.efficiency;
@@ -77,7 +106,7 @@ export function efficiencyHtml(room, { t, hass }) {
 }
 
 /** The learned heat-up rates, one line in the detail view. */
-export function learnedHtml(room, { t, hass }) {
+export function learnedHtml(room, { t, hass, season }) {
   const parts = Object.entries(room.learned || {})
     .filter(([, value]) => value !== null && value !== undefined)
     .map(([source, value]) =>
@@ -98,7 +127,11 @@ export function learnedHtml(room, { t, hass }) {
         )}</div>`;
 
   if (!parts.length) return offset;
-  return `<div class="note">${escapeHtml(t('ui.learned_title'))}: ${escapeHtml(parts.join(' · '))}</div>${offset}`;
+  /* a rate without the difference it was measured at is not a number anyone
+     can act on, so the reference rides along in the label */
+  const reference = season === 'hutes' ? REFERENCE_DELTA.hutes : REFERENCE_DELTA.futes;
+  const title = fill(t('ui.learned_title_at'), { delta: reference });
+  return `<div class="note">${escapeHtml(title)}: ${escapeHtml(parts.join(' · '))}</div>${offset}`;
 }
 
 /** The air in the room, next to how warm it feels. */
@@ -419,8 +452,10 @@ export function roomRowHtml(room, options) {
       ${trendHtml(room, options)}
       ${options.series ? sparklineHtml(options.series, options) : ''}
       ${notesHtml(room, options)}
+      ${rateNowHtml(room, options)}
       ${efficiencyHtml(room, options)}
       ${learnedHtml(room, options)}
+      ${lossHtml(room, options)}
       ${showControls ? controlsHtml(room, options) : ''}
       ${options.zones ? zoneSetpointsHtml(room, options) : ''}
     </div>`;
@@ -487,7 +522,7 @@ export function compactRowHtml(room, options) {
         <span class="quick">${stepButtonsHtml(room, options)}</span>
         ${icon(expanded ? 'chevron_up' : 'chevron')}
       </div>
-      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${trendHtml(room, options)}${notesHtml(room, options)}${efficiencyHtml(room, options)}${learnedHtml(room, options)}${controlsHtml(room, options)}` : ''}
+      ${expanded ? `${suggestionHtml(room, options)}${partsHtml(room, options)}${trendHtml(room, options)}${notesHtml(room, options)}${rateNowHtml(room, options)}${efficiencyHtml(room, options)}${learnedHtml(room, options)}${lossHtml(room, options)}${controlsHtml(room, options)}` : ''}
     </div>`;
 }
 

@@ -108,15 +108,17 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
 | tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
 | szelep-eltolás | `input_number.<prefix>_szelep_eltolas_<szoba>` (°C) |
+| sebesség most | `sensor.<prefix>_sebesseg_<szoba>` (°C/óra) |
+| hőveszteség | `input_number.<prefix>_hoveszteseg_<szoba>` (°C/óra/K) |
 | klíma COP | nincs alapértelmezés (`rooms[].entities.cop`) |
 | klímás hő ára | nincs alapértelmezés (`rooms[].entities.heat_cost`) |
 | klíma nem hatékony | nincs alapértelmezés (`rooms[].entities.inefficient`) |
 
 Egy házban több gép lehet, és ugyanabban az időjárásban **nem egyforma a
-COP-juk** – egy kisebb egység rosszabbul teljesít. Ezért a három
-klíma-szerep szobánként is megadható, és több szoba nyugodtan mutathat
-ugyanarra a szenzorra. Ahol nincs megadva, ott nem jelenik meg semmi (a
-fürdőben nincs klíma, ott nincs is mit írni).
+COP-juk** – hogy melyik a jobb, az a típustól függ, nem a méretétől. Ezért
+a három klíma-szerep szobánként is megadható, és több szoba nyugodtan
+mutathat ugyanarra a szenzorra. Ahol nincs megadva, ott nem jelenik meg
+semmi (a fürdőben nincs klíma, ott nincs is mit írni).
 | páratartalom | nincs névszabály – `rooms[].humidity`, részpontnál `parts[].humidity` |
 | hőérzet | `sensor.hoerzet_<kulcs>` (°C) |
 | komfortszó | `sensor.komfort_<kulcs>` (Hideg / Hűvös / Kellemes / Meleg / Túl meleg, utána `· száraz` vagy `· párás`) |
@@ -168,6 +170,36 @@ billentyűzeten a tizedes gomb vesszőt ad; egy `type="number"` mező ettől
 csendben sehova nem jutott. A kártya most maga értelmezi, amit beírtak:
 levágja a szóközöket, a vesszőt pontra cseréli, és ha az eredmény nem szám,
 **kiírja a hibát** ahelyett, hogy nem csinálna semmit.
+
+## Tanult sebesség és a ΔT
+
+Egy „°C/óra" önmagában nem mond semmit: a szoba gyorsabban melegszik, ha
+kint enyhe van. A fűtési logika ezért minden tanult sebességet egy
+**referencia-különbségre** vetít – fűtésnél 15 K, hűtésnél 8 K –, és a
+kártya ezt ki is írja: „Tanult sebesség (15 K-on): …".
+
+Mellé két sor kerül, ha a hozzájuk tartozó entitás létezik:
+
+- **„Most, ΔT 18 K mellett: 1,20 °C/óra (Klíma)"** – a
+  `sensor.<prefix>_sebesseg_<szoba>` értéke, vagyis ugyanaz a sebesség a
+  mostani időjárásra számolva. A képletet a kártya **nem** számolja, azt a
+  HA adja; a ΔT-t viszont igen, a szoba hőmérsékletéből és a kinti
+  értékből (fűtésnél bent − kint, hűtésnél kint − bent). A forrás nevét a
+  szenzor `forras` attribútumából veszi, ha van, különben abból, ami épp
+  fut.
+- **„Hőveszteség 0,015 °C/óra/K"** – a `input_number.<prefix>_hoveszteseg_<szoba>`
+  értéke, halványan.
+
+**A ΔT-hez a szobakártyának is kell a kinti hőmérséklet.** Ez ház szintű
+adat, ezért a szobakártya configjába is bele kell írni:
+
+```yaml
+type: custom:heating-rooms-card
+entities:
+  outside: sensor.kinti_homerseklet
+```
+
+Enélkül a sor megjelenik, csak a ΔT marad le róla.
 
 ## 24 órás görbe
 

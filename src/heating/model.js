@@ -246,6 +246,10 @@ export function outsideCoolingSeason(now = new Date()) {
 /* ------------------------------- rooms ------------------------------- */
 
 export function buildRoomsModel(hass, config) {
+  const houseIds = houseEntities(config);
+  const outside = num(hass, houseIds.outside);
+  const season = stateOf(hass, houseIds.season_active) || null;
+
   const rooms = listRooms(config).map((room) => {
     const ids = room.entities;
     const windowState = stateOf(hass, ids.window);
@@ -325,6 +329,19 @@ export function buildRoomsModel(hass, config) {
       learning,
       learned,
       valveOffset: num(hass, ids.offset),
+      /* What the room manages right now. The logic publishes the figure; the
+         card only works out the difference it belongs to, because that is
+         what makes a rate comparable at all. Heating counts inside minus
+         outside, cooling the other way round. */
+      rateNow: num(hass, ids.rate_now),
+      rateNowSource: stateObj(hass, ids.rate_now)?.attributes?.forras || null,
+      loss: num(hass, ids.loss),
+      delta:
+        outside === null || temperature === null
+          ? null
+          : season === 'hutes'
+            ? outside - temperature
+            : temperature - outside,
       /* A room's heat pump is not always the house's: a smaller unit in one
          bedroom has its own COP at the same outdoor temperature. These have
          no naming rule, so they only exist when the config names them. */

@@ -48,6 +48,10 @@ export function listRooms(config) {
       /* what the logic learned about this radiator valve: how far its own
          reading sits from the room's */
       ids.offset = `input_number.${prefix}_szelep_eltolas_${key}`;
+      /* the learned rate recomputed for the temperature difference that
+         happens to be outside right now, and the room's own loss factor */
+      ids.rate_now = `sensor.${prefix}_sebesseg_${key}`;
+      ids.loss = `input_number.${prefix}_hoveszteseg_${key}`;
 
       /* humidity has no naming rule of its own - the sensors sit wherever
          the hardware put them - so it only exists when the config says so */

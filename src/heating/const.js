@@ -233,6 +233,16 @@ export const TEMP_MAX = 30;
 export const COOLING_FROM = { month: 5, day: 1 };
 export const COOLING_TO = { month: 9, day: 30 };
 
+/**
+ * The temperature difference the learned rates are quoted at.
+ *
+ * A room warms faster when it is mild outside, so a single "°C per hour"
+ * means nothing without the difference it was measured at. The heating
+ * logic normalises every learned rate to these, and the card says so rather
+ * than letting the number look absolute.
+ */
+export const REFERENCE_DELTA = { futes: 15, hutes: 8 };
+
 /** How far back the room card's temperature sparkline reaches. */
 export const HISTORY_HOURS = 24;
 

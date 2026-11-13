@@ -387,6 +387,24 @@ export function makeHass(seasonKey = 'futes') {
        losing ground; elsewhere the entity simply does not exist */
     if (room.key === 'room_1') put(`binary_sensor.futes_${room.key}_elmarad`, 'on');
 
+    /* the learned rate recomputed for the difference outside right now, and
+       the room's own loss factor */
+    const activeSource =
+      seasonKey === 'hutes' ? 'hutes' : room.key === 'bath' ? 'aeno' : mock.suggestion === 'gaz' ? 'gaz' : 'klima';
+    const refRate = room.key === 'bath' ? 0.98 : 1.3;
+    const delta = Math.abs((mock.temp ?? 20) - season.outside);
+    const reference = seasonKey === 'hutes' ? 8 : 15;
+    put(
+      `sensor.futes_sebesseg_${room.key}`,
+      Number((refRate - 0.03 * (delta - reference)).toFixed(2)),
+      { unit_of_measurement: '°C/h', forras: activeSource },
+    );
+    put(`input_number.futes_hoveszteseg_${room.key}`, room.key === 'bath' ? 0.02 : 0.015, {
+      min: 0.002,
+      max: 0.06,
+      step: 0.001,
+    });
+
     /* what the logic learned about this room's radiator valve */
     if (room.key === 'room_3') {
       put(`input_number.futes_szelep_eltolas_${room.key}`, -1.5, { min: -4, max: 5, step: 0.1 });
