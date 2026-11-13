@@ -100,6 +100,10 @@
     if (domain === 'climate' && service === 'set_hvac_mode') {
       set(data.entity_id, data.hvac_mode);
     }
+    if (domain === 'climate' && service === 'set_swing_mode') {
+      const old = hass.states[data.entity_id];
+      set(data.entity_id, old.state, { swing_mode: data.swing_mode });
+    }
 
     if (domain === 'scheduler' && (service === 'edit' || service === 'add')) {
       const id = service === 'edit' ? data.entity_id : `switch.schedule_demo_${Date.now()}`;

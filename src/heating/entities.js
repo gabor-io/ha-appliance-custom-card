@@ -52,6 +52,12 @@ export function listRooms(config) {
          happens to be outside right now, and the room's own loss factor */
       ids.rate_now = `sensor.${prefix}_sebesseg_${key}`;
       ids.loss = `input_number.${prefix}_hoveszteseg_${key}`;
+      ids.regression = `input_text.${prefix}_felfutes_regr_${key}`;
+
+      /* the air conditioner that serves this room. Its name follows the
+         Daikin integration, not the heating prefix, so it comes from the
+         config; the card touches nothing on it but the flap. */
+      if (room.ac) ids.ac = room.ac;
 
       /* humidity has no naming rule of its own - the sensors sit wherever
          the hardware put them - so it only exists when the config says so */

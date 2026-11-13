@@ -106,10 +106,12 @@ repóban nincs és nem is lesz saját szobalista. A kulcsból és az előtagból
 | elő-fűtés/-hűtés | `sensor.<prefix>_elofutes_<szoba>` (timestamp) |
 | hőtrend | `sensor.<prefix>_trend_<szoba>` (°C/óra) |
 | tanulás folyik | `input_text.<prefix>_tanulas_<szoba>` (`unixidő\|kezdő°C\|forrás\|cél\|fel/le`) |
-| tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno>` (°C/óra) |
+| tanult sebesség | `input_number.<prefix>_tanult_<szoba>_<klima\|gaz\|hutes\|aeno\|hibrid>` (°C/óra) |
 | szelep-eltolás | `input_number.<prefix>_szelep_eltolas_<szoba>` (°C) |
 | sebesség most | `sensor.<prefix>_sebesseg_<szoba>` (°C/óra) |
 | hőveszteség | `input_number.<prefix>_hoveszteseg_<szoba>` (°C/óra/K) |
+| felfűtés-regresszió | `input_text.<prefix>_felfutes_regr_<szoba>` (JSON) |
+| a szoba klímája | nincs alapértelmezés (`rooms[].ac`) – **csak a lamellához** |
 | klíma COP | nincs alapértelmezés (`rooms[].entities.cop`) |
 | klímás hő ára | nincs alapértelmezés (`rooms[].entities.heat_cost`) |
 | klíma nem hatékony | nincs alapértelmezés (`rooms[].entities.inefficient`) |
@@ -187,6 +189,10 @@ Mellé két sor kerül, ha a hozzájuk tartozó entitás létezik:
   értékből (fűtésnél bent − kint, hűtésnél kint − bent). A forrás nevét a
   szenzor `forras` attribútumából veszi, ha van, különben abból, ami épp
   fut.
+- **„ΔT-függés: −0,035 °C/óra/K, 6 mérés"** – az
+  `input_text.<prefix>_felfutes_regr_<szoba>` JSON-jából, az épp aktív
+  forráshoz tartozó meredekség. A −1-es meredekség azt jelenti, hogy még
+  nincs elég mérés; olyankor a sor nem jelenik meg.
 - **„Hőveszteség 0,015 °C/óra/K"** – a `input_number.<prefix>_hoveszteseg_<szoba>`
   értéke, halványan.
 
@@ -200,6 +206,21 @@ entities:
 ```
 
 Enélkül a sor megjelenik, csak a ΔT marad le róla.
+
+## Lamella
+
+A szoba Daikin klímája a `rooms[].ac` kulccsal adható meg. Ha megvan, a
+szoba részletes nézetében megjelenik egy **Lamella** kapcsoló (áll /
+mozog), ami a `climate.set_swing_mode` szolgáltatást hívja.
+
+Ez az egyetlen dolog, amit a kártya a klímán állít. A hőmérsékletet, az
+üzemmódot és a ventilátort a fűtési logika vezérli – a lamellához viszont
+nem nyúl, ezért az szabadon állítható innen.
+
+Négy lamella-mód helyett kettő van: a pydaikin minden BRP069 adapterre
+`Horizontal`-t és `3D`-t is bejelent, de ezeken a beltéri egységeken csak a
+fel-le mozgás működik. Ugyanazt a listát használja a kártya, mint a
+Daikin-kártya (`SAFE_SWING_MODES`), hogy egy helyen legyen leírva.
 
 ## 24 órás görbe
 

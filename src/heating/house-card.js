@@ -571,6 +571,7 @@ export class HouseHeatingCard extends HTMLElement {
       case 'step':
       case 'boost':
       case 'hvac':
+      case 'swing':
         this._roomAction(target);
         break;
       default:

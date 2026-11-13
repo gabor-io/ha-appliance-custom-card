@@ -182,7 +182,7 @@ export const COMFORT_LEVELS = {
  * heats with an infrared panel and has no heat-pump rate at all - so a
  * missing entity means "not applicable", not "zero".
  */
-export const LEARNED_SOURCES = ['klima', 'gaz', 'hutes', 'aeno'];
+export const LEARNED_SOURCES = ['klima', 'gaz', 'hutes', 'aeno', 'hibrid'];
 
 /**
  * The predictive control the heating logic runs, as far as the card needs it

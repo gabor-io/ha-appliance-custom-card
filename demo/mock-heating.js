@@ -45,8 +45,16 @@ export const ROOMS = [
     boost: true,
     humidity: 'sensor.room_1_humidity',
     entities: { cop: 'sensor.klima_cop', heat_cost: 'sensor.klima_hokoltseg' },
+    ac: 'climate.room_1_ac',
   },
-  { key: 'room_2', name: 'Háló 2', climate: 'climate.room_2', boost: false, humidity: 'sensor.room_2_humidity' },
+  {
+    key: 'room_2',
+    name: 'Háló 2',
+    climate: 'climate.room_2',
+    boost: false,
+    humidity: 'sensor.room_2_humidity',
+    ac: 'climate.room_2_ac',
+  },
   {
     key: 'room_3',
     name: 'Háló 3',
@@ -377,7 +385,7 @@ export function makeHass(seasonKey = 'futes') {
     const learned =
       room.key === 'bath'
         ? { gaz: 0.8, aeno: 0.98 }
-        : { klima: 1.3, gaz: 0.85, hutes: 1.1 };
+        : { klima: 1.3, gaz: 0.85, hutes: 1.1, hibrid: 1.55 };
     for (const [source, value] of Object.entries(learned)) {
       put(`input_number.futes_tanult_${room.key}_${source}`, value, { min: 0, max: 5, step: 0.05 });
     }
@@ -386,6 +394,28 @@ export function makeHass(seasonKey = 'futes') {
     /* only one room is fitted with the sensor that says the heat pump is
        losing ground; elsewhere the entity simply does not exist */
     if (room.key === 'room_1') put(`binary_sensor.futes_${room.key}_elmarad`, 'on');
+
+    /* the room's air conditioner, as the Daikin integration reports it:
+       the flap list always claims four modes, only two of which work */
+    if (room.ac) {
+      put(room.ac, seasonKey === 'hutes' ? 'cool' : 'heat', {
+        friendly_name: `${room.name} klíma`,
+        swing_modes: ['Off', 'Vertical', 'Horizontal', '3D'],
+        swing_mode: room.key === 'room_1' ? 'Vertical' : 'Off',
+        hvac_modes: ['heat', 'cool', 'fan_only', 'off'],
+        current_temperature: mock.temp,
+        temperature: mock.target,
+      });
+    }
+
+    /* a few rooms already have enough warm-ups for a regression */
+    if (room.key === 'room_1') {
+      put(
+        `input_text.futes_felfutes_regr_${room.key}`,
+        JSON.stringify({ klima: [6, 78, 7.9, 1040, 100.2, -0.035], gaz: [2, 24, 2.1, 300, 25, -1] }),
+        { max: 255 },
+      );
+    }
 
     /* the learned rate recomputed for the difference outside right now, and
        the room's own loss factor */

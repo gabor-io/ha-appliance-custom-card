@@ -7,6 +7,11 @@
  * the budget lasts at the current pace - which is derived, never stored.
  */
 
+/* One source of truth for a hardware quirk: pydaikin advertises Horizontal
+   and 3D on every adapter, even where the indoor unit only moves the flap up
+   and down. The Daikin card learned that the hard way; this family reuses the
+   same list rather than finding out again. */
+import { SAFE_SWING_MODES } from '../daikin/const.js';
 import {
   COMFORT_LEVELS,
   COOLING_FROM,
@@ -333,9 +338,14 @@ export function buildRoomsModel(hass, config) {
          card only works out the difference it belongs to, because that is
          what makes a rate comparable at all. Heating counts inside minus
          outside, cooling the other way round. */
+      /* the flap. The heating logic drives the unit's temperature, mode and
+         fan; the flap is the one thing it never touches, so it is the one
+         thing the card may set. */
+      swing: swingOf(hass, ids.ac),
       rateNow: num(hass, ids.rate_now),
       rateNowSource: stateObj(hass, ids.rate_now)?.attributes?.forras || null,
       loss: num(hass, ids.loss),
+      regression: regressionOf(hass, ids.regression),
       delta:
         outside === null || temperature === null
           ? null
@@ -437,6 +447,53 @@ export function roomSchedule(hass, config, entityId) {
     zone: obj.state === 'on' ? zoneOn : zoneOff,
     nextEvent: next && Number.isFinite(next.getTime()) ? next : null,
   };
+}
+
+/** The flap of the room's air conditioner, with the modes that really work. */
+export function swingOf(hass, entityId) {
+  const obj = entityId ? stateObj(hass, entityId) : null;
+  if (!obj) return null;
+  const modes = (obj.attributes?.swing_modes || []).filter((mode) =>
+    SAFE_SWING_MODES.includes(String(mode).toLowerCase()),
+  );
+  if (modes.length < 2) return null;
+  const current = obj.attributes?.swing_mode || null;
+  return {
+    entity: entityId,
+    modes,
+    current,
+    /* the flap moves unless swing is explicitly off */
+    swinging: Boolean(current) && String(current).toLowerCase() !== 'off',
+    moving: modes.find((mode) => String(mode).toLowerCase() !== 'off') || 'Vertical',
+    parked: modes.find((mode) => String(mode).toLowerCase() === 'off') || 'Off',
+    on: obj.state !== 'off' && !isUnavailable(obj.state),
+  };
+}
+
+/**
+ * What the logic learned about how the warm-up rate depends on ΔT.
+ *
+ * The helper holds a regression per source as
+ * `{source: [n, Σx, Σy, Σx², Σxy, slope]}`, and a slope of −1 is its way of
+ * saying "not enough measurements yet".
+ */
+export function regressionOf(hass, entityId) {
+  const raw = stateOf(hass, entityId);
+  if (!raw || isUnavailable(raw) || !raw.trim().startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const out = {};
+    for (const [source, row] of Object.entries(parsed)) {
+      if (!Array.isArray(row) || row.length < 6) continue;
+      const slope = Number(row[5]);
+      const count = Number(row[0]);
+      if (!Number.isFinite(slope) || slope === -1) continue;
+      out[source] = { slope, count: Number.isFinite(count) ? count : null };
+    }
+    return Object.keys(out).length ? out : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 /** The rooms whose window has been open long enough to be worth a warning. */

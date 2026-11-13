@@ -78,7 +78,18 @@ export function rateNowHtml(room, { t, hass }) {
           delta: formatDecimal(room.delta, hass, 0),
           value: formatDecimal(room.rateNow, hass, 2),
         });
-  return `<div class="note">${icon('trend_up')} ${escapeHtml(text + label)}</div>`;
+  /* how strongly the rate falls with ΔT, once enough warm-ups were measured */
+  const regression = source ? room.regression?.[source] : null;
+  const dependence = regression
+    ? `<div class="note">${escapeHtml(
+        fill(t('ui.rate_dependence'), {
+          value: formatDecimal(regression.slope, hass, 3),
+          count: regression.count ?? '',
+        }),
+      )}</div>`
+    : '';
+
+  return `<div class="note">${icon('trend_up')} ${escapeHtml(text + label)}</div>${dependence}`;
 }
 
 /** How fast the room loses heat: °C per hour for every degree of difference. */
@@ -368,6 +379,21 @@ export function modeButtonsHtml(room, { t }) {
     </div>`;
 }
 
+/**
+ * The flap, as one toggle.
+ *
+ * Only two of the four modes the entity advertises actually do anything on
+ * these units, so the card offers parked or moving and nothing else - four
+ * buttons would be three lies and one control.
+ */
+export function swingHtml(room, { t }) {
+  if (!room.swing) return '';
+  const next = room.swing.swinging ? room.swing.parked : room.swing.moving;
+  return `<button class="chip" type="button" data-action="swing" data-room="${escapeHtml(room.key)}"
+      data-value="${escapeHtml(next)}" aria-pressed="${room.swing.swinging}"
+      ${room.swing.on ? '' : 'disabled'}>${icon('swing')}<span>${escapeHtml(t('ui.swing'))}</span></button>`;
+}
+
 export function controlsHtml(room, options) {
   const { t, showBoost = true } = options;
   const select = (role, values, current, title) =>
@@ -401,6 +427,7 @@ export function controlsHtml(room, options) {
       ${stepButtonsHtml(room, options)}
       ${mode}
       ${room.parts.length ? select('aggregation', room.aggregation.options, room.aggregation.value, t('ui.aggregation_title')) : ''}
+      ${swingHtml(room, options)}
       ${boost}
     </div>`;
 }
@@ -559,6 +586,15 @@ export function applyRoomAction({ hass, config, room, action, target }) {
     const next = Math.min(TEMP_MAX, Math.max(TEMP_MIN, base + direction * TEMP_STEP));
     if (next === base) return false;
     call('input_number', 'set_value', { entity_id: room.override.entity, value: next });
+    return true;
+  }
+
+  if (action === 'swing') {
+    if (!room?.swing) return false;
+    call('climate', 'set_swing_mode', {
+      entity_id: room.swing.entity,
+      swing_mode: target.dataset.value,
+    });
     return true;
   }
 
