@@ -47,9 +47,18 @@ A levezetés és a mérések: [`../docs/aeno-capabilities.md`](../docs/aeno-capa
 
 ## Beküldés a tuya-local projektbe
 
-A profil a tuya-local formátuma szerint készült, és kész a beküldésre: a
-lépések, a PR-szövegek és az előre lefuttatott ellenőrzések itt vannak:
-[`upstream-pr.md`](upstream-pr.md).
+A profil a tuya-local formátuma szerint készült, és kész a beküldésre. A
+karbantartó viszont lezárta a PR-nyitást, ezért a beküldés a projekt két saját
+issue-sablonjával megy: a kész szövegek, a lépések és az előre lefuttatott
+ellenőrzések itt vannak: [`upstream-pr.md`](upstream-pr.md).
+
+## Hogy a frissítés ne vigye el
+
+A tuya-local csak a saját `devices/` könyvtárából olvas profilt, ezért a HACS
+minden frissítése letörli a bemásolt fájlt – és a panel bejegyzése ilyenkor
+elhasal, nem csak „nem frissül". Két megoldás (visszamásoló automatizmus, vagy
+fork HACS custom repositoryként) itt van, az indoklással:
+[`local-override.md`](local-override.md).
 
 ## Fisher F-ERVQ-B150CO2-I
 
