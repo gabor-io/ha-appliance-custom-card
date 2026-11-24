@@ -45,6 +45,12 @@ mennyezeti szerelés és a visszajelző fényereje.
 
 A levezetés és a mérések: [`../docs/aeno-capabilities.md`](../docs/aeno-capabilities.md).
 
+## Beküldés a tuya-local projektbe
+
+A profil a tuya-local formátuma szerint készült, és kész a beküldésre: a
+lépések, a PR-szövegek és az előre lefuttatott ellenőrzések itt vannak:
+[`upstream-pr.md`](upstream-pr.md).
+
 ## Fisher F-ERVQ-B150CO2-I
 
 Ehhez **nincs** saját profil: a gyári `fisher_ervq_hd_hrv` a készülék 13
