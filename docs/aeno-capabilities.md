@@ -6,6 +6,9 @@ Assistantba. Ez az integráció minden entitást egy YAML **eszközprofilból**
 épít, tehát hogy mi létezik egyáltalán, az a profilon múlik – a kártya ezért
 mindkettővel működik, és csak azt rajzolja ki, amit tényleg megtalál.
 
+A saját profil a repóban van: [`tuya/aeno_agh0001s_heater.yaml`](../tuya/aeno_agh0001s_heater.yaml)
+(telepítés és indoklás: [`tuya/README.md`](../tuya/README.md)).
+
 ## A két profil
 
 | | gyári `princess_panel_heater` | a panel saját profilja |

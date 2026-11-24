@@ -528,6 +528,12 @@ device: 8f1c0a2b5d7e4f3a9c6b1d2e3f4a5b6c
 name: Airfryer
 ```
 
+## tuya-local eszközprofil
+
+Az AENO infrapanelhez saját tuya-local eszközprofil készült, mert a gyári a
+panel 22 adatpontjából hatot ír le. A profil és a telepítése:
+[`tuya/`](tuya/).
+
 ## Beállítások
 
 Közös opciók mindkét kártyán:
