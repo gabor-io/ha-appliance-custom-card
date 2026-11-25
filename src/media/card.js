@@ -92,7 +92,7 @@ export class MediaRoomCard extends HTMLElement {
     wrap.addEventListener('click', (ev) => this._onClick(ev));
     wrap.addEventListener('input', (ev) => this._onInput(ev));
 
-    for (const name of ['head', 'main', 'vol', 'players']) {
+    for (const name of ['hero', 'foot', 'vol', 'players']) {
       const node = document.createElement('div');
       node.dataset.section = name;
       this._sections[name] = node;
@@ -122,15 +122,15 @@ export class MediaRoomCard extends HTMLElement {
     this._applyWrapClasses(model);
 
     if (model.idle) {
-      this._section('head', '');
-      this._section('main', this._quietHtml(model, t));
+      this._section('hero', this._quietHtml(model, t));
+      this._section('foot', '');
       this._section('vol', '');
       this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
       return;
     }
 
-    this._section('head', this._headHtml(model, t));
-    this._section('main', this._mainHtml(model, t));
+    this._section('hero', this._heroHtml(model, t));
+    this._section('foot', this._config.show_progress ? this._progHtml(model, t) : '');
     this._section('vol', this._config.show_volume ? this._volHtml(model, t) : '');
     this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
   }
@@ -141,9 +141,9 @@ export class MediaRoomCard extends HTMLElement {
     this._signatures = {};
     for (const [name, node] of Object.entries(this._sections)) {
       node.innerHTML = '';
-      node.hidden = name !== 'head';
+      node.hidden = name !== 'hero';
     }
-    this._sections.head.innerHTML = `
+    this._sections.hero.innerHTML = `
       <div class="empty">${icon('cast')}<div>${escapeHtml(t(`ui.${model.reason}`))}</div></div>`;
   }
 
@@ -158,84 +158,81 @@ export class MediaRoomCard extends HTMLElement {
     const classes = ['wrap'];
     if (this._config.compact) classes.push('compact');
     if (model.state === 'paused') classes.push('paused');
+    /* with no picture behind it the text has the whole width, and the hero
+       has no reason to stand as tall as a picture would have made it */
+    if (!this._config.show_artwork || (!model.artwork && !model.hasMedia)) classes.push('noart');
     if (this._hass.themes?.darkMode) classes.push('dark');
     const next = classes.join(' ');
     if (this._wrap.className !== next) this._wrap.className = next;
   }
 
-  /* ---------------------------- header ------------------------------ */
-
-  _headHtml(model, t) {
-    /* the whole point of merging two players is that the card no longer says
-       which box it is - so the box goes in the subtitle, where it belongs */
-    const source = [model.app, model.active.name].filter(Boolean);
-    return `
-      <div class="head">
-        <div class="who">
-          <div class="room" data-action="more-info">${escapeHtml(model.name)}</div>
-          <div class="src">${icon('cast_on')}<span>${escapeHtml(source.join(' · '))}</span></div>
-        </div>
-        <div class="spacer"></div>
-        <div class="pill">${escapeHtml(t(`state.${model.state}`, model.state))}</div>
-      </div>`;
-  }
-
-  /* ----------------------------- body ------------------------------- */
+  /* ----------------------------- hero ------------------------------- */
 
   /**
-   * Artwork on the left, everything about the thing playing on the right.
+   * The artwork is the card's background, not a tile beside the text.
    *
-   * Progress and transport live in that right-hand column rather than under
-   * the whole card, because a poster is tall and two lines of title are not:
-   * laid out the other way the card has a hole beside the picture the size
-   * of the picture.
+   * This is the shape Home Assistant's own media control card has, and the
+   * reason it works is that a 16:9 still or a poster has nothing worth
+   * reading in it: pushed to the right edge and faded out towards the left,
+   * it gives the card the colour of what is playing while leaving the half
+   * that carries the title plainly legible. A thumbnail in a box does none
+   * of that and costs the same space.
    */
-  _mainHtml(model, t) {
-    const art = this._config.show_artwork ? this._artHtml(model) : '';
-    const progress = this._config.show_progress ? this._progHtml(model, t) : '';
+  _heroHtml(model, t) {
+    const source = [model.app, model.active.name].filter(Boolean);
+    const controls = this._controlsHtml(model, t);
     return `
-      <div class="now${art ? '' : ' noart'}">
-        ${art}
-        <div class="meta">
-          <div class="said">
-            <div class="title">${escapeHtml(model.title)}</div>
-            ${model.sub ? `<div class="sub">${escapeHtml(model.sub)}</div>` : ''}
-            ${
-              !model.hasMedia
-                ? `<div class="sub">${escapeHtml(t('ui.nothing_sub_one'))}</div>`
-                : ''
-            }
+      <div class="hero">
+        ${this._config.show_artwork ? this._bgHtml(model) : ''}
+        <div class="fg">
+          <div class="head">
+            <div class="who">
+              <div class="room" data-action="more-info">${escapeHtml(model.name)}</div>
+              <div class="src">${icon('cast_on')}<span>${escapeHtml(source.join(' · '))}</span></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="pill">${escapeHtml(t(`state.${model.state}`, model.state))}</div>
           </div>
-          ${progress}
-          ${this._controlsHtml(model, t)}
+          <div class="body">
+            <div class="said">
+              <div class="title">${escapeHtml(model.title)}</div>
+              ${model.sub ? `<div class="sub">${escapeHtml(model.sub)}</div>` : ''}
+              ${
+                !model.hasMedia
+                  ? `<div class="sub">${escapeHtml(t('ui.nothing_sub_one'))}</div>`
+                  : ''
+              }
+            </div>
+            ${controls}
+          </div>
         </div>
       </div>`;
   }
 
-  _artHtml(model) {
-    /* a player that is merely on is not playing anything, so there is no
-       picture to show and an empty tile the height of a poster is just a
-       hole in the card */
-    if (!model.artwork && !model.hasMedia) return '';
-    /* an album cover is square, a channel logo or a game is landscape and a
-       film is a tall poster; forcing one shape on all three crops whichever
-       two are wrong, so the box follows the content type */
-    const type = String(model.active.stateObj?.attributes?.media_content_type || '').toLowerCase();
-    const shape = ['music', 'playlist', 'podcast'].includes(type)
-      ? ' square'
-      : ['channel', 'app', 'game', 'url', 'video'].includes(type)
-        ? ' wide'
-        : '';
-    const inner = model.artwork
-      ? `<img src="${escapeHtml(model.artwork)}" alt="" loading="lazy">`
-      : icon(model.icon);
-    const code =
-      model.sub && /^S\d+E\d+$/.test(model.sub.split(' · ').pop() || '')
-        ? model.sub.split(' · ').pop()
-        : null;
-    return `<div class="art${shape}" data-action="more-info">
-      ${inner}${code ? `<span class="tag">${escapeHtml(code)}</span>` : ''}
-    </div>`;
+  /**
+   * Two copies of the same picture: one blurred across the whole card, one
+   * sharp on the right.
+   *
+   * The blurred copy is what gives the left-hand side the colour of the
+   * thing playing. Home Assistant's own card gets that colour by reading the
+   * dominant one out of the image on a canvas; a blurred copy under a
+   * mostly-opaque veil arrives at the same place without touching the pixels
+   * - which also means it cannot fail on an image the browser will not let
+   * us read.
+   */
+  _bgHtml(model) {
+    if (!model.artwork) {
+      return !model.hasMedia
+        ? ''
+        : `<div class="bg"><div class="mark">${icon(model.icon)}</div><div class="veil"></div></div>`;
+    }
+    const src = escapeHtml(model.artwork);
+    return `
+      <div class="bg">
+        <img class="blur" src="${src}" alt="" aria-hidden="true">
+        <img class="shot" src="${src}" alt="" data-action="more-info">
+        <div class="veil"></div>
+      </div>`;
   }
 
   _progHtml(model, t) {
@@ -261,11 +258,7 @@ export class MediaRoomCard extends HTMLElement {
       </button>`;
 
     const parts = [];
-    if (model.can.power) {
-      parts.push(
-        button('power', 'power', t('ui.power'), { cls: model.live ? 'off' : '' }),
-      );
-    }
+    if (model.can.power) parts.push(button('power', 'power', t('ui.power')));
     if (model.can.prev) parts.push(button('prev', 'skip_prev', t('ui.prev')));
 
     const canToggle = model.can.pause || model.can.play;
@@ -351,8 +344,7 @@ export class MediaRoomCard extends HTMLElement {
   _tick() {
     const model = this._model;
     if (!model?.ok || model.idle || !model.playing || !this._config?.show_progress) return;
-    const progress = this._model.progress;
-    if (!progress) return;
+    if (!model.progress) return;
 
     /* recompute from the entity rather than adding a second to the last
        drawing, so a state update that moved the playhead is not fought */
@@ -360,9 +352,9 @@ export class MediaRoomCard extends HTMLElement {
     if (!fresh.ok || !fresh.progress) return;
     this._model = fresh;
 
-    const bar = this._sections.main.querySelector('.bar > i');
-    const elapsed = this._sections.main.querySelector('[data-role="elapsed"]');
-    const left = this._sections.main.querySelector('[data-role="left"]');
+    const bar = this._sections.foot.querySelector('.bar > i');
+    const elapsed = this._sections.foot.querySelector('[data-role="elapsed"]');
+    const left = this._sections.foot.querySelector('[data-role="left"]');
     if (bar) bar.style.width = `${fresh.progress.percent.toFixed(2)}%`;
     if (elapsed) {
       elapsed.textContent = fill(this._t('ui.of'), {
@@ -374,7 +366,7 @@ export class MediaRoomCard extends HTMLElement {
       left.textContent = fill(this._t('ui.left'), { time: clock(fresh.progress.remaining) });
     }
     /* the drawn progress is no longer what the signature says it is */
-    this._signatures.main = null;
+    this._signatures.foot = null;
   }
 
   /* ---------------------------- actions ----------------------------- */

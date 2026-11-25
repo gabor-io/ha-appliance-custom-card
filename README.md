@@ -410,9 +410,17 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
   eltelt időt – de **csak lejátszás közben**, mert megállított filmnél a
   pillanatfelvétel már pontos, és a sáv kifutna egy olyan film végére, amit
   senki nem néz.
-- **A borító alakja a tartalomhoz igazodik**: zenénél négyzet, csatornánál és
-  appnál fekvő, filmnél és sorozatnál álló poszter – egyetlen alakba
-  kényszerítve kettő a háromból levágva látszana.
+- **A borító a háttér, nem egy bélyegkép mellette.** Jobb oldalt ül, balra
+  elhalványodva, a szöveg és a gombok előtte – ez a gyári HA media kártya
+  elrendezése, és azért működik, mert egy filmkockán nincs mit elolvasni: a
+  kártya megkapja tőle annak a színét, ami megy, miközben a címet hordozó
+  fele tisztán olvasható marad. Egy dobozba tett bélyegkép ugyanennyi helyet
+  foglal, és ebből semmit nem ad.
+- **A bal oldali szín magától jön.** A gyári kártya ezt úgy csinálja, hogy
+  canvason kiolvassa a kép domináns színét; itt egy elmosott másolat ül a
+  takaró réteg alatt, ami ugyanoda érkezik anélkül, hogy a képpontokhoz
+  nyúlna – így olyan képen sem tud elhasalni, amit a böngésző nem enged
+  beolvasni.
 
 Részletek: [`docs/media-capabilities.md`](docs/media-capabilities.md),
 példák: [`examples/media.yaml`](examples/media.yaml).

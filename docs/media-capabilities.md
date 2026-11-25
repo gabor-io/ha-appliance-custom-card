@@ -80,7 +80,27 @@ lenne.
 | Alcím | `media_series_title`, `S{media_season}E{media_episode}`, `media_artist`, `media_album_name` – ami van, ponttal elválasztva, az azonos szövegek kihagyásával |
 | Fejléc alsó sora | `app_name` és az aktív lejátszó neve |
 | Borító | `entity_picture` |
-| Borító alakja | `media_content_type`: zene négyzet, csatorna/app/játék fekvő, minden más álló poszter |
+
+## A kinézet
+
+A borító a kártya **háttere**, nem egy bélyegkép a szöveg mellett: jobb oldalt
+ül, balra elhalványodva, a szöveg és a gombok előtte. Ez a gyári
+`media-control` kártya elrendezése, és azért ez a jó, mert egy filmkockán vagy
+egy poszteren nincs mit elolvasni – a jobb szélre tolva és balra kifuttatva a
+kártya megkapja tőle annak a színét, ami megy, miközben a címet hordozó fele
+tisztán olvasható marad.
+
+Két példányban szerepel ugyanaz a kép: egy elmosott az egész kártyán, és egy
+éles a jobb oldalon. Az elmosott adja a bal oldal színét. A gyári kártya ezt
+úgy oldja meg, hogy canvasra rajzolva kiolvassa a domináns színt; az elmosott
+másolat ugyanoda érkezik anélkül, hogy a képpontokhoz nyúlna – ezért olyan
+képen sem tud elhasalni, amit a böngésző nem enged beolvasni.
+
+Amit a kártya ebből magának tart fenn: a cím és a gombok sávja a kép előtt
+megáll (jobb oldali belső margó, nem százalékos `max-width` – az egy
+automata rácsoszlopban körkörös hivatkozás, és a tartalom egy csíkká esik
+össze). A fejléc viszont szándékosan végigér: a jobb felső állapotcímke a kép
+fölé való, ahogy a gyári kártyán is ott van a hossz.
 
 ## A játékidő
 
