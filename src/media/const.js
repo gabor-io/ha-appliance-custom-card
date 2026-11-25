@@ -89,5 +89,17 @@ export const CONTENT_ICONS = {
   url: 'cast',
 };
 
+/**
+ * Content types whose `entity_picture` is a logo, not a still.
+ *
+ * A TV integration answers a broadcast channel with the channel's logo and an
+ * app with the app's icon. Those are the wrong shape for a cover-cropped
+ * background - a logo cropped to a 16:9 strip is a fragment of a logo - so
+ * the card lays them out contained instead, and skips the blurred copy that
+ * gives a film its colour: blurring a logo gives either a colour block or,
+ * if it has transparency, nothing at all.
+ */
+export const LOGO_TYPES = ['channel', 'app'];
+
 /** How often the progress bar redraws itself between state updates. */
 export const TICK_MS = 1000;

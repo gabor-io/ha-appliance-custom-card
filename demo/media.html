@@ -46,7 +46,7 @@
   }
   customElements.define('ha-card', HaCard);
 
-  const { SCENARIOS, makeHass, BOX, TV } = window.demo;
+  const { SCENARIOS, makeHass, BOX, TV, SET } = window.demo;
   const grid = document.getElementById('grid');
   const toolbar = document.getElementById('toolbar');
 
@@ -60,13 +60,18 @@
       const wrapper = document.createElement('div');
       if (narrow) wrapper.className = 'narrow';
       const card = document.createElement('media-room-card');
-      card.setConfig({
+      /* each scenario brings its own set of players, in its own order */
+      const entities = Object.keys(SCENARIOS[key]);
+      const config = {
         type: 'custom:media-room-card',
         language: 'hu',
         name: 'Hálószoba',
-        entities: [BOX, TV],
+        entities,
         compact,
-      });
+      };
+      /* the television is the only thing in the room with a volume */
+      if (entities.includes(SET)) config.volume_entity = SET;
+      card.setConfig(config);
       const hass = makeHass(key);
       hass.themes = { darkMode: document.body.classList.contains('dark') };
       card.hass = hass;

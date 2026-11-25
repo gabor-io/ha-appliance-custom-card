@@ -405,6 +405,16 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
 - **Ha tényleg megy mindkettő, te döntesz**: koppints a lejátszók sorában
   arra, amelyiket látni akarod, és a kártya azon marad, amíg újra rá nem
   koppintasz.
+- **A hang jöhet máshonnan, mint a kép.** Egy TV-re kötött boxnál a box
+  `supported_features`-ében nincs hangerő, a TV-ében van – egy olyan kártya,
+  ami mindig az aktív lejátszóra küld, pont akkor marad hangerő nélkül,
+  amikor használnád. A `volume_entity` megnevezi, ami a hangot adja: onnantól
+  a csúszka arra megy, a lejátszás/szünet meg arra, ami játszik. A csúszka
+  mellett ott a neve, hogy ne tűnjön a képernyőn látszó lejátszóénak.
+- **Csatornalogó nem állókép.** Ha a `media_content_type` `channel` vagy
+  `app`, az `entity_picture` logó: a kártya ilyenkor arányosan, kicsinyítve
+  mutatja, és elhagyja az elmosott másolatot – egy elmosott logó vagy
+  színfolt, vagy átlátszó logónál semmi.
 - **A játékidő nem áll meg két állapotfrissítés között.** A `media_position`
   pillanatfelvétel, nem élő érték, ezért a kártya hozzászámolja az azóta
   eltelt időt – de **csak lejátszás közben**, mert megállított filmnél a
@@ -425,9 +435,13 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
 Részletek: [`docs/media-capabilities.md`](docs/media-capabilities.md),
 példák: [`examples/media.yaml`](examples/media.yaml).
 
-| Mindkettő megy | Zene | Semmi nem megy | Sötét téma |
-| --- | --- | --- | --- |
-| ![Mindkettő](docs/images/media-both.png) | ![Zene](docs/images/media-music.png) | ![Semmi](docs/images/media-idle.png) | ![Sötét](docs/images/media-dark.png) |
+| Mindkettő megy | A TV hangereje | Tévéadás, logóval |
+| --- | --- | --- |
+| ![Mindkettő](docs/images/media-both.png) | ![Hangerő](docs/images/media-volume.png) | ![Csatorna](docs/images/media-channel.png) |
+
+| Zene | Semmi nem megy | Sötét téma |
+| --- | --- | --- |
+| ![Zene](docs/images/media-music.png) | ![Semmi](docs/images/media-idle.png) | ![Sötét](docs/images/media-dark.png) |
 
 ## Telepítés
 

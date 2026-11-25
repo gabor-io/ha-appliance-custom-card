@@ -161,6 +161,9 @@ export class MediaRoomCard extends HTMLElement {
     /* with no picture behind it the text has the whole width, and the hero
        has no reason to stand as tall as a picture would have made it */
     if (!this._config.show_artwork || (!model.artwork && !model.hasMedia)) classes.push('noart');
+    /* a contained logo leaves the card's own background behind the header,
+       so the badge there does not need the scrim a full-bleed picture wants */
+    if (model.logo) classes.push('logo');
     if (this._hass.themes?.darkMode) classes.push('dark');
     const next = classes.join(' ');
     if (this._wrap.className !== next) this._wrap.className = next;
@@ -227,6 +230,15 @@ export class MediaRoomCard extends HTMLElement {
         : `<div class="bg"><div class="mark">${icon(model.icon)}</div><div class="veil"></div></div>`;
     }
     const src = escapeHtml(model.artwork);
+    /* a channel logo or an app icon is not a still: cropping it to the strip
+       leaves a fragment of a logo, and a blurred copy of one is either a
+       colour block or, with transparency, nothing */
+    if (model.logo) {
+      return `
+        <div class="bg logo">
+          <img class="shot" src="${src}" alt="" data-action="more-info">
+        </div>`;
+    }
     return `
       <div class="bg">
         <img class="blur" src="${src}" alt="" aria-hidden="true">
@@ -280,24 +292,30 @@ export class MediaRoomCard extends HTMLElement {
   }
 
   _volHtml(model, t) {
-    if (!model.can.volume && !model.can.mute) return '';
-    const percent = model.volume === null ? null : Math.round(model.volume * 100);
-    const mute = model.can.mute
-      ? `<button class="mute${model.muted ? ' on' : ''}" data-action="mute"
-          title="${escapeHtml(model.muted ? t('ui.unmute') : t('ui.mute'))}"
-          aria-label="${escapeHtml(model.muted ? t('ui.unmute') : t('ui.mute'))}">
-          ${icon(model.muted ? 'volume_off' : 'volume')}
+    const sound = model.sound;
+    if (!sound || (!sound.can.set && !sound.can.mute)) return '';
+    const percent = sound.level === null ? null : Math.round(sound.level * 100);
+    const mute = sound.can.mute
+      ? `<button class="mute${sound.muted ? ' on' : ''}" data-action="mute"
+          title="${escapeHtml(sound.muted ? t('ui.unmute') : t('ui.mute'))}"
+          aria-label="${escapeHtml(sound.muted ? t('ui.unmute') : t('ui.mute'))}">
+          ${icon(sound.muted ? 'volume_off' : 'volume')}
         </button>`
       : icon('volume');
     const slider =
-      model.can.volume && percent !== null
+      sound.can.set && percent !== null
         ? `<input type="range" min="0" max="100" step="1" value="${percent}"
              data-action="volume" aria-label="${escapeHtml(t('ui.volume'))}">
-           <span class="val">${model.muted ? escapeHtml(t('ui.muted')) : `${percent}%`}</span>`
+           <span class="val">${sound.muted ? escapeHtml(t('ui.muted')) : `${percent}%`}</span>`
         : /* without a slider the speaker on its own reads as decoration, so
              it gets the word that says it is a button */
-          `<span class="only">${escapeHtml(model.muted ? t('ui.muted') : t('ui.mute'))}</span>`;
-    return `<div class="vol">${mute}${slider}</div>`;
+          `<span class="only">${escapeHtml(sound.muted ? t('ui.muted') : t('ui.mute'))}</span>`;
+    /* when the sound comes from a different box than the picture, say so -
+       otherwise the slider looks like it belongs to the player on screen */
+    const whose = sound.other
+      ? `<span class="whose">${escapeHtml(sound.name)}</span>`
+      : '';
+    return `<div class="vol">${mute}${slider}${whose}</div>`;
   }
 
   _playersHtml(model, t) {
@@ -380,7 +398,9 @@ export class MediaRoomCard extends HTMLElement {
     clearTimeout(this._volTimer);
     this._volTimer = setTimeout(() => {
       this._haptic('light');
-      this._call('volume_set', { volume_level: percent / 100 });
+      this._callOn(this._model?.sound?.entityId, 'volume_set', {
+        volume_level: percent / 100,
+      });
     }, 200);
   }
 
@@ -430,7 +450,9 @@ export class MediaRoomCard extends HTMLElement {
         break;
       case 'mute':
         this._haptic('light');
-        this._call('volume_mute', { is_volume_muted: !model.muted });
+        this._callOn(model.sound?.entityId, 'volume_mute', {
+          is_volume_muted: !model.sound?.muted,
+        });
         break;
       default:
         break;
@@ -438,7 +460,10 @@ export class MediaRoomCard extends HTMLElement {
   }
 
   _call(service, data) {
-    const entityId = this._model?.active?.entityId;
+    return this._callOn(this._model?.active?.entityId, service, data);
+  }
+
+  _callOn(entityId, service, data) {
     if (!entityId) return Promise.resolve();
     return this._hass.callService('media_player', service, { entity_id: entityId, ...data });
   }

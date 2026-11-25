@@ -43,6 +43,13 @@ ${BASE_STYLES}
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 26%);
   mask-image: linear-gradient(to right, transparent 0%, #000 26%);
 }
+/* logo mode: contained, padded, no blurred copy and no veil over it */
+.bg.logo { display: grid; }
+.bg.logo .shot {
+  position: absolute; top: 0; right: 0; height: 100%; width: 34%;
+  object-fit: contain; padding: 14px 16px 14px 0; box-sizing: border-box;
+  -webkit-mask-image: none; mask-image: none;
+}
 .bg .mark { position: absolute; top: 0; right: 0; height: 100%; width: 40%;
   display: grid; place-items: center; }
 .bg .mark .icon { width: 56px; height: 56px; color: var(--ap-muted); opacity: .35; }
@@ -58,6 +65,7 @@ ${BASE_STYLES}
     transparent 74%);
 }
 .wrap.noart .hero { min-height: 0; }
+.wrap.logo .hero { min-height: 140px; }
 
 .fg { display: grid; gap: 12px; align-content: space-between; min-width: 0; }
 /* The artwork is on the right, so the title and the buttons stop before it.
@@ -84,7 +92,7 @@ ${BASE_STYLES}
    colours have nothing to hold on to - it gets its own scrim instead, the
    way the stock card writes the runtime over the artwork */
 .head .pill { flex: none; background: rgba(0, 0, 0, .42); color: #fff; backdrop-filter: blur(2px); }
-.wrap.noart .head .pill {
+.wrap.noart .head .pill, .wrap.logo .head .pill {
   background: color-mix(in srgb, var(--ap-accent) 16%, transparent);
   color: var(--ap-accent); backdrop-filter: none;
 }
@@ -132,6 +140,8 @@ ${BASE_STYLES}
 .vol .only { font-size: .8rem; color: var(--ap-muted); }
 .vol .val { font-size: .76rem; color: var(--ap-muted); font-variant-numeric: tabular-nums;
   min-width: 34px; text-align: right; }
+.vol .whose { font-size: .73rem; color: var(--ap-muted); opacity: .8; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 42%; }
 
 /* ---------- the player row ---------- */
 .players { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 14px; }

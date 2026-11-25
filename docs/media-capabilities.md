@@ -25,6 +25,7 @@ entities:
 | `show_progress` | `true` | Játékidő-sáv és az idők. |
 | `show_volume` | `true` | Hangerő és némítás. |
 | `show_players` | `true` | A lejátszók sora a kártya alján. |
+| `volume_entity` | az aktív lejátszó | Amelyik a hangot adja, ha nem az, amelyik játszik. |
 | `compact` | `false` | Kisebb borító, szorosabb térköz. |
 
 Egyetlen entitás is megadható `entity:`-vel; ekkor a lejátszók sora magától
@@ -49,6 +50,40 @@ házban.
 
 A lejátszók sorában **bármelyikre koppintva az lesz a megjelenített**, amíg
 újra rá nem koppintasz. Ez akkor hasznos, ha tényleg megy mindkettő.
+
+## Ha a hang nem onnan jön, ami játszik
+
+Egy TV-hez kötött streaming boxnál a kép az egyik entitás, a hang a másik: a
+box `supported_features`-ében **nincs** hangerő, a TV-ében van. Egy olyan
+kártya, ami mindig az aktív lejátszóra küld, pont akkor marad hangerő nélkül,
+amikor használnád.
+
+Ezért a `volume_entity` azt nevezi meg, ami a hangot adja:
+
+```yaml
+type: custom:media-room-card
+name: Hálószoba
+entities:
+  - media_player.a_box
+  - media_player.a_televizio
+volume_entity: media_player.a_televizio
+```
+
+Innentől a hangerő-csúszka és a némítás **mindig** arra az entitásra megy, a
+lejátszás/szünet/előre-hátra pedig arra, ami épp játszik. A csúszka mellett
+ott van annak a neve, amelyiké a hangerő – különben úgy nézne ki, mintha a
+képernyőn látszó lejátszóé lenne.
+
+A TV-t érdemes az `entities` listába is betenni: így adásnézéskor (amikor
+egyetlen lejátszó sem „playing") a kártya a TV-t mutatja. A sorrendnél a
+lista végére kerüljön, mert az `on` úgyis kisebb, mint a `playing`.
+
+## Csatornalogó és app-ikon
+
+Ha a `media_content_type` `channel` vagy `app`, az `entity_picture` **nem
+állókép, hanem logó**. Ilyenkor a kártya nem háttérként vágja be, hanem
+arányosan, kicsinyítve mutatja a jobb oldalon, és elhagyja az elmosott
+másolatot: egy elmosott logó vagy egy színfolt, vagy – ha átlátszó – semmi.
 
 ## Melyik gomb jelenik meg
 

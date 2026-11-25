@@ -18,7 +18,19 @@
     - media_player.nappali_box
     - media_player.nappali_hangszoro
 
-# 3) Mobil dashboardra: tömör, borító és hangerő nélkül
+# 3) A kép az egyik dobozé, a hang a TV-é.
+#    A box supported_features-ében nincs hangerő, a TV-ében van: a csúszka
+#    ezért mindig a TV-re megy, a lejátszás/szünet meg arra, ami játszik.
+#    A TV az entities listában is ott van, a végén: adásnézéskor (amikor
+#    semmi nem "playing") így a kártya a TV-t mutatja, logóval.
+- type: custom:media-room-card
+  name: Hálószoba
+  entities:
+    - media_player.halo_box
+    - media_player.halo_televizio
+  volume_entity: media_player.halo_televizio
+
+# 4) Mobil dashboardra: tömör, borító és hangerő nélkül
 - type: custom:media-room-card
   name: Hálószoba
   compact: true
@@ -27,11 +39,11 @@
     - media_player.halo_box
     - media_player.halo_tv_plex
 
-# 4) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
+# 5) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
 - type: custom:media-room-card
   entity: media_player.konyha_radio
 
-# 5) Saját néven, ha az entitás neve nem a szobáról szól
+# 6) Saját néven, ha az entitás neve nem a szobáról szól
 - type: custom:media-room-card
   name: Dolgozó
   entities:

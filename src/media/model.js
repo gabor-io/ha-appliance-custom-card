@@ -6,6 +6,7 @@
 import {
   CONTENT_ICONS,
   FEATURE,
+  LOGO_TYPES,
   RANK_ACTIVE,
   RANK_IDLE,
   STATE_RANK,
@@ -91,6 +92,35 @@ function titlesOf(stateObj, t) {
   };
 }
 
+/**
+ * Which entity the volume belongs to.
+ *
+ * In a room with a streaming box feeding a television, the box plays and the
+ * television makes the sound: the box's entity has no volume feature at all,
+ * so a card that always sends volume to whatever is playing has no volume
+ * control exactly when it is being used. `volume_entity` names the thing
+ * that makes the sound, and the row is then drawn from its state, not the
+ * active player's.
+ */
+function soundOf(hass, config, active) {
+  const named = config?.volume_entity;
+  const stateObj = (named && hass?.states?.[named]) || active?.stateObj || null;
+  if (!stateObj) return null;
+  const entityId = stateObj.entity_id || active?.entityId;
+  const level = Number(stateObj.attributes?.volume_level);
+  return {
+    entityId,
+    name: friendlyName(hass, entityId),
+    other: Boolean(named && hass?.states?.[named] && entityId !== active?.entityId),
+    level: Number.isFinite(level) ? level : null,
+    muted: Boolean(stateObj.attributes?.is_volume_muted),
+    can: {
+      set: supports(stateObj, FEATURE.VOLUME_SET),
+      mute: supports(stateObj, FEATURE.VOLUME_MUTE),
+    },
+  };
+}
+
 function iconFor(stateObj) {
   const type = String(stateObj?.attributes?.media_content_type || '').toLowerCase();
   return CONTENT_ICONS[type] || (stateObj?.attributes?.media_title ? 'cast_on' : 'tv');
@@ -149,7 +179,10 @@ export function buildModel(hass, config, t, pinned = null) {
 
   const stateObj = active.stateObj;
   const titles = titlesOf(stateObj, t);
-  const volume = Number(stateObj.attributes?.volume_level);
+  const contentType = String(stateObj.attributes?.media_content_type || '').toLowerCase();
+  /* a television reports the input it is on rather than an app name; it is
+     worth showing, but not twice when it is also the title */
+  const app = active.app || stateObj.attributes?.source || null;
 
   return {
     ok: true,
@@ -165,12 +198,12 @@ export function buildModel(hass, config, t, pinned = null) {
     title: titles.title,
     sub: titles.sub,
     hasMedia: titles.hasMedia,
-    app: active.app,
+    app: app && app !== titles.title ? app : null,
     artwork: stateObj.attributes?.entity_picture || null,
+    logo: LOGO_TYPES.includes(contentType),
     icon: iconFor(stateObj),
     progress: progressOf(stateObj),
-    volume: Number.isFinite(volume) ? volume : null,
-    muted: Boolean(stateObj.attributes?.is_volume_muted),
+    sound: soundOf(hass, config, active),
     can: {
       power: supports(stateObj, FEATURE.TURN_ON) || supports(stateObj, FEATURE.TURN_OFF),
       turnOn: supports(stateObj, FEATURE.TURN_ON),
@@ -181,8 +214,6 @@ export function buildModel(hass, config, t, pinned = null) {
       prev: supports(stateObj, FEATURE.PREVIOUS_TRACK),
       next: supports(stateObj, FEATURE.NEXT_TRACK),
       seek: supports(stateObj, FEATURE.SEEK),
-      volume: supports(stateObj, FEATURE.VOLUME_SET),
-      mute: supports(stateObj, FEATURE.VOLUME_MUTE),
     },
   };
 }

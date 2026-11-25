@@ -10,6 +10,7 @@
 
 const BOX = 'media_player.bedroom_streaming_box';
 const TV = 'media_player.bedroom_tv_plex';
+const SET = 'media_player.bedroom_television';
 
 /* a poster, drawn rather than fetched: the demo has no Home Assistant behind
    it to proxy artwork from */
@@ -58,6 +59,10 @@ const ALBUM = {
 const BOX_FEATURES = 1 | 2 | 8 | 16 | 32 | 128 | 256 | 512 | 1024 | 4096 | 16384 | 131072;
 /* a Plex client: transport and volume, no power */
 const TV_FEATURES = 1 | 2 | 4 | 8 | 16 | 32 | 512 | 4096 | 16384;
+/* the television set itself, as ha-samsungtv-smart reports it: it never says
+   "playing", only on or off, but it is the only thing in the room with a
+   volume - 221117 is the real supported_features of a UE55MU7052 */
+const SET_FEATURES = 221117;
 
 function player(entityId, name, state, extra = {}, features = BOX_FEATURES) {
   const { position = null, ...attrs } = extra;
@@ -78,10 +83,41 @@ function player(entityId, name, state, extra = {}, features = BOX_FEATURES) {
   };
 }
 
+const CHANNEL = {
+  media_title: 'M4 Sport (8)',
+  media_channel: '8',
+  media_content_type: 'channel',
+  app_name: null,
+  source: 'TV',
+  /* a channel logo, which is a logo and not a still - the card must not crop
+     it to the artwork strip */
+  entity_picture:
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60">' +
+        '<rect width="160" height="60" rx="8" fill="#0b4da2"/>' +
+        '<text x="80" y="40" text-anchor="middle" font-family="sans-serif"' +
+        ' font-size="28" font-weight="700" fill="#fff">M4</text></svg>',
+    ),
+};
+
 export const SCENARIOS = {
   'box megy': {
     [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 2380 }),
     [TV]: player(TV, 'TV – Plex', 'off', {}, TV_FEATURES),
+  },
+  /* the real case this option exists for: the box has the picture and no
+     volume at all, the television has the volume and never says "playing" */
+  'box + tv hangereje': {
+    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 2380 }),
+    [SET]: player(SET, 'Televízió', 'on', {
+      media_title: 'Apple TV', source: 'Apple TV', media_content_type: 'video',
+      volume_level: 0.17,
+    }, SET_FEATURES),
+  },
+  'tv adás': {
+    [SET]: player(SET, 'Televízió', 'on', { ...CHANNEL, volume_level: 0.22 }, SET_FEATURES),
+    [BOX]: player(BOX, 'Hálószoba box', 'off'),
   },
   'tv megy': {
     [BOX]: player(BOX, 'Hálószoba box', 'idle'),
@@ -137,4 +173,4 @@ export function makeHass(key) {
   return hass;
 }
 
-window.demo = { SCENARIOS, makeHass, BOX, TV };
+window.demo = { SCENARIOS, makeHass, BOX, TV, SET };

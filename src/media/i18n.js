@@ -24,6 +24,7 @@ const HU = {
     pin_hint: 'Koppints egy lejátszóra, hogy azt mutassa a kártya',
     volume: 'Hangerő',
     muted: 'Némítva',
+    volume_of: 'hangerő: {name}',
     left: 'még {time}',
     of: '{elapsed} / {duration}',
     power: 'Be/ki',
@@ -39,6 +40,10 @@ const HU = {
   },
   editor: {
     entities: 'Lejátszók',
+    volume_entity: 'A hangerő ezé',
+    volume_entity_hint:
+      'Ha a hang nem abból jön, ami játszik – például a box képet ad, a TV hangot –, itt add meg a TV-t.',
+    volume_entity_auto: 'Ami épp megy',
     entities_hint: 'Amelyik elindul, az jelenik meg. Egyenlő állapotnál a lista sorrendje dönt.',
     name: 'Név',
     language: 'Nyelv',
@@ -76,6 +81,7 @@ const EN = {
     pin_hint: 'Tap a player to make the card show that one',
     volume: 'Volume',
     muted: 'Muted',
+    volume_of: 'volume: {name}',
     left: '{time} left',
     of: '{elapsed} / {duration}',
     power: 'Power',
@@ -91,6 +97,10 @@ const EN = {
   },
   editor: {
     entities: 'Players',
+    volume_entity: 'Volume belongs to',
+    volume_entity_hint:
+      'When the sound comes from something other than the player - a box for the picture, the TV for the sound - name the TV here.',
+    volume_entity_auto: 'Whatever is playing',
     entities_hint: 'Whichever starts is shown. On equal states the list order decides.',
     name: 'Name',
     language: 'Language',

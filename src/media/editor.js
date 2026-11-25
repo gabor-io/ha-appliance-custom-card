@@ -115,6 +115,19 @@ export class MediaRoomCardEditor extends HTMLElement {
       ),
     ].join('');
 
+    /* the volume may belong to a box that is not in the list at all - a TV
+       that only ever makes the sound, never the picture - so this picker
+       offers every player, not just the chosen ones */
+    const volumeOptions = [
+      `<option value="">${escapeHtml(t('editor.volume_entity_auto'))}</option>`,
+      ...all.map(
+        (player) =>
+          `<option value="${escapeHtml(player.id)}" ${
+            player.id === this._config.volume_entity ? 'selected' : ''
+          }>${escapeHtml(player.name)}</option>`,
+      ),
+    ].join('');
+
     const languageOptions = [
       `<option value="auto">${escapeHtml(t('editor.language_auto'))}</option>`,
       ...LANGUAGES.map(
@@ -136,6 +149,10 @@ export class MediaRoomCardEditor extends HTMLElement {
         <div class="hint">${escapeHtml(t('editor.entities_hint'))}</div>
         <div class="chosen">${rows}</div>
         <label><select data-add>${addOptions}</select></label>
+        <label>${escapeHtml(t('editor.volume_entity'))}
+          <select data-key="volume_entity">${volumeOptions}</select>
+        </label>
+        <div class="hint">${escapeHtml(t('editor.volume_entity_hint'))}</div>
         <label>${escapeHtml(t('editor.name'))}
           <input type="text" data-key="name" value="${escapeHtml(this._config.name || '')}">
         </label>
