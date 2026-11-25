@@ -143,6 +143,41 @@ ${BASE_STYLES}
 .vol .whose { font-size: .73rem; color: var(--ap-muted); opacity: .8; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; max-width: 42%; }
 
+/* ---------- a seekable bar has to look touchable ---------- */
+.prog .bar.seek { cursor: pointer; height: 6px; margin: -3px 0; }
+.prog .bar.seek:hover > i { filter: brightness(1.1); }
+
+/* ---------- source, sound mode, remote toggle ---------- */
+.picks { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 16px 12px; }
+.compact .picks { padding: 0 12px 10px; }
+.pick { display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 150px; }
+.pick .icon { width: 16px; height: 16px; color: var(--ap-muted); flex: none; }
+.pick select {
+  font: inherit; font-size: .8rem; min-width: 0; width: 100%;
+  padding: 6px 8px; border-radius: 9px;
+  border: 1px solid var(--ap-line); background: transparent; color: var(--ap-text);
+}
+.ctl.pad-toggle { width: 34px; height: 34px; flex: none; border: 1px solid var(--ap-line); }
+.ctl.pad-toggle.on { background: color-mix(in srgb, var(--ap-accent) 18%, transparent);
+  color: var(--ap-accent); border-color: var(--ap-accent-soft); }
+.ctl.small { width: 30px; height: 30px; border: 1px solid var(--ap-line); flex: none; }
+.ctl.small .icon { width: 16px; height: 16px; }
+
+/* ---------- the direction pad ---------- */
+.pad { display: grid; gap: 10px; justify-items: center; padding: 0 16px 14px; }
+.dpad { display: grid; grid-template-columns: repeat(3, 44px); gap: 6px; }
+.padkey {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--ap-line);
+  background: transparent; color: var(--ap-text); cursor: pointer;
+  display: grid; place-items: center; padding: 0;
+}
+.padkey .icon { width: 22px; height: 22px; }
+.padkey:hover { background: color-mix(in srgb, var(--ap-text) 10%, transparent); }
+.padkey:active { background: color-mix(in srgb, var(--ap-accent) 22%, transparent); }
+.padkey.mid { border-radius: 50%; border-color: var(--ap-accent-soft); color: var(--ap-accent); }
+.extras { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.extras .padkey { width: 40px; height: 36px; border-radius: 10px; }
+
 /* ---------- the player row ---------- */
 .players { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 14px; }
 .compact .players { padding: 0 12px 12px; }

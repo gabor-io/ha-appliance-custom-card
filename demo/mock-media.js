@@ -55,14 +55,32 @@ const ALBUM = {
   entity_picture: poster('#2b6f4a', '#102f20', '♪'),
 };
 
-/* Apple TV style box: everything but volume set */
-const BOX_FEATURES = 1 | 2 | 8 | 16 | 32 | 128 | 256 | 512 | 1024 | 4096 | 16384 | 131072;
+/* Apple TV style box: seek yes, volume no - which is what the real one
+   reports (pyatv: SetPosition available, SetVolume unavailable) */
+const BOX_FEATURES = 1 | 2 | 16 | 32 | 128 | 256 | 512 | 2048 | 4096 | 16384 | 131072;
 /* a Plex client: transport and volume, no power */
 const TV_FEATURES = 1 | 2 | 4 | 8 | 16 | 32 | 512 | 4096 | 16384;
 /* the television set itself, as ha-samsungtv-smart reports it: it never says
    "playing", only on or off, but it is the only thing in the room with a
    volume - 221117 is the real supported_features of a UE55MU7052 */
 const SET_FEATURES = 221117;
+
+/* what the two boxes answer `remote.send_command` with */
+const PLATFORMS = {
+  [BOX]: 'apple_tv',
+  [TV]: 'plex',
+  [SET]: 'samsungtv_smart',
+};
+const DEVICES = { [BOX]: 'dev-box', [TV]: 'dev-tv-plex', [SET]: 'dev-set' };
+const REMOTES = { 'remote.bedroom_box': 'dev-box', 'remote.television': 'dev-set' };
+
+const TV_SOURCES = [
+  'TV', 'Apple TV', 'Plex', 'Disney+', 'YouTube', 'Internet', 'HBO Max',
+  'SkyShowtime', 'Prime Video', 'Netflix', 'Spotify',
+];
+const SOUND_MODES = ['Normál', 'Optimalizálva', 'Hangosított'];
+const BOX_APPS = ['Plex', 'YouTube', 'Netflix', 'Apple TV+', 'Képernyővédő'];
+const BOX_SOURCE = { source: 'Plex', source_list: BOX_APPS };
 
 function player(entityId, name, state, extra = {}, features = BOX_FEATURES) {
   const { position = null, ...attrs } = extra;
@@ -103,20 +121,24 @@ const CHANNEL = {
 
 export const SCENARIOS = {
   'box megy': {
-    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 2380 }),
+    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, ...BOX_SOURCE, position: 2380 }),
     [TV]: player(TV, 'TV – Plex', 'off', {}, TV_FEATURES),
   },
   /* the real case this option exists for: the box has the picture and no
      volume at all, the television has the volume and never says "playing" */
   'box + tv hangereje': {
-    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 2380 }),
+    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, ...BOX_SOURCE, position: 2380 }),
     [SET]: player(SET, 'Televízió', 'on', {
       media_title: 'Apple TV', source: 'Apple TV', media_content_type: 'video',
-      volume_level: 0.17,
+      volume_level: 0.17, source_list: TV_SOURCES, sound_mode: 'Optimalizálva',
+      sound_mode_list: SOUND_MODES,
     }, SET_FEATURES),
   },
   'tv adás': {
-    [SET]: player(SET, 'Televízió', 'on', { ...CHANNEL, volume_level: 0.22 }, SET_FEATURES),
+    [SET]: player(SET, 'Televízió', 'on', {
+      ...CHANNEL, volume_level: 0.22, source_list: TV_SOURCES,
+      sound_mode: 'Normál', sound_mode_list: SOUND_MODES,
+    }, SET_FEATURES),
     [BOX]: player(BOX, 'Hálószoba box', 'off'),
   },
   'tv megy': {
@@ -168,7 +190,23 @@ export function makeHass(key) {
   };
   for (const [entityId, stateObj] of Object.entries(states)) {
     hass.states[entityId] = stateObj;
-    hass.entities[entityId] = { entity_id: entityId, platform: 'demo', device_id: null };
+    hass.entities[entityId] = {
+      entity_id: entityId,
+      platform: PLATFORMS[entityId] || 'demo',
+      device_id: DEVICES[entityId] || null,
+    };
+  }
+  /* each box also has a remote entity on the same device, which is how the
+     card finds the one belonging to whatever is playing */
+  for (const [entityId, device] of Object.entries(REMOTES)) {
+    if (!Object.values(DEVICES).includes(device)) continue;
+    if (!Object.keys(states).some((id) => DEVICES[id] === device)) continue;
+    hass.states[entityId] = { entity_id: entityId, state: 'on', attributes: {} };
+    hass.entities[entityId] = {
+      entity_id: entityId,
+      platform: entityId.includes('television') ? 'samsungtv_smart' : 'apple_tv',
+      device_id: device,
+    };
   }
   return hass;
 }

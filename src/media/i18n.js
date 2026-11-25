@@ -25,6 +25,9 @@ const HU = {
     volume: 'Hangerő',
     muted: 'Némítva',
     volume_of: 'hangerő: {name}',
+    source: 'Forrás',
+    sound_mode: 'Hangzás',
+    remote: 'Távirányító',
     left: 'még {time}',
     of: '{elapsed} / {duration}',
     power: 'Be/ki',
@@ -37,6 +40,11 @@ const HU = {
     unmute: 'Némítás vissza',
     unavailable_player: 'nem válaszol',
     missing_player: 'nincs ilyen entitás',
+  },
+  key: {
+    up: 'Fel', down: 'Le', left: 'Balra', right: 'Jobbra', select: 'OK',
+    back: 'Vissza', home: 'Főmenü', menu: 'Menü',
+    rewind: 'Vissza egy kicsit', forward: 'Előre egy kicsit',
   },
   editor: {
     entities: 'Lejátszók',
@@ -53,6 +61,8 @@ const HU = {
     show_progress: 'Játékidő',
     show_volume: 'Hangerő',
     show_players: 'Lejátszók sora',
+    show_sources: 'Forrás és hangzás',
+    show_remote: 'Távirányító gomb',
     compact: 'Tömör',
   },
 };
@@ -82,6 +92,9 @@ const EN = {
     volume: 'Volume',
     muted: 'Muted',
     volume_of: 'volume: {name}',
+    source: 'Source',
+    sound_mode: 'Sound mode',
+    remote: 'Remote',
     left: '{time} left',
     of: '{elapsed} / {duration}',
     power: 'Power',
@@ -94,6 +107,11 @@ const EN = {
     unmute: 'Unmute',
     unavailable_player: 'not answering',
     missing_player: 'no such entity',
+  },
+  key: {
+    up: 'Up', down: 'Down', left: 'Left', right: 'Right', select: 'OK',
+    back: 'Back', home: 'Home', menu: 'Menu',
+    rewind: 'Skip back', forward: 'Skip forward',
   },
   editor: {
     entities: 'Players',
@@ -110,6 +128,8 @@ const EN = {
     show_progress: 'Progress',
     show_volume: 'Volume',
     show_players: 'Player row',
+    show_sources: 'Source and sound mode',
+    show_remote: 'Remote button',
     compact: 'Compact',
   },
 };

@@ -30,7 +30,22 @@
     - media_player.halo_televizio
   volume_entity: media_player.halo_televizio
 
-# 4) Mobil dashboardra: tömör, borító és hangerő nélkül
+# 4) Minden, amit a két integráció enged: forrás- és hangzásválasztó,
+#    tekerés a sávon, és a doboz saját távirányítója.
+#    A pad entitását és billentyűtérképét magától megtalálja a lejátszó
+#    eszközéről - ezeket csak akkor írd ki, ha felül akarod bírálni.
+- type: custom:media-room-card
+  name: Hálószoba
+  entities:
+    - media_player.halo_box
+    - media_player.halo_televizio
+  volume_entity: media_player.halo_televizio
+  show_sources: true
+  show_remote: true
+  # remote_entity: remote.halo_box
+  # remote_keys: apple        # apple | samsung | saját {gomb: parancs} térkép
+
+# 5) Mobil dashboardra: tömör, borító és hangerő nélkül
 - type: custom:media-room-card
   name: Hálószoba
   compact: true
@@ -39,11 +54,11 @@
     - media_player.halo_box
     - media_player.halo_tv_plex
 
-# 5) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
+# 6) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
 - type: custom:media-room-card
   entity: media_player.konyha_radio
 
-# 6) Saját néven, ha az entitás neve nem a szobáról szól
+# 7) Saját néven, ha az entitás neve nem a szobáról szól
 - type: custom:media-room-card
   name: Dolgozó
   entities:

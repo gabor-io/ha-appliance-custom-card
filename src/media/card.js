@@ -1,4 +1,12 @@
-import { CARD_NAME, CARD_VERSION, EDITOR_NAME, TICK_MS } from './const.js';
+import {
+  CARD_NAME,
+  CARD_VERSION,
+  EDITOR_NAME,
+  PAD_EXTRAS,
+  PAD_ICONS,
+  PAD_LAYOUT,
+  TICK_MS,
+} from './const.js';
 import { fill, getLanguage, translator } from './i18n.js';
 import { buildModel, clock } from './model.js';
 import { listMediaPlayers } from './entities.js';
@@ -13,6 +21,8 @@ export const DEFAULTS = {
   show_progress: true,
   show_volume: true,
   show_players: true,
+  show_sources: true,
+  show_remote: true,
 };
 
 /** Card that shows whichever of several media players is actually playing. */
@@ -91,8 +101,9 @@ export class MediaRoomCard extends HTMLElement {
     wrap.className = 'wrap';
     wrap.addEventListener('click', (ev) => this._onClick(ev));
     wrap.addEventListener('input', (ev) => this._onInput(ev));
+    wrap.addEventListener('change', (ev) => this._onChange(ev));
 
-    for (const name of ['hero', 'foot', 'vol', 'players']) {
+    for (const name of ['hero', 'foot', 'vol', 'sources', 'pad', 'players']) {
       const node = document.createElement('div');
       node.dataset.section = name;
       this._sections[name] = node;
@@ -125,6 +136,8 @@ export class MediaRoomCard extends HTMLElement {
       this._section('hero', this._quietHtml(model, t));
       this._section('foot', '');
       this._section('vol', '');
+      this._section('sources', '');
+      this._section('pad', '');
       this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
       return;
     }
@@ -132,6 +145,8 @@ export class MediaRoomCard extends HTMLElement {
     this._section('hero', this._heroHtml(model, t));
     this._section('foot', this._config.show_progress ? this._progHtml(model, t) : '');
     this._section('vol', this._config.show_volume ? this._volHtml(model, t) : '');
+    this._section('sources', this._config.show_sources ? this._sourcesHtml(model, t) : '');
+    this._section('pad', this._padOpen ? this._padHtml(model, t) : '');
     this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
   }
 
@@ -252,7 +267,13 @@ export class MediaRoomCard extends HTMLElement {
     const { elapsed, duration, remaining, percent } = model.progress;
     return `
       <div class="prog">
-        <div class="bar"><i style="width:${percent.toFixed(2)}%"></i></div>
+        <div class="bar${model.can.seek ? ' seek' : ''}"${
+          model.can.seek
+            ? ' data-action="seek" role="slider" tabindex="0"' +
+              ` aria-valuemin="0" aria-valuemax="${Math.round(duration)}"` +
+              ` aria-valuenow="${Math.round(elapsed)}"`
+            : ''
+        }><i style="width:${percent.toFixed(2)}%"></i></div>
         <div class="times">
           <span data-role="elapsed">${escapeHtml(
             fill(t('ui.of'), { elapsed: clock(elapsed), duration: clock(duration) }),
@@ -310,12 +331,83 @@ export class MediaRoomCard extends HTMLElement {
         : /* without a slider the speaker on its own reads as decoration, so
              it gets the word that says it is a button */
           `<span class="only">${escapeHtml(sound.muted ? t('ui.muted') : t('ui.mute'))}</span>`;
+    /* a player with steps but no absolute volume (a TV over HDMI-CEC, say)
+       can still be turned up and down, just not set */
+    const steps =
+      !sound.can.set && sound.can.step
+        ? `<button class="ctl small" data-action="vol-down" title="-" aria-label="-">${icon('chevron')}</button>
+           <button class="ctl small" data-action="vol-up" title="+" aria-label="+">${icon('chevron_up')}</button>`
+        : '';
     /* when the sound comes from a different box than the picture, say so -
        otherwise the slider looks like it belongs to the player on screen */
     const whose = sound.other
       ? `<span class="whose">${escapeHtml(sound.name)}</span>`
       : '';
-    return `<div class="vol">${mute}${slider}${whose}</div>`;
+    return `<div class="vol">${mute}${slider}${steps}${whose}</div>`;
+  }
+
+  /**
+   * The two things a television lets you pick that a player does not: which
+   * input or app is on screen, and what the sound is doing.
+   *
+   * Both are `<select>`s rather than rows of chips because the lists are
+   * long - this television offers nineteen sources - and a chip row of
+   * nineteen would be the tallest thing on the card.
+   */
+  _sourcesHtml(model, t) {
+    const parts = [];
+    if (model.sources) {
+      parts.push(this._pickerHtml('source', icon('apps'), t('ui.source'), model.sources));
+    }
+    if (model.sound?.modes) {
+      parts.push(this._pickerHtml('sound-mode', icon('volume'), t('ui.sound_mode'), model.sound.modes));
+    }
+    if (model.pad) {
+      parts.push(
+        `<button class="ctl pad-toggle${this._padOpen ? ' on' : ''}" data-action="pad"
+           title="${escapeHtml(t('ui.remote'))}" aria-label="${escapeHtml(t('ui.remote'))}"
+           aria-pressed="${this._padOpen ? 'true' : 'false'}">${icon('remote')}</button>`,
+      );
+    }
+    return parts.length ? `<div class="picks">${parts.join('')}</div>` : '';
+  }
+
+  _pickerHtml(action, iconHtml, label, list) {
+    const options = list.options
+      .map(
+        (option) =>
+          `<option value="${escapeHtml(option)}" ${option === list.current ? 'selected' : ''}>${escapeHtml(option)}</option>`,
+      )
+      .join('');
+    /* a current value the list does not contain would otherwise show as the
+       first option, quietly claiming the box is on something it is not */
+    const unlisted =
+      list.current && !list.options.includes(list.current)
+        ? `<option value="" selected disabled>${escapeHtml(list.current)}</option>`
+        : '';
+    return `<label class="pick" title="${escapeHtml(label)}">${iconHtml}
+      <select data-action="${action}" aria-label="${escapeHtml(label)}">${unlisted}${options}</select>
+    </label>`;
+  }
+
+  /**
+   * The direction pad, drawn only when the box behind the active player has
+   * a remote entity whose command names this card knows.
+   */
+  _padHtml(model, t) {
+    if (!model.pad) return '';
+    const keys = model.pad.keys;
+    const key = (name) =>
+      !keys[name]
+        ? '<span></span>'
+        : `<button class="padkey${name === 'select' ? ' mid' : ''}" data-action="key" data-key="${escapeHtml(name)}"
+             title="${escapeHtml(t(`key.${name}`, name))}" aria-label="${escapeHtml(t(`key.${name}`, name))}">
+             ${icon(PAD_ICONS[name])}</button>`;
+    const grid = PAD_LAYOUT.map(
+      (row) => row.map((name) => (name ? key(name) : '<span></span>')).join(''),
+    ).join('');
+    const extras = PAD_EXTRAS.filter((name) => keys[name]).map(key).join('');
+    return `<div class="pad"><div class="dpad">${grid}</div><div class="extras">${extras}</div></div>`;
   }
 
   _playersHtml(model, t) {
@@ -389,6 +481,19 @@ export class MediaRoomCard extends HTMLElement {
 
   /* ---------------------------- actions ----------------------------- */
 
+  _onChange(ev) {
+    const node = ev.target.closest('select[data-action]');
+    if (!node || !node.value) return;
+    const { action } = node.dataset;
+    this._haptic('light');
+    if (action === 'source') this._call('select_source', { source: node.value });
+    if (action === 'sound-mode') {
+      this._callOn(this._model?.sound?.entityId, 'select_sound_mode', {
+        sound_mode: node.value,
+      });
+    }
+  }
+
   _onInput(ev) {
     const node = ev.target.closest('[data-action="volume"]');
     if (!node) return;
@@ -407,7 +512,7 @@ export class MediaRoomCard extends HTMLElement {
   _onClick(ev) {
     const node = ev.target.closest('[data-action]');
     if (!node || node.hasAttribute('disabled')) return;
-    const { action, entity } = node.dataset;
+    const { action, entity, key } = node.dataset;
     const model = this._model;
     if (!model?.ok) return;
 
@@ -447,6 +552,37 @@ export class MediaRoomCard extends HTMLElement {
       case 'stop':
         this._haptic('medium');
         this._call('media_stop', {});
+        break;
+      case 'seek': {
+        const box = node.getBoundingClientRect();
+        const duration = model.progress?.duration;
+        if (!duration || !box.width) break;
+        const ratio = Math.min(1, Math.max(0, (ev.clientX - box.left) / box.width));
+        this._haptic('light');
+        this._call('media_seek', { seek_position: Math.round(ratio * duration) });
+        break;
+      }
+      case 'pad':
+        this._padOpen = !this._padOpen;
+        this._haptic('light');
+        this._render();
+        break;
+      case 'key':
+        if (!model.pad?.keys?.[key]) break;
+        this._haptic('light');
+        this._hass.callService('remote', 'send_command', {
+          entity_id: model.pad.entityId,
+          command: model.pad.keys[key],
+        });
+        break;
+      case 'vol-up':
+      case 'vol-down':
+        this._haptic('light');
+        this._callOn(
+          model.sound?.entityId,
+          action === 'vol-up' ? 'volume_up' : 'volume_down',
+          {},
+        );
         break;
       case 'mute':
         this._haptic('light');

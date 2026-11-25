@@ -415,6 +415,17 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
   `app`, az `entity_picture` logó: a kártya ilyenkor arányosan, kicsinyítve
   mutatja, és elhagyja az elmosott másolatot – egy elmosott logó vagy
   színfolt, vagy átlátszó logónál semmi.
+- **Forrás, hangzásmód, tekerés – amit a gép tud.** A forrásválasztó az aktív
+  lejátszóé (TV-nél a bemenetek és appok, Apple TV-nél a telepített appok), a
+  hangzásmód a *hangot adó* entitásé, a játékidő-sáv pedig tekerhető, ha az
+  adott lejátszó tud `SEEK`-et. Kétnél kevesebb elemű lista nem lesz választó.
+- **Távirányító, a megfelelő billentyűtérképpel.** Ha az aktív lejátszó
+  dobozán van `remote` entitás, kinyitható egy iránypad. A két integráció nem
+  ugyanazt érti: az Apple TV `up`/`select`/`menu`, a Samsung
+  `KEY_UP`/`KEY_ENTER`/`KEY_RETURN`. A kártya ezért nem az entitás nevéből
+  találgat, hanem a remote entitás **platformjából** választ térképet –
+  ismeretlennél inkább nincs pad, mint olyan, ami minden gombra
+  „Command not found"-ot dob.
 - **A játékidő nem áll meg két állapotfrissítés között.** A `media_position`
   pillanatfelvétel, nem élő érték, ezért a kártya hozzászámolja az azóta
   eltelt időt – de **csak lejátszás közben**, mert megállított filmnél a
@@ -435,9 +446,13 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
 Részletek: [`docs/media-capabilities.md`](docs/media-capabilities.md),
 példák: [`examples/media.yaml`](examples/media.yaml).
 
-| Mindkettő megy | A TV hangereje | Tévéadás, logóval |
+| Mindkettő megy | A TV hangereje, forrás és hangzás | Tévéadás, logóval |
 | --- | --- | --- |
 | ![Mindkettő](docs/images/media-both.png) | ![Hangerő](docs/images/media-volume.png) | ![Csatorna](docs/images/media-channel.png) |
+
+| Távirányító |
+| --- |
+| ![Távirányító](docs/images/media-remote.png) |
 
 | Zene | Semmi nem megy | Sötét téma |
 | --- | --- | --- |

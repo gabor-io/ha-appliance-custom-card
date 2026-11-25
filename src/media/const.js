@@ -70,6 +70,7 @@ export const FEATURE = {
   STOP: 4096,
   PLAY: 16384,
   SHUFFLE_SET: 32768,
+  SELECT_SOUND_MODE: 65536,
   BROWSE_MEDIA: 131072,
   REPEAT_SET: 262144,
 };
@@ -100,6 +101,77 @@ export const CONTENT_ICONS = {
  * if it has transparency, nothing at all.
  */
 export const LOGO_TYPES = ['channel', 'app'];
+
+/**
+ * What a direction pad sends, per integration.
+ *
+ * `remote.send_command` takes whatever string the integration's own remote
+ * entity understands, and the two here do not agree on a single name: the
+ * Apple TV takes pyatv's method names (`up`, `select`, `menu`), a Samsung
+ * takes Tizen key codes (`KEY_UP`, `KEY_ENTER`, `KEY_RETURN`). A pad with
+ * one hardcoded set would be dead on the other box, so the map is chosen
+ * from the remote entity's own platform.
+ *
+ * Only commands that exist on both sides of each integration are listed:
+ * pyatv raises "Command not found" for anything its RemoteControl has no
+ * method for, and the Apple TV's own feature list (from its diagnostics)
+ * confirms these are the available ones.
+ */
+export const REMOTE_KEYS = {
+  apple: {
+    up: 'up',
+    down: 'down',
+    left: 'left',
+    right: 'right',
+    select: 'select',
+    back: 'menu',
+    home: 'home',
+    menu: 'top_menu',
+    rewind: 'skip_backward',
+    forward: 'skip_forward',
+  },
+  samsung: {
+    up: 'KEY_UP',
+    down: 'KEY_DOWN',
+    left: 'KEY_LEFT',
+    right: 'KEY_RIGHT',
+    select: 'KEY_ENTER',
+    back: 'KEY_RETURN',
+    home: 'KEY_HOME',
+    menu: 'KEY_MENU',
+    rewind: 'KEY_REWIND',
+    forward: 'KEY_FF',
+  },
+};
+
+/** Which key map an integration's remote entity wants. */
+export const PLATFORM_KEYS = {
+  apple_tv: 'apple',
+  samsungtv: 'samsung',
+  samsungtv_smart: 'samsung',
+};
+
+/** The pad's layout, drawn as a 3x3 grid plus a row of extras. */
+export const PAD_LAYOUT = [
+  [null, 'up', null],
+  ['left', 'select', 'right'],
+  [null, 'down', null],
+];
+export const PAD_EXTRAS = ['back', 'home', 'menu', 'rewind', 'forward'];
+
+/** Icons for the pad, by key. */
+export const PAD_ICONS = {
+  up: 'chevron_up',
+  down: 'chevron',
+  left: 'chevron_left',
+  right: 'chevron_right',
+  select: 'dot',
+  back: 'back',
+  home: 'home',
+  menu: 'menu',
+  rewind: 'rewind',
+  forward: 'forward',
+};
 
 /** How often the progress bar redraws itself between state updates. */
 export const TICK_MS = 1000;

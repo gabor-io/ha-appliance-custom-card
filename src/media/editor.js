@@ -45,7 +45,15 @@ input[type="text"], select {
   color: var(--primary-text-color, #212121); cursor: pointer; }
 `;
 
-const TOGGLES = ['show_artwork', 'show_progress', 'show_volume', 'show_players', 'compact'];
+const TOGGLES = [
+  'show_artwork',
+  'show_progress',
+  'show_volume',
+  'show_sources',
+  'show_remote',
+  'show_players',
+  'compact',
+];
 
 export class MediaRoomCardEditor extends HTMLElement {
   constructor() {

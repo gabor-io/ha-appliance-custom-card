@@ -7,11 +7,12 @@ import {
   CONTENT_ICONS,
   FEATURE,
   LOGO_TYPES,
+  REMOTE_KEYS,
   RANK_ACTIVE,
   RANK_IDLE,
   STATE_RANK,
 } from './const.js';
-import { configuredPlayers, friendlyName } from './entities.js';
+import { configuredPlayers, friendlyName, remoteFor } from './entities.js';
 
 const rankOf = (state) => STATE_RANK[state] ?? 0;
 
@@ -114,11 +115,53 @@ function soundOf(hass, config, active) {
     other: Boolean(named && hass?.states?.[named] && entityId !== active?.entityId),
     level: Number.isFinite(level) ? level : null,
     muted: Boolean(stateObj.attributes?.is_volume_muted),
+    /* the sound modes are the amplifier's, so they belong here rather than
+       with the thing that happens to be playing */
+    modes: listOf(stateObj, 'sound_mode_list', 'sound_mode', FEATURE.SELECT_SOUND_MODE),
     can: {
       set: supports(stateObj, FEATURE.VOLUME_SET),
       mute: supports(stateObj, FEATURE.VOLUME_MUTE),
+      step: supports(stateObj, FEATURE.VOLUME_STEP),
     },
   };
+}
+
+/** A `<select>`-able list, or null when the player offers nothing to pick. */
+function listOf(stateObj, listAttr, currentAttr, bit) {
+  if (!supports(stateObj, bit)) return null;
+  const list = stateObj?.attributes?.[listAttr];
+  if (!Array.isArray(list) || list.length < 2) return null;
+  /* a TV lists the same app twice when it is both an input and an installed
+     app; the picker would then have two identical rows, one of them dead */
+  const unique = [...new Set(list.filter((item) => typeof item === 'string'))];
+  if (unique.length < 2) return null;
+  return { options: unique, current: stateObj.attributes?.[currentAttr] ?? null };
+}
+
+/**
+ * The direction pad, when the active player's box has a remote entity whose
+ * commands this card knows.
+ *
+ * An unknown platform gets no pad rather than a pad of guesses: a remote
+ * that raises "Command not found" on every press is worse than none.
+ */
+function padOf(hass, config, active) {
+  if (config?.show_remote === false) return null;
+  const named = config?.remote_entity;
+  const found = named
+    ? { entityId: named, keys: null, platform: hass?.entities?.[named]?.platform || null }
+    : remoteFor(hass, active?.entityId);
+  if (!found || !hass?.states?.[found.entityId]) return null;
+
+  const wanted = config?.remote_keys && config.remote_keys !== 'auto' ? config.remote_keys : null;
+  const keys =
+    (typeof wanted === 'object' && wanted) ||
+    REMOTE_KEYS[wanted] ||
+    REMOTE_KEYS[found.keys] ||
+    REMOTE_KEYS[{ apple_tv: 'apple', samsungtv: 'samsung', samsungtv_smart: 'samsung' }[found.platform]] ||
+    null;
+  if (!keys) return null;
+  return { entityId: found.entityId, keys };
 }
 
 function iconFor(stateObj) {
@@ -204,6 +247,8 @@ export function buildModel(hass, config, t, pinned = null) {
     icon: iconFor(stateObj),
     progress: progressOf(stateObj),
     sound: soundOf(hass, config, active),
+    sources: listOf(stateObj, 'source_list', 'source', FEATURE.SELECT_SOURCE),
+    pad: padOf(hass, config, active),
     can: {
       power: supports(stateObj, FEATURE.TURN_ON) || supports(stateObj, FEATURE.TURN_OFF),
       turnOn: supports(stateObj, FEATURE.TURN_ON),

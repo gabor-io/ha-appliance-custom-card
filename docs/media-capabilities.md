@@ -26,6 +26,10 @@ entities:
 | `show_volume` | `true` | Hangerő és némítás. |
 | `show_players` | `true` | A lejátszók sora a kártya alján. |
 | `volume_entity` | az aktív lejátszó | Amelyik a hangot adja, ha nem az, amelyik játszik. |
+| `show_sources` | `true` | Forrás- és hangzásmód-választó. |
+| `show_remote` | `true` | A távirányító gomb (a pad csak koppintásra nyílik ki). |
+| `remote_entity` | az aktív lejátszó dobozáé | Melyik `remote` entitásnak menjenek a gombok. |
+| `remote_keys` | `auto` | `apple`, `samsung`, vagy saját `{gomb: parancs}` térkép. |
 | `compact` | `false` | Kisebb borító, szorosabb térköz. |
 
 Egyetlen entitás is megadható `entity:`-vel; ekkor a lejátszók sora magától
@@ -84,6 +88,52 @@ Ha a `media_content_type` `channel` vagy `app`, az `entity_picture` **nem
 állókép, hanem logó**. Ilyenkor a kártya nem háttérként vágja be, hanem
 arányosan, kicsinyítve mutatja a jobb oldalon, és elhagyja az elmosott
 másolatot: egy elmosott logó vagy egy színfolt, vagy – ha átlátszó – semmi.
+
+## Forrás, hangzásmód, tekerés
+
+Ezek mind a `supported_features`-ből jönnek, és csak akkor jelennek meg, ha
+tényleg van mit választani (kétnél kevesebb elemű lista nem választó):
+
+- **Forrás** – `SELECT_SOURCE` (2048) és `source_list`. Az *aktív lejátszóé*:
+  egy TV-nél ez a bemenetek és appok listája, egy Apple TV-nél a telepített
+  appoké (`LaunchApp`).
+- **Hangzásmód** – `SELECT_SOUND_MODE` (65536) és `sound_mode_list`. Ez a
+  *hangot adó* entitásé, nem az aktív lejátszóé, mert a hangzás az erősítő
+  dolga.
+- **Tekerés** – `SEEK` (2). Ilyenkor a játékidő-sávra lehet koppintani, és
+  oda ugrik. Az Apple TV ezt tudja (`SetPosition`), a TV nem.
+
+## Távirányító
+
+Ha az aktív lejátszó dobozán van `remote` entitás, a kártyán megjelenik egy
+távirányító gomb, ami kinyit egy iránypadot (fel/le/balra/jobbra/OK, plusz
+vissza, főmenü, menü, és egy kicsit vissza/előre).
+
+A két integráció **nem ugyanazokat a parancsokat** érti:
+
+| Gomb | Apple TV (pyatv) | Samsung (Tizen) |
+| --- | --- | --- |
+| fel / le / balra / jobbra | `up` `down` `left` `right` | `KEY_UP` `KEY_DOWN` `KEY_LEFT` `KEY_RIGHT` |
+| OK | `select` | `KEY_ENTER` |
+| vissza | `menu` | `KEY_RETURN` |
+| főmenü | `home` | `KEY_HOME` |
+| menü | `top_menu` | `KEY_MENU` |
+| vissza/előre | `skip_backward` `skip_forward` | `KEY_REWIND` `KEY_FF` |
+
+A kártya ezért **nem az entitás nevéből találgat**, hanem a `remote` entitás
+*platformjából* választ térképet (`apple_tv` → Apple, `samsungtv_smart` és
+`samsungtv` → Samsung). Ismeretlen platformnál inkább nincs pad, mint olyan,
+ami minden gombnyomásra „Command not found"-ot dob. Saját térkép is adható:
+
+```yaml
+remote_keys:
+  up: KEY_UP
+  select: KEY_ENTER
+  back: KEY_RETURN
+```
+
+A pad mindig ahhoz a dobozhoz tartozik, **ami épp megy**: ha a box játszik,
+az Apple TV-t irányítja; ha a TV az aktív, a TV-t.
 
 ## Melyik gomb jelenik meg
 
@@ -158,6 +208,17 @@ az ujjad alól.
 
 ## Amit nem csinál
 
+- **Nem böngészi a médiatárat.** A `BROWSE_MEDIA` dialógust a Home Assistant
+  saját „részletek" ablaka nyitja – a kártya fejlécére koppintva eléred.
+- **Nincs keverés és ismétlés.** Egyik eszköz sem jelenti be őket: az Apple
+  TV diagnosztikájában a `SetShuffle` és a `SetRepeat` `Unavailable`, a TV
+  `supported_features`-ében sincs benne a két bit.
+- **Nincs képmód-választó.** A `samsungtv_smart` ad hozzá egy saját
+  szolgáltatást, de ezen a készüléken a `picture_mode_list` egyetlen elemű
+  (`HDR+`), tehát a választó egy soha nem változó gomb lenne.
+- **Nincs AirPlay kimenet-választó.** A pyatv tudja
+  (`OutputDevices`, `SetOutputDevices`), de a Home Assistant `media_player`
+  entitása ezt nem adja át, így a kártyának sincs mihez nyúlnia.
 - **Nem hoz létre entitást.** Ha olyan összevont lejátszó kell, amire
   automatizálás vagy más kártya is hivatkozhat, arra a beépített
   [`universal`](https://www.home-assistant.io/integrations/universal/) media

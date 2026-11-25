@@ -8,7 +8,7 @@
  * and never guesses.
  */
 
-import { DOMAIN } from './const.js';
+import { DOMAIN, PLATFORM_KEYS } from './const.js';
 
 function registryEntries(hass) {
   return Object.values(hass?.entities || {});
@@ -60,4 +60,27 @@ export function configuredPlayers(config) {
     out.push({ entityId, name: typeof item === 'object' ? item?.name || null : null });
   }
   return out;
+}
+
+/**
+ * The remote entity that belongs to the same box as a player.
+ *
+ * Both integrations here create a `remote` entity next to the media player
+ * on the same device, and that is the only thing the two have in common:
+ * the commands it takes are the integration's own, so the platform decides
+ * which key map the pad uses. Nothing is guessed from the entity id - two
+ * boxes in one room have names nobody can parse reliably.
+ */
+export function remoteFor(hass, playerEntityId) {
+  const entry = hass?.entities?.[playerEntityId];
+  if (!entry?.device_id) return null;
+  const remote = Object.values(hass.entities).find(
+    (item) => item.device_id === entry.device_id && item.entity_id.startsWith('remote.'),
+  );
+  if (!remote || !hass.states?.[remote.entity_id]) return null;
+  return {
+    entityId: remote.entity_id,
+    keys: PLATFORM_KEYS[remote.platform] || null,
+    platform: remote.platform || null,
+  };
 }
