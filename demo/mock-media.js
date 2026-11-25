@@ -1,0 +1,140 @@
+/**
+ * Mock `hass` for the media room card: one screen with two things that can
+ * play on it - a streaming box and the TV's own Plex app.
+ *
+ * The scenarios are the states a room like that actually goes through, and
+ * the awkward ones are deliberate: both players alive at once (which one is
+ * "the" player?), a player that is on but says nothing about what it is
+ * doing, and an entity that has gone missing from the registry entirely.
+ */
+
+const BOX = 'media_player.bedroom_streaming_box';
+const TV = 'media_player.bedroom_tv_plex';
+
+/* a poster, drawn rather than fetched: the demo has no Home Assistant behind
+   it to proxy artwork from */
+const poster = (top, bottom, label) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/>
+      </linearGradient></defs>
+      <rect width="200" height="300" fill="url(#g)"/>
+      <circle cx="100" cy="120" r="46" fill="rgba(255,255,255,.14)"/>
+      <text x="100" y="128" text-anchor="middle" font-family="sans-serif"
+        font-size="34" fill="rgba(255,255,255,.85)">${label}</text>
+    </svg>`)}`;
+
+const EPISODE = {
+  media_title: 'Úton a biztonság felé',
+  media_series_title: 'A hosszú sötét',
+  media_season: 2,
+  media_episode: 1,
+  media_content_type: 'tvshow',
+  media_duration: 4020,
+  app_name: 'Plex',
+  entity_picture: poster('#2b4a6f', '#10202f', 'S2'),
+};
+
+const FILM = {
+  media_title: 'A nagy utazás',
+  media_content_type: 'movie',
+  media_duration: 7500,
+  app_name: 'Plex',
+  entity_picture: poster('#6f2b4a', '#2f1020', 'F'),
+};
+
+const ALBUM = {
+  media_title: 'Esti dal',
+  media_artist: 'Kórus',
+  media_album_name: 'Négy évszak',
+  media_content_type: 'music',
+  media_duration: 272,
+  app_name: 'Plex',
+  entity_picture: poster('#2b6f4a', '#102f20', '♪'),
+};
+
+/* Apple TV style box: everything but volume set */
+const BOX_FEATURES = 1 | 2 | 8 | 16 | 32 | 128 | 256 | 512 | 1024 | 4096 | 16384 | 131072;
+/* a Plex client: transport and volume, no power */
+const TV_FEATURES = 1 | 2 | 4 | 8 | 16 | 32 | 512 | 4096 | 16384;
+
+function player(entityId, name, state, extra = {}, features = BOX_FEATURES) {
+  const { position = null, ...attrs } = extra;
+  return {
+    entity_id: entityId,
+    state,
+    attributes: {
+      friendly_name: name,
+      supported_features: features,
+      ...(position === null
+        ? {}
+        : {
+            media_position: position,
+            media_position_updated_at: new Date(Date.now() - 12000).toISOString(),
+          }),
+      ...attrs,
+    },
+  };
+}
+
+export const SCENARIOS = {
+  'box megy': {
+    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 2380 }),
+    [TV]: player(TV, 'TV – Plex', 'off', {}, TV_FEATURES),
+  },
+  'tv megy': {
+    [BOX]: player(BOX, 'Hálószoba box', 'idle'),
+    [TV]: player(TV, 'TV – Plex', 'playing', { ...FILM, position: 640 }, TV_FEATURES),
+  },
+  zene: {
+    [BOX]: player(BOX, 'Hálószoba box', 'off'),
+    [TV]: player(TV, 'TV – Plex', 'playing', { ...ALBUM, position: 95, volume_level: 0.32 }, TV_FEATURES),
+  },
+  szünet: {
+    [BOX]: player(BOX, 'Hálószoba box', 'paused', { ...EPISODE, position: 1210 }),
+    [TV]: player(TV, 'TV – Plex', 'idle', {}, TV_FEATURES),
+  },
+  'mindkettő': {
+    [BOX]: player(BOX, 'Hálószoba box', 'paused', { ...EPISODE, position: 1210 }),
+    [TV]: player(TV, 'TV – Plex', 'playing', { ...FILM, position: 3300, volume_level: 0.55 }, TV_FEATURES),
+  },
+  'csak bekapcsolva': {
+    [BOX]: player(BOX, 'Hálószoba box', 'on'),
+    [TV]: player(TV, 'TV – Plex', 'off', {}, TV_FEATURES),
+  },
+  'semmi': {
+    [BOX]: player(BOX, 'Hálószoba box', 'off'),
+    [TV]: player(TV, 'TV – Plex', 'off', {}, TV_FEATURES),
+  },
+  'egyik hiányzik': {
+    [BOX]: player(BOX, 'Hálószoba box', 'playing', { ...EPISODE, position: 300 }),
+  },
+  'némítva': {
+    [BOX]: player(BOX, 'Hálószoba box', 'idle'),
+    [TV]: player(TV, 'TV – Plex', 'playing', { ...FILM, position: 1800, volume_level: 0.4, is_volume_muted: true }, TV_FEATURES),
+  },
+};
+
+export function makeHass(key) {
+  const states = SCENARIOS[key] || SCENARIOS['box megy'];
+  const hass = {
+    states: {},
+    entities: {},
+    devices: {},
+    locale: { language: 'hu' },
+    themes: { darkMode: false },
+    callService: (domain, service, data) => {
+      /* eslint-disable no-console */
+      console.log('callService', domain, service, data);
+      return Promise.resolve();
+    },
+  };
+  for (const [entityId, stateObj] of Object.entries(states)) {
+    hass.states[entityId] = stateObj;
+    hass.entities[entityId] = { entity_id: entityId, platform: 'demo', device_id: null };
+  }
+  return hass;
+}
+
+window.demo = { SCENARIOS, makeHass, BOX, TV };

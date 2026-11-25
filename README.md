@@ -1,6 +1,7 @@
 # Home Appliance Cards
 
-Tíz Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
+Tizennégy Lovelace kártya a háztartáshoz, a garázshoz és a nappalihoz,
+közös alapokon:
 
 | Kártya | Készülék | Integráció |
 | --- | --- | --- |
@@ -14,6 +15,7 @@ Tíz Lovelace kártya a háztartáshoz és a garázshoz, közös alapokon:
 | `custom:netatmo-weather-card` | Netatmo időjárás-állomás: kinti hőmérséklet, légnyomás, szobánkénti CO₂ | beépített [`netatmo`](https://www.home-assistant.io/integrations/netatmo) integráció |
 | `custom:aeno-heater-card` | AENO infra fűtőpanel (fejlesztve: **AGH0001S**) | [make-all/tuya-local](https://github.com/make-all/tuya-local) |
 | `custom:nanoleaf-shapes-card` | Nanoleaf Shapes világító panelek (fejlesztve: **Shapes Hexagons, NL42**) | beépített [`nanoleaf`](https://www.home-assistant.io/integrations/nanoleaf) integráció |
+| `custom:media-room-card` | Egy képernyő, több lejátszó egy kártyán (fejlesztve: **Apple TV + Plex a TV-n**) | bármelyik `media_player` entitás |
 | `custom:house-heating-card` | Gázkeret, napi ütem és az aktív fűtési forrás | saját helper entitások ([szerződés](docs/heating-capabilities.md)) |
 | `custom:heating-rooms-card` | Szobánkénti hőmérséklet, felülírás, forrás, ablakállapot (egy szobára is szűkíthető) | saját helper entitások |
 | `custom:heating-schedule-card` | Heti zóna-ütemterv idővonallal, fűtésre és hűtésre | [nielsfaber/scheduler-component](https://github.com/nielsfaber/scheduler-component) |
@@ -378,6 +380,47 @@ példák: [`examples/nanoleaf.yaml`](examples/nanoleaf.yaml).
 | --- | --- | --- | --- | --- |
 | ![Kilenc panel](docs/images/nanoleaf-scene.png) | ![Fix szín](docs/images/nanoleaf-solid.png) | ![Fehér](docs/images/nanoleaf-white.png) | ![Kikapcsolva](docs/images/nanoleaf-off.png) | ![Sötét](docs/images/nanoleaf-dark.png) |
 
+## Médiaszoba kártya
+
+![Médiaszoba kártya](docs/images/media-light.png)
+
+Egy képernyőhöz tipikusan több lejátszó tartozik – egy streaming box és
+magának a TV-nek az appja –, és mindegyik külön `media_player` entitás. Mindkettő
+ott van egész nap, ezért a dashboardon két kártya van ott, ahol a szobában egy
+képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
+
+- **Amelyik a legtöbbet mondja, az nyer.** A sorrend
+  `off < idle < on < paused < buffering < playing`, és holtversenynél a
+  configban előbb szereplő. Ez nem saját kitalálás: szó szerint ez a szabály
+  van a Home Assistant beépített `universal` media playerében, ami ugyanezt a
+  feladatot oldja meg entitás szinten – két különböző „aktív lejátszó"
+  fogalom ugyanabban a házban csak zavar lenne.
+- **A gombsor az aktív lejátszóé.** Csak az jelenik meg, amire a
+  `supported_features` bitje azt mondja, hogy tudja: a boxot ki lehet
+  kapcsolni, de nincs hangereje, a Plex kliensnek fordítva. Váltáskor tehát
+  változik a gombsor – ez nem hiba. Egy gomb, ami csendben nem csinál semmit,
+  rosszabb, mint ha ott sem lenne.
+- **Az összevonás elrejti, melyik doboz megy – ezért ki van írva.** A fejléc
+  alsó sora az app és a lejátszó neve, alul pedig ott van mind, állapottal.
+- **Ha tényleg megy mindkettő, te döntesz**: koppints a lejátszók sorában
+  arra, amelyiket látni akarod, és a kártya azon marad, amíg újra rá nem
+  koppintasz.
+- **A játékidő nem áll meg két állapotfrissítés között.** A `media_position`
+  pillanatfelvétel, nem élő érték, ezért a kártya hozzászámolja az azóta
+  eltelt időt – de **csak lejátszás közben**, mert megállított filmnél a
+  pillanatfelvétel már pontos, és a sáv kifutna egy olyan film végére, amit
+  senki nem néz.
+- **A borító alakja a tartalomhoz igazodik**: zenénél négyzet, csatornánál és
+  appnál fekvő, filmnél és sorozatnál álló poszter – egyetlen alakba
+  kényszerítve kettő a háromból levágva látszana.
+
+Részletek: [`docs/media-capabilities.md`](docs/media-capabilities.md),
+példák: [`examples/media.yaml`](examples/media.yaml).
+
+| Mindkettő megy | Zene | Semmi nem megy | Sötét téma |
+| --- | --- | --- | --- |
+| ![Mindkettő](docs/images/media-both.png) | ![Zene](docs/images/media-music.png) | ![Semmi](docs/images/media-idle.png) | ![Sötét](docs/images/media-dark.png) |
+
 ## Telepítés
 
 > **Ez a repó privát.** A HACS hivatalosan csak publikus repókat támogat, ezért
@@ -387,12 +430,13 @@ példák: [`examples/nanoleaf.yaml`](examples/nanoleaf.yaml).
 ### Kézzel (privát repónál ez ajánlott)
 
 1. Töltsd le a `dist/ha-appliance-cards.js` fájlt – ez tartalmazza mind a
-   tíz kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
+   tizennégy kártyát. (Ha csak egy kell: `dist/aeg-dishwasher-card.js`,
    `dist/philips-airfryer-card.js`, `dist/skoda-car-card.js`,
    `dist/liebherr-fridge-card.js`, `dist/fisher-erv-card.js`,
    `dist/daikin-ac-card.js`, `dist/netatmo-heating-card.js`,
    `dist/netatmo-weather-card.js`, `dist/aeno-heater-card.js`, illetve
-   `dist/nanoleaf-shapes-card.js`, `dist/heating-cards.js`.)
+   `dist/nanoleaf-shapes-card.js`, `dist/heating-cards.js`,
+   `dist/media-room-card.js`.)
    - GitHub böngészőből: a fájl oldalán **Download raw file**.
    - Vagy a Home Assistant gépén, személyes hozzáférési tokennel (fine-grained
      token, `Contents: Read` jogosultsággal az adott repóra):

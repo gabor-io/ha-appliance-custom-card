@@ -17,6 +17,7 @@ const TARGETS = [
   { in: 'src/aeno/index.js', out: 'dist/aeno-heater-card.js' },
   { in: 'src/nanoleaf/index.js', out: 'dist/nanoleaf-shapes-card.js' },
   { in: 'src/heating/index.js', out: 'dist/heating-cards.js' },
+  { in: 'src/media/index.js', out: 'dist/media-room-card.js' },
 ];
 
 const dev = process.argv.includes('--dev');

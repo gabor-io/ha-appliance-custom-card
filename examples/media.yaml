@@ -1,0 +1,41 @@
+# Médiaszoba kártya – példák
+# Részletek: docs/media-capabilities.md
+
+# 1) A tipikus eset: egy képernyő, két forrás.
+#    Amelyik épp megy, az látszik.
+- type: custom:media-room-card
+  name: Hálószoba
+  entities:
+    - media_player.halo_box
+    - media_player.halo_tv_plex
+
+# 2) A sorrend dönt, ha mindkettő ugyanabban az állapotban van.
+#    Itt a TV appja az elsődleges.
+- type: custom:media-room-card
+  name: Nappali
+  entities:
+    - media_player.nappali_tv_plex
+    - media_player.nappali_box
+    - media_player.nappali_hangszoro
+
+# 3) Mobil dashboardra: tömör, borító és hangerő nélkül
+- type: custom:media-room-card
+  name: Hálószoba
+  compact: true
+  show_volume: false
+  entities:
+    - media_player.halo_box
+    - media_player.halo_tv_plex
+
+# 4) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
+- type: custom:media-room-card
+  entity: media_player.konyha_radio
+
+# 5) Saját néven, ha az entitás neve nem a szobáról szól
+- type: custom:media-room-card
+  name: Dolgozó
+  entities:
+    - entity: media_player.pc_plex
+      name: Gép
+    - entity: media_player.monitor_tv
+      name: Monitor

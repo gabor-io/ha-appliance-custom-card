@@ -10,3 +10,4 @@ import './netatmo-weather/index.js';
 import './aeno/index.js';
 import './nanoleaf/index.js';
 import './heating/index.js';
+import './media/index.js';

@@ -1,0 +1,123 @@
+import { makeTranslator, pickLanguage } from '../shared/i18n.js';
+
+const HU = {
+  card_name: 'Médiaszoba',
+  state: {
+    playing: 'Megy',
+    paused: 'Megállítva',
+    buffering: 'Töltődik',
+    idle: 'Készenlétben',
+    on: 'Bekapcsolva',
+    off: 'Kikapcsolva',
+    unavailable: 'Nem válaszol',
+    unknown: 'Ismeretlen',
+  },
+  ui: {
+    nothing: 'Most semmi nem megy',
+    nothing_sub: 'Mindkét lejátszó néma – ami elindul, az jelenik meg itt.',
+    nothing_sub_one: 'A lejátszó néma – ami elindul, az jelenik meg itt.',
+    no_entities:
+      'Nincs megadva lejátszó. Írd be az `entities:` alá azokat a media_player entitásokat, amik ugyanazt a képernyőt hajtják.',
+    missing_entities: 'A megadott lejátszók egyike sem létezik ebben a Home Assistantban.',
+    players: 'Lejátszók',
+    pinned: 'rögzítve',
+    pin_hint: 'Koppints egy lejátszóra, hogy azt mutassa a kártya',
+    volume: 'Hangerő',
+    muted: 'Némítva',
+    left: 'még {time}',
+    of: '{elapsed} / {duration}',
+    power: 'Be/ki',
+    prev: 'Előző',
+    next: 'Következő',
+    play: 'Lejátszás',
+    pause: 'Szünet',
+    stop: 'Leállítás',
+    mute: 'Némítás',
+    unmute: 'Némítás vissza',
+    unavailable_player: 'nem válaszol',
+    missing_player: 'nincs ilyen entitás',
+  },
+  editor: {
+    entities: 'Lejátszók',
+    entities_hint: 'Amelyik elindul, az jelenik meg. Egyenlő állapotnál a lista sorrendje dönt.',
+    name: 'Név',
+    language: 'Nyelv',
+    language_auto: 'Automatikus',
+    sections: 'Mit mutasson',
+    show_artwork: 'Borítókép',
+    show_progress: 'Játékidő',
+    show_volume: 'Hangerő',
+    show_players: 'Lejátszók sora',
+    compact: 'Tömör',
+  },
+};
+
+const EN = {
+  card_name: 'Media room',
+  state: {
+    playing: 'Playing',
+    paused: 'Paused',
+    buffering: 'Buffering',
+    idle: 'Idle',
+    on: 'On',
+    off: 'Off',
+    unavailable: 'Not answering',
+    unknown: 'Unknown',
+  },
+  ui: {
+    nothing: 'Nothing playing',
+    nothing_sub: 'Both players are quiet - whichever starts will show up here.',
+    nothing_sub_one: 'The player is quiet - whatever starts will show up here.',
+    no_entities:
+      'No players configured. List the media_player entities that drive the same screen under `entities:`.',
+    missing_entities: 'None of the configured players exist in this Home Assistant.',
+    players: 'Players',
+    pinned: 'pinned',
+    pin_hint: 'Tap a player to make the card show that one',
+    volume: 'Volume',
+    muted: 'Muted',
+    left: '{time} left',
+    of: '{elapsed} / {duration}',
+    power: 'Power',
+    prev: 'Previous',
+    next: 'Next',
+    play: 'Play',
+    pause: 'Pause',
+    stop: 'Stop',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    unavailable_player: 'not answering',
+    missing_player: 'no such entity',
+  },
+  editor: {
+    entities: 'Players',
+    entities_hint: 'Whichever starts is shown. On equal states the list order decides.',
+    name: 'Name',
+    language: 'Language',
+    language_auto: 'Automatic',
+    sections: 'What to show',
+    show_artwork: 'Artwork',
+    show_progress: 'Progress',
+    show_volume: 'Volume',
+    show_players: 'Player row',
+    compact: 'Compact',
+  },
+};
+
+const DICTIONARIES = { hu: HU, en: EN };
+export const LANGUAGES = Object.keys(DICTIONARIES);
+
+export function getLanguage(config, hass) {
+  return pickLanguage(config, hass, LANGUAGES);
+}
+
+export function translator(lang) {
+  return makeTranslator(DICTIONARIES, lang, 'hu');
+}
+
+/** `{name}` substitution, the same helper every card in the family uses. */
+export function fill(text, values) {
+  return String(text).replace(/\{(\w+)\}/g, (match, key) =>
+    values[key] === undefined ? match : String(values[key]),
+  );
+}
