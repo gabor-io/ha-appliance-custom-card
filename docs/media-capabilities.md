@@ -164,7 +164,7 @@ macros:
 | `name` | a gomb felirata |
 | `icon` | ikonnév a kártya készletéből (`leaf`, `leaf_off`, `remote`, …) |
 | `keys` | a parancsok; `KEY_LEFT*10` tíz megnyomást jelent |
-| `entity` | melyik `remote` entitásnak menjen (alap: az aktív lejátszó dobozáé) |
+| `entity` | melyik `remote` entitásnak menjen (lásd lentebb: magától is megtalálja) |
 | `delay_ms` | saját szünet a gombok között, ha a menü lassan rajzol |
 | `sets` | egy helper, amit a kártya a küldés után beállít |
 
@@ -174,6 +174,21 @@ macros:
 sorozat 31 gombnyomás, tehát nagyjából **15 másodpercig** tart – a kártya
 ezért a futás idejére letiltja a makrógombokat, különben a második makró
 belekezdene az elsőbe, és a menü valahol félúton maradna.
+
+### Melyik távirányítóra megy
+
+A `KEY_MENU` Tizen kódja a Samsungnak szól, a `menu` pedig a pyatv
+metódusneve az Apple TV-nek — egy szobában a két doboz egy-egy nyelvet ért.
+A kártya ezért **a parancsokból olvassa ki, melyik nyelven van a makró**, és
+azt a távirányítót keresi hozzá, amelyik azt a nyelvet beszéli. Csak ha ilyet
+nem talál, esik vissza arra a dobozra, amelyik épp játszik.
+
+Ez nem kozmetika: enélkül egy `KEY_*` sorozat ahhoz a dobozhoz ment, ami
+éppen ment — tipikusan a streaming boxhoz —, ahol a pyatv minden gombra
+„Command not found"-ot dobott, a TV-n pedig nem történt semmi. Az `entity:`
+mezővel felül lehet bírálni; ha megadod, és a makró nyelve nem illik ahhoz a
+dobozhoz, a kártya **nem küldi el**, hanem letiltva mutatja a gombot, és a
+buborékban megírja, mi a baj.
 
 ### Amit tudni kell róla
 

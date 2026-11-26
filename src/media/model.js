@@ -8,6 +8,7 @@ import {
   FEATURE,
   LOGO_TYPES,
   MACRO_MAX_KEYS,
+  PLATFORM_KEYS,
   REMOTE_KEYS,
   REPEAT_RE,
   RANK_ACTIVE,
@@ -191,6 +192,39 @@ export function expandKeys(keys, delayMs) {
 }
 
 /**
+ * Which dialect a macro is written in.
+ *
+ * `KEY_MENU` is a Tizen key code and `menu` is a pyatv method name; the two
+ * boxes in one room understand one each. Reading it off the keys lets a
+ * macro find the remote that speaks its language instead of being sent to
+ * whichever box happens to be playing - which is how an eco macro for the
+ * television ended up at the Apple TV, where every key raised "Command not
+ * found" and nothing happened.
+ */
+function dialectOf(keys) {
+  let samsung = false;
+  let apple = false;
+  for (const key of keys) {
+    if (/^\d+$/.test(key)) continue; // a pause, not a key
+    if (/^KEY_[A-Z0-9_]+$/.test(key)) samsung = true;
+    else if (/^[a-z][a-z_]*$/.test(key)) apple = true;
+  }
+  if (samsung && !apple) return 'samsung';
+  if (apple && !samsung) return 'apple';
+  return null;
+}
+
+/** The remote in this room that speaks the given dialect, if there is one. */
+function remoteSpeaking(hass, players, dialect) {
+  if (!dialect) return null;
+  for (const player of players) {
+    const found = remoteFor(hass, player.entityId);
+    if (found?.keys === dialect) return found.entityId;
+  }
+  return null;
+}
+
+/**
  * The macro buttons.
  *
  * These are blind: the card sends a fixed walk through the television's own
@@ -200,13 +234,23 @@ export function expandKeys(keys, delayMs) {
  * is a helper entity it writes after sending - then the pair shows what was
  * last sent, which is honest, and says so in the docs.
  */
-function macrosOf(hass, config, pad) {
+function macrosOf(hass, config, pad, players) {
   const list = Array.isArray(config?.macros) ? config.macros : [];
   return list
     .map((item, index) => {
       const keys = expandKeys(item?.keys, item?.delay_ms);
-      const entityId = item?.entity || pad?.entityId || null;
+      const dialect = dialectOf(keys);
+      /* a named entity wins; otherwise the remote that speaks this macro's
+         dialect; only then whatever is playing */
+      const entityId =
+        item?.entity || remoteSpeaking(hass, players, dialect) || pad?.entityId || null;
       if (!keys.length || !entityId || !hass?.states?.[entityId]) return null;
+
+      /* a macro pointed at a box that cannot understand it would fail key by
+         key in the log and look like nothing happening, so it is shown as
+         unusable with the reason instead of being sent */
+      const speaks = PLATFORM_KEYS[hass?.entities?.[entityId]?.platform] || null;
+      const mismatch = Boolean(dialect && speaks && dialect !== speaks);
       const sets = item?.sets?.entity ? item.sets : null;
       const current = sets ? hass?.states?.[sets.entity]?.state : null;
       return {
@@ -216,6 +260,9 @@ function macrosOf(hass, config, pad) {
         entityId,
         keys,
         sets,
+        mismatch,
+        dialect,
+        speaks,
         /* only meaningful when the macro writes a helper; without one the
            button is a button, not a state */
         active: sets ? current === String(sets.state ?? 'on') : null,
@@ -310,7 +357,7 @@ export function buildModel(hass, config, t, pinned = null) {
     sound: soundOf(hass, config, active),
     sources: listOf(stateObj, 'source_list', 'source', FEATURE.SELECT_SOURCE),
     pad,
-    macros: macrosOf(hass, config, pad),
+    macros: macrosOf(hass, config, pad, players),
     can: {
       power: supports(stateObj, FEATURE.TURN_ON) || supports(stateObj, FEATURE.TURN_OFF),
       turnOn: supports(stateObj, FEATURE.TURN_ON),

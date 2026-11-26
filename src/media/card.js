@@ -414,10 +414,14 @@ export class MediaRoomCard extends HTMLElement {
         if (macro.active === true) classes.push('shown');
         if (macro.active === false) classes.push('dead');
         if (busy === macro.index) classes.push('busy');
+        if (macro.mismatch) classes.push('gone');
+        const why = macro.mismatch
+          ? fill(t('ui.macro_mismatch'), { entity: macro.entityId, dialect: macro.dialect })
+          : macro.name;
         return `<button class="${classes.join(' ')}" data-action="macro" data-macro="${macro.index}"
-            ${busy !== null && busy !== undefined ? 'disabled' : ''}
-            title="${escapeHtml(macro.name)}">
-            ${icon(macro.icon)}<span class="label">${escapeHtml(macro.name)}</span>
+            ${macro.mismatch || (busy !== null && busy !== undefined) ? 'disabled' : ''}
+            title="${escapeHtml(why)}">
+            ${icon(macro.mismatch ? 'alert' : macro.icon)}<span class="label">${escapeHtml(macro.name)}</span>
             ${busy === macro.index ? `<span class="what">${escapeHtml(t('ui.sending'))}</span>` : ''}
           </button>`;
       })
@@ -643,7 +647,7 @@ export class MediaRoomCard extends HTMLElement {
   async _runMacro(model, index) {
     if (this._macroBusy !== null && this._macroBusy !== undefined) return;
     const macro = model.macros?.find((item) => item.index === index);
-    if (!macro) return;
+    if (!macro || macro.mismatch) return;
 
     this._macroBusy = index;
     this._render();

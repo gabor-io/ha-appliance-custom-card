@@ -29,6 +29,8 @@ const HU = {
     sound_mode: 'Hangzás',
     remote: 'Távirányító',
     sending: 'megy…',
+    macro_mismatch:
+      'Ez a makró {dialect} parancsokat küldene, de a(z) {entity} nem ilyet ért. Add meg a helyes távirányítót az `entity:` mezőben.',
     left: 'még {time}',
     of: '{elapsed} / {duration}',
     power: 'Be/ki',
@@ -98,6 +100,8 @@ const EN = {
     sound_mode: 'Sound mode',
     remote: 'Remote',
     sending: 'sending…',
+    macro_mismatch:
+      'This macro sends {dialect} commands, but {entity} does not speak that. Name the right remote in `entity:`.',
     left: '{time} left',
     of: '{elapsed} / {duration}',
     power: 'Power',
