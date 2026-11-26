@@ -7,7 +7,9 @@ import {
   CONTENT_ICONS,
   FEATURE,
   LOGO_TYPES,
+  MACRO_MAX_KEYS,
   REMOTE_KEYS,
+  REPEAT_RE,
   RANK_ACTIVE,
   RANK_IDLE,
   STATE_RANK,
@@ -164,6 +166,64 @@ function padOf(hass, config, active) {
   return { entityId: found.entityId, keys };
 }
 
+/**
+ * Expands a macro's key list, turning `KEY_LEFT*10` into ten presses.
+ *
+ * A bare number is left alone: the Samsung integration reads a numeric
+ * element of the chain as a pause in milliseconds, which is how a macro
+ * gets a longer wait where a menu is slow to draw.
+ */
+export function expandKeys(keys, delayMs) {
+  const out = [];
+  for (const raw of Array.isArray(keys) ? keys : []) {
+    const item = String(raw).trim();
+    if (!item) continue;
+    const match = REPEAT_RE.exec(item);
+    const key = match ? match[1] : item;
+    const times = match ? Math.min(Number(match[2]), MACRO_MAX_KEYS) : 1;
+    for (let i = 0; i < times; i += 1) {
+      if (delayMs && out.length) out.push(String(delayMs));
+      out.push(key);
+      if (out.length >= MACRO_MAX_KEYS) return out;
+    }
+  }
+  return out;
+}
+
+/**
+ * The macro buttons.
+ *
+ * These are blind: the card sends a fixed walk through the television's own
+ * menu and has no way of seeing where it ended up. A television does not
+ * report settings like its eco mode in any attribute, so a two-state switch
+ * would be inventing a state it cannot read. What a macro can have instead
+ * is a helper entity it writes after sending - then the pair shows what was
+ * last sent, which is honest, and says so in the docs.
+ */
+function macrosOf(hass, config, pad) {
+  const list = Array.isArray(config?.macros) ? config.macros : [];
+  return list
+    .map((item, index) => {
+      const keys = expandKeys(item?.keys, item?.delay_ms);
+      const entityId = item?.entity || pad?.entityId || null;
+      if (!keys.length || !entityId || !hass?.states?.[entityId]) return null;
+      const sets = item?.sets?.entity ? item.sets : null;
+      const current = sets ? hass?.states?.[sets.entity]?.state : null;
+      return {
+        index,
+        name: String(item?.name || `#${index + 1}`),
+        icon: item?.icon || 'remote',
+        entityId,
+        keys,
+        sets,
+        /* only meaningful when the macro writes a helper; without one the
+           button is a button, not a state */
+        active: sets ? current === String(sets.state ?? 'on') : null,
+      };
+    })
+    .filter(Boolean);
+}
+
 function iconFor(stateObj) {
   const type = String(stateObj?.attributes?.media_content_type || '').toLowerCase();
   return CONTENT_ICONS[type] || (stateObj?.attributes?.media_title ? 'cast_on' : 'tv');
@@ -221,6 +281,7 @@ export function buildModel(hass, config, t, pinned = null) {
   }
 
   const stateObj = active.stateObj;
+  const pad = padOf(hass, config, active);
   const titles = titlesOf(stateObj, t);
   const contentType = String(stateObj.attributes?.media_content_type || '').toLowerCase();
   /* a television reports the input it is on rather than an app name; it is
@@ -248,7 +309,8 @@ export function buildModel(hass, config, t, pinned = null) {
     progress: progressOf(stateObj),
     sound: soundOf(hass, config, active),
     sources: listOf(stateObj, 'source_list', 'source', FEATURE.SELECT_SOURCE),
-    pad: padOf(hass, config, active),
+    pad,
+    macros: macrosOf(hass, config, pad),
     can: {
       power: supports(stateObj, FEATURE.TURN_ON) || supports(stateObj, FEATURE.TURN_OFF),
       turnOn: supports(stateObj, FEATURE.TURN_ON),

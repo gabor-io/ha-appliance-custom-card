@@ -45,7 +45,29 @@
   # remote_entity: remote.halo_box
   # remote_keys: apple        # apple | samsung | saját {gomb: parancs} térkép
 
-# 5) Mobil dashboardra: tömör, borító és hangerő nélkül
+# 5) Makrógomb arra, amit a TV csak a saját menüjében enged: Eco mód.
+#    A két sorozat egyetlen lépésben tér el (fel háromszor / le háromszor).
+#    A TV nem jelenti, hogy be van-e kapcsolva az Eco, ezért két gomb van,
+#    és egy helper jegyzi meg, mit küldtél utoljára.
+- type: custom:media-room-card
+  name: Hálószoba
+  entities:
+    - media_player.halo_televizio
+  macros:
+    - name: Eco be
+      icon: leaf
+      keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
+             KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
+             KEY_DOWN*3, KEY_ENTER, KEY_RETURN*4]
+      sets: { entity: input_boolean.tv_eco, state: 'on' }
+    - name: Eco ki
+      icon: leaf_off
+      keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
+             KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
+             KEY_UP*3, KEY_ENTER, KEY_RETURN*4]
+      sets: { entity: input_boolean.tv_eco, state: 'off' }
+
+# 6) Mobil dashboardra: tömör, borító és hangerő nélkül
 - type: custom:media-room-card
   name: Hálószoba
   compact: true
@@ -54,11 +76,11 @@
     - media_player.halo_box
     - media_player.halo_tv_plex
 
-# 6) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
+# 7) Egyetlen lejátszóhoz is jó – ilyenkor a lejátszók sora elmarad
 - type: custom:media-room-card
   entity: media_player.konyha_radio
 
-# 7) Saját néven, ha az entitás neve nem a szobáról szól
+# 8) Saját néven, ha az entitás neve nem a szobáról szól
 - type: custom:media-room-card
   name: Dolgozó
   entities:

@@ -70,7 +70,24 @@
         compact,
       };
       /* the television is the only thing in the room with a volume */
-      if (entities.includes(SET)) config.volume_entity = SET;
+      if (entities.includes(SET)) {
+        config.volume_entity = SET;
+        /* the eco walk through the TV's own menu: the two sequences differ
+           in a single step, up three times versus down three times */
+        const ECO = ['KEY_MENU', 'KEY_LEFT*10', 'KEY_ENTER', 'KEY_DOWN*3', 'KEY_RIGHT', 'KEY_DOWN*3', 'KEY_ENTER', 'KEY_DOWN*2', 'KEY_ENTER'];
+        config.macros = [
+          {
+            name: 'Eco be', icon: 'leaf',
+            keys: [...ECO, 'KEY_DOWN*3', 'KEY_ENTER', 'KEY_RETURN*4'],
+            sets: { entity: 'input_boolean.tv_eco', state: 'on' },
+          },
+          {
+            name: 'Eco ki', icon: 'leaf_off',
+            keys: [...ECO, 'KEY_UP*3', 'KEY_ENTER', 'KEY_RETURN*4'],
+            sets: { entity: 'input_boolean.tv_eco', state: 'off' },
+          },
+        ];
+      }
       card.setConfig(config);
       const hass = makeHass(key);
       hass.themes = { darkMode: document.body.classList.contains('dark') };

@@ -173,5 +173,16 @@ export const PAD_ICONS = {
   forward: 'forward',
 };
 
+/**
+ * `KEY_LEFT*10` in a macro means ten presses.
+ *
+ * Writing a menu walk out key by key makes a thirty-line list nobody can
+ * check against the television's own menu; the multiplier keeps it readable.
+ */
+export const REPEAT_RE = /^(.+?)\*(\d+)$/;
+
+/** A macro may not be longer than this, however the multipliers add up. */
+export const MACRO_MAX_KEYS = 120;
+
 /** How often the progress bar redraws itself between state updates. */
 export const TICK_MS = 1000;

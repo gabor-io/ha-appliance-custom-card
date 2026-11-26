@@ -51,6 +51,7 @@ const TOGGLES = [
   'show_volume',
   'show_sources',
   'show_remote',
+  'show_macros',
   'show_players',
   'compact',
 ];

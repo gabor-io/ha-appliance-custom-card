@@ -426,6 +426,15 @@ képernyő van. Ez a kártya **azt mutatja, amelyik tényleg megy**.
   találgat, hanem a remote entitás **platformjából** választ térképet –
   ismeretlennél inkább nincs pad, mint olyan, ami minden gombra
   „Command not found"-ot dob.
+- **Makrógombok arra, amit a készülék nem ad ki entitásként.** Egy Samsungon
+  az Eco mód csak a TV saját menüjében állítható – a `macros` egy gombbal
+  végigsétál rajta (`KEY_LEFT*10` tíz megnyomást jelent), egyetlen
+  `remote.send_command` hívásban. A makró **vak**: ha a TV nem onnan indul,
+  ahonnan a sorozatot írták, máshol köt ki – ezért a kártya a futás idejére
+  letiltja a gombokat, és a dokumentáció kimondja a kockázatot. A TV nem
+  jelenti, hogy be van-e kapcsolva az Eco, ezért két gomb van, nem egy
+  kapcsoló; egy megadott helper megjegyzi, **mit küldtél utoljára** – nem azt,
+  mi van a készülékben.
 - **A játékidő nem áll meg két állapotfrissítés között.** A `media_position`
   pillanatfelvétel, nem élő érték, ezért a kártya hozzászámolja az azóta
   eltelt időt – de **csak lejátszás közben**, mert megállított filmnél a

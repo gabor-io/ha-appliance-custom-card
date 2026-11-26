@@ -23,6 +23,7 @@ export const DEFAULTS = {
   show_players: true,
   show_sources: true,
   show_remote: true,
+  show_macros: true,
 };
 
 /** Card that shows whichever of several media players is actually playing. */
@@ -47,6 +48,7 @@ export class MediaRoomCard extends HTMLElement {
     this._signatures = {};
     this._built = false;
     this._pinned = null;
+    this._macroBusy = null;
   }
 
   setConfig(config) {
@@ -103,7 +105,7 @@ export class MediaRoomCard extends HTMLElement {
     wrap.addEventListener('input', (ev) => this._onInput(ev));
     wrap.addEventListener('change', (ev) => this._onChange(ev));
 
-    for (const name of ['hero', 'foot', 'vol', 'sources', 'pad', 'players']) {
+    for (const name of ['hero', 'foot', 'vol', 'sources', 'macros', 'pad', 'players']) {
       const node = document.createElement('div');
       node.dataset.section = name;
       this._sections[name] = node;
@@ -137,6 +139,7 @@ export class MediaRoomCard extends HTMLElement {
       this._section('foot', '');
       this._section('vol', '');
       this._section('sources', '');
+      this._section('macros', '');
       this._section('pad', '');
       this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
       return;
@@ -146,6 +149,7 @@ export class MediaRoomCard extends HTMLElement {
     this._section('foot', this._config.show_progress ? this._progHtml(model, t) : '');
     this._section('vol', this._config.show_volume ? this._volHtml(model, t) : '');
     this._section('sources', this._config.show_sources ? this._sourcesHtml(model, t) : '');
+    this._section('macros', this._config.show_macros ? this._macrosHtml(model, t) : '');
     this._section('pad', this._padOpen ? this._padHtml(model, t) : '');
     this._section('players', this._config.show_players ? this._playersHtml(model, t) : '');
   }
@@ -391,6 +395,37 @@ export class MediaRoomCard extends HTMLElement {
   }
 
   /**
+   * Buttons that walk the television's own menu.
+   *
+   * Everything here is blind: the card sends a fixed sequence of key presses
+   * and cannot see where the menu ended up. Two consequences are built in -
+   * the buttons lock while one is running, because a second macro started
+   * halfway through the first would leave the menu somewhere nobody
+   * intended; and a macro only looks like a switch when it was given a
+   * helper entity to write, since the television reports no such setting of
+   * its own.
+   */
+  _macrosHtml(model, t) {
+    if (!model.macros?.length) return '';
+    const busy = this._macroBusy;
+    const chips = model.macros
+      .map((macro) => {
+        const classes = ['chip', 'macro'];
+        if (macro.active === true) classes.push('shown');
+        if (macro.active === false) classes.push('dead');
+        if (busy === macro.index) classes.push('busy');
+        return `<button class="${classes.join(' ')}" data-action="macro" data-macro="${macro.index}"
+            ${busy !== null && busy !== undefined ? 'disabled' : ''}
+            title="${escapeHtml(macro.name)}">
+            ${icon(macro.icon)}<span class="label">${escapeHtml(macro.name)}</span>
+            ${busy === macro.index ? `<span class="what">${escapeHtml(t('ui.sending'))}</span>` : ''}
+          </button>`;
+      })
+      .join('');
+    return `<div class="macros">${chips}</div>`;
+  }
+
+  /**
    * The direction pad, drawn only when the box behind the active player has
    * a remote entity whose command names this card knows.
    */
@@ -575,6 +610,9 @@ export class MediaRoomCard extends HTMLElement {
           command: model.pad.keys[key],
         });
         break;
+      case 'macro':
+        this._runMacro(model, Number(node.dataset.macro));
+        break;
       case 'vol-up':
       case 'vol-down':
         this._haptic('light');
@@ -592,6 +630,51 @@ export class MediaRoomCard extends HTMLElement {
         break;
       default:
         break;
+    }
+  }
+
+  /**
+   * Sends one macro as a single `remote.send_command`.
+   *
+   * The integration paces the chain itself - half a second between keys
+   * unless the macro asked for more - so the whole walk is one call rather
+   * than thirty, and one call is also what makes the lock below reliable.
+   */
+  async _runMacro(model, index) {
+    if (this._macroBusy !== null && this._macroBusy !== undefined) return;
+    const macro = model.macros?.find((item) => item.index === index);
+    if (!macro) return;
+
+    this._macroBusy = index;
+    this._render();
+    this._haptic('medium');
+    try {
+      await this._hass.callService('remote', 'send_command', {
+        entity_id: macro.entityId,
+        command: macro.keys,
+      });
+      /* the television tells us nothing about what the walk changed, so the
+         only record of it is the helper the macro was given */
+      if (macro.sets?.entity) {
+        const domain = macro.sets.entity.split('.')[0];
+        const on = String(macro.sets.state ?? 'on') === 'on';
+        if (domain === 'input_boolean' || domain === 'switch') {
+          await this._hass.callService(domain, on ? 'turn_on' : 'turn_off', {
+            entity_id: macro.sets.entity,
+          });
+        } else if (domain === 'input_text' || domain === 'input_select') {
+          await this._hass.callService(
+            domain,
+            domain === 'input_text' ? 'set_value' : 'select_option',
+            domain === 'input_text'
+              ? { entity_id: macro.sets.entity, value: String(macro.sets.state) }
+              : { entity_id: macro.sets.entity, option: String(macro.sets.state) },
+          );
+        }
+      }
+    } finally {
+      this._macroBusy = null;
+      this._render();
     }
   }
 

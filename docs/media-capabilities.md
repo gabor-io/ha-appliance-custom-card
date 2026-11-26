@@ -30,6 +30,8 @@ entities:
 | `show_remote` | `true` | A távirányító gomb (a pad csak koppintásra nyílik ki). |
 | `remote_entity` | az aktív lejátszó dobozáé | Melyik `remote` entitásnak menjenek a gombok. |
 | `remote_keys` | `auto` | `apple`, `samsung`, vagy saját `{gomb: parancs}` térkép. |
+| `macros` | – | Saját gombok, amik gombnyomás-sorozatot küldenek. |
+| `show_macros` | `true` | A makrógombok sora. |
 | `compact` | `false` | Kisebb borító, szorosabb térköz. |
 
 Egyetlen entitás is megadható `entity:`-vel; ekkor a lejátszók sora magától
@@ -134,6 +136,58 @@ remote_keys:
 
 A pad mindig ahhoz a dobozhoz tartozik, **ami épp megy**: ha a box játszik,
 az Apple TV-t irányítja; ha a TV az aktív, a TV-t.
+
+## Makrógombok
+
+Van, amit a készülék nem ad ki entitásként, csak a saját menüjében lehet
+állítani – egy Samsungnál ilyen az Eco mód. Ezekre való a `macros`: egy
+gomb, ami végigsétál a menün.
+
+```yaml
+macros:
+  - name: Eco be
+    icon: leaf
+    keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
+           KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
+           KEY_DOWN*3, KEY_ENTER, KEY_RETURN*4]
+    sets: { entity: input_boolean.tv_eco, state: 'on' }
+  - name: Eco ki
+    icon: leaf_off
+    keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
+           KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
+           KEY_UP*3, KEY_ENTER, KEY_RETURN*4]
+    sets: { entity: input_boolean.tv_eco, state: 'off' }
+```
+
+| Mező | Mit jelent |
+| --- | --- |
+| `name` | a gomb felirata |
+| `icon` | ikonnév a kártya készletéből (`leaf`, `leaf_off`, `remote`, …) |
+| `keys` | a parancsok; `KEY_LEFT*10` tíz megnyomást jelent |
+| `entity` | melyik `remote` entitásnak menjen (alap: az aktív lejátszó dobozáé) |
+| `delay_ms` | saját szünet a gombok között, ha a menü lassan rajzol |
+| `sets` | egy helper, amit a kártya a küldés után beállít |
+
+**Egy hívás az egész.** A `samsungtv_smart` a `remote.send_command` listáját
+`+`-szal fűzi össze, és magától tesz **0,5 másodperc** szünetet a gombok közé
+(egy szám a listában ezredmásodperces várakozás, 0,2–2 s közé vágva). A fenti
+sorozat 31 gombnyomás, tehát nagyjából **15 másodpercig** tart – a kártya
+ezért a futás idejére letiltja a makrógombokat, különben a második makró
+belekezdene az elsőbe, és a menü valahol félúton maradna.
+
+### Amit tudni kell róla
+
+- **A makró vak.** A kártya elküldi a sorozatot, és nem látja, hova jutott a
+  menü. Ha a TV nem onnan indul, ahonnan a sorozatot írtad – például már nyitva
+  van egy menü –, akkor máshol köt ki, és **más beállítást írhat át**. Ez nem
+  a kártya hibája, hanem a módszeré.
+- **A TV nem mondja meg, hogy be van-e kapcsolva az Eco.** Nincs rá attribútum
+  és nincs rá `supported_features` bit. Ezért két gomb van, nem egy kapcsoló.
+- **A `sets` csak annyit tud, amennyit elküldtek.** A megadott helpert a kártya
+  a küldés után beállítja, és a két gomb ettől úgy néz ki, mint egy kapcsoló –
+  de ez **azt mutatja, mit küldtél utoljára**, nem azt, mi van a TV-ben. Ha a
+  távirányítóval állítod át, a helper hazudni fog, amíg újra a kártyáról nem
+  nyúlsz hozzá.
 
 ## Melyik gomb jelenik meg
 

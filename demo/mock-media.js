@@ -196,6 +196,17 @@ export function makeHass(key) {
       device_id: DEVICES[entityId] || null,
     };
   }
+  /* the helper a macro writes, so the pair can show what was last sent -
+     the television itself reports nothing about its eco setting */
+  hass.states['input_boolean.tv_eco'] = {
+    entity_id: 'input_boolean.tv_eco',
+    state: 'off',
+    attributes: { friendly_name: 'TV eco' },
+  };
+  hass.entities['input_boolean.tv_eco'] = {
+    entity_id: 'input_boolean.tv_eco', platform: 'input_boolean', device_id: null,
+  };
+
   /* each box also has a remote entity on the same device, which is how the
      card finds the one belonging to whatever is playing */
   for (const [entityId, device] of Object.entries(REMOTES)) {

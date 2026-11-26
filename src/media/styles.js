@@ -163,6 +163,16 @@ ${BASE_STYLES}
 .ctl.small { width: 30px; height: 30px; border: 1px solid var(--ap-line); flex: none; }
 .ctl.small .icon { width: 16px; height: 16px; }
 
+/* ---------- macro buttons ---------- */
+.macros { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 12px; }
+.compact .macros { padding: 0 12px 10px; }
+.macros .chip.macro { gap: 6px; }
+.macros .chip.macro .icon { width: 15px; height: 15px; flex: none; }
+.macros .chip.macro .what { font-size: .72rem; opacity: .8; }
+.macros .chip.macro.busy { color: var(--ap-accent); border-color: var(--ap-accent-soft); }
+.macros .chip.macro[disabled] { cursor: default; }
+.macros .chip.macro[disabled]:not(.busy) { opacity: .45; }
+
 /* ---------- the direction pad ---------- */
 .pad { display: grid; gap: 10px; justify-items: center; padding: 0 16px 14px; }
 .dpad { display: grid; grid-template-columns: repeat(3, 44px); gap: 6px; }

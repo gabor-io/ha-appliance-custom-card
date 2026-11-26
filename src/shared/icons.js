@@ -50,6 +50,7 @@ import {
   mdiHomeOutline,
   mdiInformationOutline,
   mdiLeaf,
+  mdiLeafOff,
   mdiLightningBolt,
   mdiMovieOpenOutline,
   mdiMenu,
@@ -310,6 +311,9 @@ export const ICONS = {
   home: mdiHomeOutline,
   menu: mdiMenu,
   rewind: mdiRewind,
+
+  // macro buttons
+  leaf_off: mdiLeafOff,
 };
 
 

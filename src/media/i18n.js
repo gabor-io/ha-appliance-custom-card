@@ -28,6 +28,7 @@ const HU = {
     source: 'Forrás',
     sound_mode: 'Hangzás',
     remote: 'Távirányító',
+    sending: 'megy…',
     left: 'még {time}',
     of: '{elapsed} / {duration}',
     power: 'Be/ki',
@@ -63,6 +64,7 @@ const HU = {
     show_players: 'Lejátszók sora',
     show_sources: 'Forrás és hangzás',
     show_remote: 'Távirányító gomb',
+    show_macros: 'Makrógombok',
     compact: 'Tömör',
   },
 };
@@ -95,6 +97,7 @@ const EN = {
     source: 'Source',
     sound_mode: 'Sound mode',
     remote: 'Remote',
+    sending: 'sending…',
     left: '{time} left',
     of: '{elapsed} / {duration}',
     power: 'Power',
@@ -130,6 +133,7 @@ const EN = {
     show_players: 'Player row',
     show_sources: 'Source and sound mode',
     show_remote: 'Remote button',
+    show_macros: 'Macro buttons',
     compact: 'Compact',
   },
 };
