@@ -147,17 +147,30 @@ gomb, ami végigsétál a menün.
 macros:
   - name: Eco be
     icon: leaf
-    keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
-           KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
-           KEY_DOWN*3, KEY_ENTER, KEY_RETURN*4]
+    keys: [KEY_MENU, 2000,
+           KEY_LEFT*10, KEY_ENTER, 2000,
+           KEY_RETURN, 1000,
+           KEY_DOWN*3, KEY_RIGHT, 1000,
+           KEY_DOWN*3, KEY_ENTER, 2000,
+           KEY_DOWN*2, KEY_ENTER, 2000,
+           KEY_DOWN*3, KEY_ENTER, 1000,
+           KEY_EXIT]
     sets: { entity: input_boolean.tv_eco, state: 'on' }
   - name: Eco ki
     icon: leaf_off
-    keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
-           KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
-           KEY_UP*3, KEY_ENTER, KEY_RETURN*4]
+    keys: [KEY_MENU, 2000,
+           KEY_LEFT*10, KEY_ENTER, 2000,
+           KEY_RETURN, 1000,
+           KEY_DOWN*3, KEY_RIGHT, 1000,
+           KEY_DOWN*3, KEY_ENTER, 2000,
+           KEY_DOWN*2, KEY_ENTER, 2000,
+           KEY_UP*3, KEY_ENTER, 1000,
+           KEY_EXIT]
     sets: { entity: input_boolean.tv_eco, state: 'off' }
 ```
+
+Ez a sorozat egy **UE55MU7052-n bemért** útvonal, nem elmélet; a lépései és a
+belőlük levonható tanulságok lentebb, a „Hogyan kell makrót bemérni" alatt.
 
 | Mező | Mit jelent |
 | --- | --- |
@@ -189,6 +202,39 @@ Ez nem kozmetika: enélkül egy `KEY_*` sorozat ahhoz a dobozhoz ment, ami
 mezővel felül lehet bírálni; ha megadod, és a makró nyelve nem illik ahhoz a
 dobozhoz, a kártya **nem küldi el**, hanem letiltva mutatja a gombot, és a
 buborékban megírja, mi a baj.
+
+### Hogyan kell makrót bemérni
+
+A fenti sorozat első változata nem működött, és a hibakeresés két olyan
+dolgot hozott ki, ami minden menüsétára igaz:
+
+**1. Az almenü nem feltétlenül ott nyílik, ahol gondolod.** Ezen a
+készüléken a Beállítások megnyitása (`KEY_ENTER`) egyenesen a *Kép*
+almenübe ugrik, nem a kategórialistára. Az eredeti sorozat ezt nem tudta,
+ezért minden további gomb rossz helyre ment – és ott képbeállítást is
+átállíthatott volna. A javítás egyetlen `KEY_RETURN` az `ENTER` után, ami
+visszalép a kategórialistára.
+
+Ezért a bemérés nem átugorható: Fejlesztői eszközök → Műveletek,
+`remote.send_command`, és **darabonként** küldd a sorozatot, minden darab
+után megnézve, hol áll a kurzor a képernyőn.
+
+```yaml
+entity_id: remote.a_televizio
+command: [KEY_MENU, 2000, KEY_LEFT*10, KEY_ENTER, 2000]
+```
+
+**2. Egy listán, ami a szélén megáll, a számolás helyett ütközz neki.** Ha
+a lista nem fordul körbe, akkor „háromszor le" a lista végére visz
+*bárhonnan* – ez teszi a sorozat utolsó értékválasztását megbízhatóvá,
+függetlenül attól, mi volt az előző beállítás. Hogy egy adott lista
+körbefordul-e, azt ki kell próbálni; ha igen, ez a trükk rontana.
+
+**3. A végén egy `KEY_EXIT`, ne több `KEY_RETURN`.** Az `EXIT` egy lépésben
+zár be mindent. A fölösleges `RETURN`-ök viszont, ha a menü már bezárult,
+**HDMI-n át a forráskészülékhez juthatnak** – egy Apple TV-t például
+kiléptetnek a futó appból. Egy szobában, ahol több doboz lóg a TV-n, ez nem
+elméleti kockázat.
 
 ### Amit tudni kell róla
 

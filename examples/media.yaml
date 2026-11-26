@@ -53,18 +53,37 @@
   name: Hálószoba
   entities:
     - media_player.halo_televizio
+  #    A sorozat egy UE55MU7052-n bemért útvonal. Három dolog van benne, ami
+  #    nem jött volna ki elméletből:
+  #      - a Beállítások ENTER-re egyenesen a Kép almenübe ugranak, ezért
+  #        kell utána egy KEY_RETURN a kategórialistához;
+  #      - a szünetek (ezredmásodperc) nélkül a TV elnyeli a gombokat, amíg
+  #        az új képernyőt rajzolja;
+  #      - a végén KEY_EXIT, nem több KEY_RETURN: a fölösleges RETURN-ök
+  #        HDMI-n át a forráskészülékhez jutnának, és kiléptetnék a futó
+  #        appból.
   macros:
     - name: Eco be
       icon: leaf
-      keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
-             KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
-             KEY_DOWN*3, KEY_ENTER, KEY_RETURN*4]
+      keys: [KEY_MENU, 2000,
+             KEY_LEFT*10, KEY_ENTER, 2000,
+             KEY_RETURN, 1000,
+             KEY_DOWN*3, KEY_RIGHT, 1000,
+             KEY_DOWN*3, KEY_ENTER, 2000,
+             KEY_DOWN*2, KEY_ENTER, 2000,
+             KEY_DOWN*3, KEY_ENTER, 1000,
+             KEY_EXIT]
       sets: { entity: input_boolean.tv_eco, state: 'on' }
     - name: Eco ki
       icon: leaf_off
-      keys: [KEY_MENU, KEY_LEFT*10, KEY_ENTER, KEY_DOWN*3, KEY_RIGHT,
-             KEY_DOWN*3, KEY_ENTER, KEY_DOWN*2, KEY_ENTER,
-             KEY_UP*3, KEY_ENTER, KEY_RETURN*4]
+      keys: [KEY_MENU, 2000,
+             KEY_LEFT*10, KEY_ENTER, 2000,
+             KEY_RETURN, 1000,
+             KEY_DOWN*3, KEY_RIGHT, 1000,
+             KEY_DOWN*3, KEY_ENTER, 2000,
+             KEY_DOWN*2, KEY_ENTER, 2000,
+             KEY_UP*3, KEY_ENTER, 1000,
+             KEY_EXIT]
       sets: { entity: input_boolean.tv_eco, state: 'off' }
 
 # 6) Mobil dashboardra: tömör, borító és hangerő nélkül

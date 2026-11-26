@@ -74,16 +74,18 @@
         config.volume_entity = SET;
         /* the eco walk through the TV's own menu: the two sequences differ
            in a single step, up three times versus down three times */
-        const ECO = ['KEY_MENU', 'KEY_LEFT*10', 'KEY_ENTER', 'KEY_DOWN*3', 'KEY_RIGHT', 'KEY_DOWN*3', 'KEY_ENTER', 'KEY_DOWN*2', 'KEY_ENTER'];
+        const ECO = ['KEY_MENU', '2000', 'KEY_LEFT*10', 'KEY_ENTER', '2000',
+          'KEY_RETURN', '1000', 'KEY_DOWN*3', 'KEY_RIGHT', '1000',
+          'KEY_DOWN*3', 'KEY_ENTER', '2000', 'KEY_DOWN*2', 'KEY_ENTER', '2000'];
         config.macros = [
           {
             name: 'Eco be', icon: 'leaf',
-            keys: [...ECO, 'KEY_DOWN*3', 'KEY_ENTER', 'KEY_RETURN*4'],
+            keys: [...ECO, 'KEY_DOWN*3', 'KEY_ENTER', '1000', 'KEY_EXIT'],
             sets: { entity: 'input_boolean.tv_eco', state: 'on' },
           },
           {
             name: 'Eco ki', icon: 'leaf_off',
-            keys: [...ECO, 'KEY_UP*3', 'KEY_ENTER', 'KEY_RETURN*4'],
+            keys: [...ECO, 'KEY_UP*3', 'KEY_ENTER', '1000', 'KEY_EXIT'],
             sets: { entity: 'input_boolean.tv_eco', state: 'off' },
           },
         ];
